@@ -342,14 +342,14 @@ Manually add specific SCIDs to index.
 
 **Use Cases:**
 
-**1. Index Specific Known Contracts:**
+**Index Specific Known Contracts:**
 ```bash
 # You know a specific app SCID
 » gnomon add f2815b442d62a055e4bb8913167e3dbce3208f300d7006aaa3a2f127b06de29d
 # Immediately indexed, no need to wait for full sync
 ```
 
-**2. Targeted Development:**
+**Targeted Development:**
 ```bash
 # Index only your development contracts
 » gnomon add [your-test-app-scid]
@@ -357,7 +357,7 @@ Manually add specific SCIDs to index.
 # Skip indexing thousands of other contracts
 ```
 
-**3. Quick Testing:**
+**Quick Testing:**
 ```bash
 # Start fresh with fastsync
 tela-cli --simulator --gnomon --fastsync=true
@@ -395,14 +395,14 @@ Delete Gnomon database for specific network.
 
 **Use Cases:**
 
-**1. Disk Space Management:**
+**Disk Space Management:**
 ```bash
 # You tested on testnet but now use mainnet
 » gnomon clean testnet
 # Frees 150MB of testnet data
 ```
 
-**2. Network Switching Cleanup:**
+**Network Switching Cleanup:**
 ```bash
 # Switching from simulator to mainnet
 » endpoint close
@@ -412,7 +412,7 @@ Delete Gnomon database for specific network.
 » gnomon start
 ```
 
-**3. Fresh Start for Specific Network:**
+**Fresh Start for Specific Network:**
 ```bash
 » gnomon stop
 » gnomon clean mainnet
@@ -576,7 +576,7 @@ tela-cli --simulator --gnomon --fastsync=true
 
 ### When to Clean Databases
 
-**Scenario 1: Network Switching**
+**Network Switching:**
 ```bash
 # You used simulator for testing, now going to mainnet
 » endpoint close
@@ -586,7 +586,7 @@ tela-cli --simulator --gnomon --fastsync=true
 » gnomon start
 ```
 
-**Scenario 2: Disk Space Issues**
+**Disk Space Issues:**
 ```bash
 # Check database sizes
 ls -lh ~/.local/share/tela/datashards/gnomon_*.db
@@ -597,7 +597,7 @@ ls -lh ~/.local/share/tela/datashards/gnomon_*.db
 # Keep only mainnet
 ```
 
-**Scenario 3: Multiple Network Testing**
+**Multiple Network Testing:**
 ```bash
 # After extensive testing on all networks
 » gnomon clean simulator  # 10 MB freed
