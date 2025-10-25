@@ -23,7 +23,24 @@ const withAnalyze = withBundleAnalyzer({
 // Enable PWA in production only
 const withPwaPlugin = withPWA({
   dest: 'public',
-  disable: process.env.NODE_ENV === 'development'
+  disable: process.env.NODE_ENV === 'development',
+  // Exclude files that don't exist or shouldn't be precached
+  buildExcludes: [/middleware-manifest\.json$/, /dynamic-css-manifest\.json$/],
+  // Don't fail on missing files
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+        }
+      }
+    }
+  ]
 })
 
 export default withAnalyze(withPwaPlugin(withNextra({
