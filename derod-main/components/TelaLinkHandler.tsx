@@ -437,6 +437,17 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
   };
 
   useEffect(() => {
+    // Only run on localhost - documentation sites don't need XSWD connections
+    const isLocalhost = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1'
+    );
+    
+    if (!isLocalhost) {
+      console.log('TelaLinkHandler: Skipping WebSocket connection (not on localhost)');
+      return;
+    }
+    
     // Prevent double mounting in React StrictMode (dev only)
     let isMounted = true;
     

@@ -3,46 +3,6 @@ import { useRouter } from 'next/router'
 import type { DocsThemeConfig } from 'nextra-theme-docs'
 import { useConfig } from 'nextra-theme-docs'
 import seoConfig from './seo.config'
-import { useState, useEffect } from 'react'
-import NodeConnectionIndicator from './components/NodeConnectionIndicator'
-import DeroStatsIndicator from './components/DeroStatsIndicator'
-
-// Global state for connection status
-let globalConnectionStatus: boolean | null = null;
-
-// Function to update global connection status
-export const updateConnectionStatus = (status: boolean) => {
-  globalConnectionStatus = status;
-  // Dispatch an event to notify components
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('dero-connection-update', { detail: status }));
-  }
-};
-
-// Custom navbar component
-function Navbar() {
-  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(globalConnectionStatus);
-  
-  useEffect(() => {
-    // Listen for connection status updates
-    const handleConnectionUpdate = (event: CustomEvent<boolean>) => {
-      setConnectionStatus(event.detail);
-    };
-    
-    window.addEventListener('dero-connection-update', handleConnectionUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('dero-connection-update', handleConnectionUpdate as EventListener);
-    };
-  }, []);
-  
-  return (
-    <div className="nx-flex nx-items-center nx-gap-2">
-      <NodeConnectionIndicator isConnected={connectionStatus} />
-      <DeroStatsIndicator />
-    </div>
-  );
-}
 
 const logo = (
   <div className="flex items-center">
@@ -86,10 +46,6 @@ const config: DocsThemeConfig = {
   project: {
     link: 'https://github.com/TELA/tela-main'
   },
-  navbar: {
-    extraContent: <Navbar />
-  },
-
   docsRepositoryBase: 'https://github.com/DHEBP/dero-docs',
   useNextSeoProps() {
     const { route } = useRouter()
