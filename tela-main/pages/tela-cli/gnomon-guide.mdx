@@ -342,14 +342,14 @@ Manually add specific SCIDs to index.
 
 **Use Cases:**
 
-**Index Specific Known Contracts (1):**
+**1. Index Specific Known Contracts:**
 ```bash
 # You know a specific app SCID
 » gnomon add f2815b442d62a055e4bb8913167e3dbce3208f300d7006aaa3a2f127b06de29d
 # Immediately indexed, no need to wait for full sync
 ```
 
-**Targeted Development (2):**
+**2. Targeted Development:**
 ```bash
 # Index only your development contracts
 » gnomon add [your-test-app-scid]
@@ -357,7 +357,7 @@ Manually add specific SCIDs to index.
 # Skip indexing thousands of other contracts
 ```
 
-**Quick Testing (3):**
+**3. Quick Testing:**
 ```bash
 # Start fresh with fastsync
 tela-cli --simulator --gnomon --fastsync=true
@@ -395,14 +395,14 @@ Delete Gnomon database for specific network.
 
 **Use Cases:**
 
-**Disk Space Management (1):**
+**1. Disk Space Management:**
 ```bash
 # You tested on testnet but now use mainnet
 » gnomon clean testnet
 # Frees 150MB of testnet data
 ```
 
-**Network Switching Cleanup (2):**
+**2. Network Switching Cleanup:**
 ```bash
 # Switching from simulator to mainnet
 » endpoint close
@@ -412,7 +412,7 @@ Delete Gnomon database for specific network.
 » gnomon start
 ```
 
-**Fresh Start for Specific Network (3):**
+**3. Fresh Start for Specific Network:**
 ```bash
 » gnomon stop
 » gnomon clean mainnet
