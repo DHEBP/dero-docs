@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { updateConnectionStatus } from '../theme.config';
 
 interface TelaLinkHandlerProps {
   onConnectionStatusChange?: (status: boolean) => void;
@@ -115,7 +114,6 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
         console.log(`WebSocket connected to ${wsUrl}`);
         setIsConnected(true);
         onConnectionStatusChange?.(true);
-        updateConnectionStatus(true);
         isConnectingRef.current = false;
         
         // Generate a fresh app ID for this connection attempt
@@ -147,7 +145,6 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
         if (!isAuthorized) {
           setIsConnected(false);
           onConnectionStatusChange?.(false);
-          updateConnectionStatus(false);
         } else {
           console.log('Socket closed but keeping authorized status');
         }
@@ -165,7 +162,6 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
         if (!isAuthorized) {
           setIsConnected(false);
           onConnectionStatusChange?.(false);
-          updateConnectionStatus(false);
         } else {
           console.log('Socket error but keeping authorized status');
         }
