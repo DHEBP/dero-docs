@@ -97,10 +97,6 @@ const config: DocsThemeConfig = {
   project: {
     link: 'https://github.com/deroproject/derohe'
   },
-  navbar: {
-    extraContent: <Navbar />
-  },
-
   docsRepositoryBase: 'https://github.com/DHEBP/dero-docs',
   useNextSeoProps() {
     const { route } = useRouter()
