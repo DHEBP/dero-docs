@@ -1,0 +1,48 @@
+# Root-level ignores for monorepo
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment
+.env
+.env*.local
+
+# Build artifacts from workspaces
+derod-main/.next/
+derod-main/out/
+derod-main/build/
+tela-main/.next/
+tela-main/out/
+tela-main/build/
+
+# Vercel
+.vercel
+
+# Temp/Session files
+*_SUMMARY.md
+*_STATUS.md
+*_COMPLETE.md
+*_GUIDE.md
+

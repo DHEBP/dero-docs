@@ -1,0 +1,133 @@
+---
+title: "DERO Cryptocurrency Wallets: A Comprehensive Guide | DERO Blockchain"
+description: "Explore DERO wallet options, including CLI, Engram, Web, and Cold wallets for secure cryptocurrency management with enhanced privacy."
+keywords: ["DERO wallets", "cryptocurrency security", "CLI wallet", "Engram wallet", "cold storage", "blockchain privacy", "secure crypto storage", "DERO ecosystem"]
+date: "2024-08-26"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/wallets.jpeg"
+slug: "wallets"
+canonicalUrl: "https://derod.org/basics/wallets"
+tags: ["basics", "wallets", "CLI", "Engram", "security"]
+---
+
+
+import Image from 'next/image';
+import { Callout } from 'nextra/components';
+
+# What is a wallet?
+![What is a wallet](/assets/wallets.jpeg)
+
+A cryptocurrency wallet is a digital tool or software application that allows users to securely store, manage, and interact with their cryptocurrencies. It serves as a virtual wallet for storing private keys, which are essential for accessing and controlling the user's cryptocurrency holdings on the blockchain.
+
+Many cryptocurrency wallets, including Dero's, employ seed phrases—a sequence of random dictionary words. These seed phrases enable the regeneration of a lost private key, underscoring their crucial role in wallet security. It is strongly advised to diligently record and store your seed phrase. Dero adopts a 25-word seed phrase, displayed during wallet creation and accessible for printing at any time within the wallet interface.
+<Callout type="info" emoji="⬇️">
+  Download here: https://github.com/deroproject/derohe/releases
+</Callout>
+## Dero Wallet Options
+
+
+
+### CLI (Command Line Interface) Wallet
+
+The CLI wallet, the fundamental and official wallet, resides [here](https://github.com/deroproject/derohe) within the official Dero suite of software. Offering all necessary functions, starting with this wallet is recommended.
+
+#### Usage:
+
+To utilize the CLI wallet, execute the binary file via the command line or terminal. The process might slightly differ based on your operating system. Nevertheless, navigate to the folder containing the executable and run it accordingly:
+
+- Linux: `./dero-wallet-cli-linux-amd64`
+- Windows: `dero-wallet-cli-windows-amd64.exe`
+- Mac: `./dero-wallet-cli-darwin`
+
+### ENGRAM (Graphical) Wallet
+
+Engram is DERO's official desktop wallet application - a privacy-focused gateway to decentralized applications (dApps) on the DERO blockchain. It provides a secure, sandboxed environment for browsing dApps whose code and data reside entirely on-chain through smart contracts.
+
+**Key Features:**
+- 🖥️ Desktop wallet with full GUI
+- 🔒 Privacy-focused browsing for blockchain dApps
+- ⛏️ Built-in miner (Netrunner)
+- 🔐 dApp authentication system (Cyberdeck)
+- 💬 Encrypted messaging
+- 🌐 Gateway to TELA platform
+
+**Learn More:**
+- [Engram Introduction](/engram/introduction) - What is Engram?
+- [Engram Features](/engram/features) - Full feature list
+- [User Guide](/engram/user-guide) - Getting started
+- [Developer API](/engram/developer-api) - Build for Engram
+
+**Download:** [GitHub Releases](https://github.com/DEROFDN/Engram)
+
+### Cold Wallet (Offline Storage)
+
+Cold storage refers to keeping your private keys and wallet on an offline, air-gapped computer for maximum security. However, **DERO's account-based model makes cold storage different** from traditional cryptocurrencies.
+
+<Callout type="warning" emoji="⚠️">
+  **Important:** DERO Stargate (current version) uses an **account-based model** that requires **wallet registration** on the blockchain. This makes fully offline cold storage more complex than UTXO-based coins.
+</Callout>
+
+#### How DERO Cold Storage Works
+
+**The Challenge:**
+- Traditional cold wallets (Bitcoin, Monero) can be created and funded completely offline
+- DERO wallets **must register** on-chain before they can receive funds
+- Registration requires a one-time network connection
+
+**Current Cold Storage Process:**
+
+1. **Create Wallet Offline** (Air-gapped computer)
+   ```bash
+   ./dero-wallet-cli-linux-amd64
+   # Create new wallet, save 25-word seed
+   ```
+
+2. **Get Wallet Address**
+   - Note your wallet address (starts with `dero1...`)
+   - Write down seed phrase on paper (NOT on USB)
+   - Save address to USB drive (safe to copy - it's public)
+
+3. **Register Wallet** (Requires network connection)
+   - Option A: Send DERO to the address from another wallet (auto-registers)
+   - Option B: Temporarily connect the air-gapped wallet to register it
+   - After registration, wallet can receive funds
+
+4. **Return to Cold Storage**
+   - Disconnect from network
+   - Keep seed phrase offline and secure
+   - Only connect when you need to send funds
+
+**View-Only Wallet:**
+```bash
+# On any networked computer
+./dero-wallet-cli-linux-amd64
+# Use view-only key to check balance without exposing private keys
+```
+
+#### Best Practices for Secure Storage
+
+**Security Checklist:**
+- ✅ Write seed phrase on paper (NEVER digital)
+- ✅ Store in multiple secure locations (safe, bank vault)
+- ✅ Use encrypted storage for wallet files
+- ✅ Never expose seed to internet-connected devices
+- ✅ Test recovery process with small amounts first
+- ✅ Use strong passwords for wallet encryption
+
+
+## Related Pages
+
+**Get Started:**
+- [DERO Tokens](/basics/tokens) - Understanding tokens and assets
+- [DERO Mining](/basics/mining) - Mine DERO to your wallet
+- [Running a Node](/basics/running-a-node) - Run your own node
+
+**Privacy Features:**
+- [Transaction Privacy](/privacy/transaction-privacy) - How wallet privacy works
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) - Encrypted balances
+- [Payload Proofs](/privacy/payload-proofs) - Prove your transactions
+
+**For Developers:**
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) - Automate wallet operations
+- [Smart Contracts](/smartContracts/token) - Deploy and interact with contracts

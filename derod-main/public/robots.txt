@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://derod.org
+
+# Sitemaps
+Sitemap: https://derod.org/sitemap.xml

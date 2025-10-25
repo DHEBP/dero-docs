@@ -1,0 +1,57 @@
+{
+  "index": {
+    "display": "hidden",
+    "title": "TELA Documentation",
+    "theme": {
+      "breadcrumb": false
+    }
+  },
+
+  "-- Getting Started": {
+    "type": "separator",
+    "title": "Getting Started"
+  },
+  "tela": "Introduction to TELA",
+  "tela-development-guide": "Quick Start Guide",
+  "tutorials": "Tutorials",
+  "tela-cli": "TELA-CLI",
+
+  "-- Advanced Topics": {
+    "type": "separator",
+    "title": "Advanced Topics"
+  },
+  "advanced-features": "Advanced Features",
+  "xswd": "XSWD Protocol",
+  "epoch-mining": "EPOCH Mining",
+
+  "-- Developer Reference": {
+    "type": "separator",
+    "title": "Developer Reference"
+  },
+  "beginner-guide": "Beginner's Guide",
+  "api-reference": "API Reference",
+  "go-package-reference": "Go Package Reference",
+  "javascript-guidelines": "Working Code",
+  "templates": "Project Templates",
+  "design-reference": "Design Reference",
+
+  "-- Compliance": {
+    "type": "separator",
+    "title": "Compliance"
+  },
+  "size-optimization": "Size Optimization", 
+  "error-troubleshooting": "Error Troubleshooting",
+
+  "DERO Homepage": {
+    "title": "DERO Homepage",
+    "type": "page",
+    "href": "https://dero.io",
+    "newWindow": true
+  },
+  "DERO Quick Start": {
+    "title": "DERO Docs",
+    "type": "page",
+    "href": "https://derod.org",
+    "newWindow": true
+  }
+}

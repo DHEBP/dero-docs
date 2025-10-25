@@ -1,0 +1,40 @@
+{
+  "index": {
+    "display": "hidden",
+    "title": "DHEBP",
+    "theme": {
+      "breadcrumb": false
+    }
+  },
+
+  "-- Overview": {
+    "type": "separator",
+    "title": "Overview"
+  },
+  "basics": "Basics",
+  "features": "Features",
+  "privacy": "Privacy Suite",
+  "tools": "Tools",
+  "engram": "Engram",
+  "-- Documentation": {
+    "type": "separator",
+    "title": "Dero Docs"
+  },
+  "dvm": "Dero Virtual Machine",
+  "rpc-api": "RPC API",
+  "smartContracts": "Smart Contracts",
+  
+  
+  "Dero (Official)": {
+    "title": "Official Website",
+    "type": "page",
+    "href": "https://dero.io",
+    "newWindow": true
+  },
+  "TELA Platform": {
+    "title": "TELA Platform",
+    "type": "page",
+    "href": "https://tela.derod.org",
+    "newWindow": true
+  }
+}

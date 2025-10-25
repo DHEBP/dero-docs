@@ -1,0 +1,91 @@
+---
+title: "DERO Name Service: Blockchain Username Registration | DERO Blockchain"
+description: "Learn how to register and manage human-readable usernames on the DERO blockchain using the built-in Name Service smart contract for easy wallet addressing."
+keywords: ["DERO Name Service", "blockchain usernames", "crypto wallet names", "DVM-BASIC", "wallet addressing", "name registration", "blockchain identities", "DERO usernames", "wallet aliases", "decentralized names"]
+date: "2024-08-26"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/name-service.jpeg"
+slug: "name"
+canonicalUrl: "https://derod.org/smartContracts/name"
+tags: ["smart-contracts", "name-service", "DVM-BASIC", "usernames"]
+---
+
+## Nameservice
+
+import { Callout } from 'nextra/components'
+
+<Callout type="warning" emoji="⚠️">
+**Testnet Tutorial:** This guide uses testnet ports (40402/40403). Always test smart contracts on testnet before deploying to mainnet. For mainnet, use ports **10102** (daemon) and **10103** (wallet).
+</Callout>
+
+Register and associate a DERO wallet with a username using the Nameservice. It includes instructions for checking the availability of a username and the process to register it with the associated DERO wallet using specific cURL commands.
+
+### Step 1
+Check whether the username is already registered. You cannot register the username if it's already taken.
+
+```bash
+curl http://127.0.0.1:40402/json_rpc -d '{"jsonrpc":"2.0","id":"0","method":"nametoaddress","params":{"name":"TESTUSERNAME" }}' -H 'Content-Type: application/json'
+```
+
+### Step 2
+Register and associate a DERO wallet with the username.
+
+```bash
+curl http://127.0.0.1:40403/json_rpc -d '{"jsonrpc":"2.0","id":"0","method":"scinvoke","params":{"scid":"0000000000000000000000000000000000000000000000000000000000000001","ringsize":2, "sc_rpc":[{"name":"entrypoint","datatype":"S","value":"Register"}, {"name":"name","datatype":"S","value":"TESTUSERNAME" }] }}' -H 'Content-Type: application/json'
+```
+
+**Note:**
+
+- Replace "TESTUSERNAME" with your desired available username in the above steps.
+- `"scid":"0000000000000000000000000000000000000000000000000000000000000001"` is reserved for nameservice registration.
+
+## nameservice.bas
+
+```DVM-BASIC
+/* Name Service SMART CONTRACT in DVM-BASIC.  
+Allows a user to register names which could be looked by wallets for easy to use name while transfer */
+
+// This function is used to initialize parameters during install time
+Function Initialize() Uint64
+10  RETURN 0 
+End Function
+
+// Register a name, limit names of 5 or less length
+Function Register(name String) Uint64 
+10  IF EXISTS(name) THEN GOTO 50   // if name is already used, it cannot be re-registered
+20  IF STRLEN(name) >= 6 THEN GOTO 40 
+30  IF SIGNER() != address_raw("deto1qyvyeyzrcm2fzf6kyq7egkes2ufgny5xn77y6typhfx9s7w3mvyd5qqynr5hx") THEN GOTO 50
+40  STORE(name,SIGNER())
+50  RETURN 0
+End Function
+
+// This function is used to change owner 
+// owner is a string form of address 
+Function TransferOwnership(name String,newowner String) Uint64 
+10  IF LOAD(name) != SIGNER() THEN GOTO 30 
+20  STORE(name,ADDRESS_RAW(newowner))
+30  RETURN 0
+End Function
+```
+
+---
+
+## Related Pages
+
+**Learn the Language:**
+- [DVM-BASIC Programming Guide](/dvm/dvm-basic) - Smart contract language guide
+- [DERO Virtual Machine](/dvm/dero-virtual-machine) - How the DVM works
+
+**Understand DERO Features:**
+- [DERO Usernames](/features/usernames) - Built-in name service explained
+- [Privacy Features](/privacy/index) - Full privacy suite overview
+
+**More Smart Contract Examples:**
+- [Token Contract](/smartContracts/token) - Private token implementation
+- [Assets Exchange](/smartContracts/assets) - Token swap contract
+- [Lottery Contract](/smartContracts/lottery) - Decentralized lottery
+
+**API References:**
+- [Daemon RPC API](/rpc-api/daemon-rpc-api) - Check name registration
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) - Register names via RPC

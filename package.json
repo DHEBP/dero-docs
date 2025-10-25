@@ -1,0 +1,43 @@
+{
+  "name": "dero-docs-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for DERO and TELA documentation sites",
+  "private": true,
+  "workspaces": [
+    "derod-main",
+    "tela-main"
+  ],
+  "scripts": {
+    "dev:derod": "cd derod-main && npm run dev",
+    "dev:tela": "cd tela-main && npm run dev",
+    "build:derod": "cd derod-main && npm run build",
+    "build:tela": "cd tela-main && npm run build",
+    "build:all": "npm run build:derod && npm run build:tela",
+    "install:all": "cd derod-main && npm install && cd ../tela-main && npm install",
+    "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out",
+    "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DHEBP/dero-docs.git"
+  },
+  "keywords": [
+    "dero",
+    "tela",
+    "documentation",
+    "blockchain",
+    "web3",
+    "privacy"
+  ],
+  "author": "DERO & TELA Community",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DHEBP/dero-docs/issues"
+  },
+  "homepage": "https://github.com/DHEBP/dero-docs#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+

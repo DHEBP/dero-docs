@@ -1,0 +1,11 @@
+{
+  "index": "Privacy Overview",
+  "homomorphic-encryption": "Homomorphic Encryption",
+  "private-smart-contracts": "Private Smart Contracts",
+  "account-based-privacy": "Account Privacy",
+  "bulletproofs": "Bulletproofs",
+  "ring-signatures": "Ring Signatures",
+  "payload-proofs": "Payload Proofs",
+  "transaction-privacy": "Transaction Privacy"
+}
+

@@ -1,0 +1,421 @@
+---
+title: "Private Smart Contracts: DERO's Token Privacy Innovation | DERO Blockchain"
+description: "Learn how DERO smart contracts issue tokens that become encrypted wallet balances - enabling private token transfers and rug-pull resistance through homomorphic encryption."
+keywords: ["private smart contracts", "DERO smart contracts", "private tokens", "encrypted token balances", "DVM privacy", "SEND_ASSET_TO_ADDRESS", "token privacy", "rug-pull resistance", "wallet tokens", "DERO DVM"]
+date: "2025-10-18"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/private-smart-contracts.jpeg"
+slug: "private-smart-contracts"
+canonicalUrl: "https://derod.org/privacy/private-smart-contracts"
+tags: ["privacy", "smart-contracts", "DVM", "tokens", "technical"]
+---
+
+import { Callout } from 'nextra/components'
+import { Tabs } from 'nextra/components'
+
+# Private Smart Contracts
+
+<Callout type="error">
+  **Critical Clarification:** "Private smart contracts" = **TOKENS ENCRYPTED IN USER WALLETS**, not encrypted state variables. Contract code and state are PUBLIC. Token balances in wallets are ENCRYPTED.
+</Callout>
+
+## How DERO Token Privacy Actually Works
+
+| Aspect | Traditional SC Tokens | DERO SC Tokens |
+|--------|---------------------|----------------|
+| **Contract Code** | 👁️ Public | 👁️ Public (auditable) |
+| **SC State Variables** | 👁️ Public | 👁️ Public (totalSupply, etc.) |
+| **User Token Balances** | 👁️ Public in contract | 🔒 **Encrypted in user wallets** |
+| **Token Transfers** | Visible amounts | Homomorphic (encrypted) |
+
+### The key innovation:
+
+Once tokens are sent to users via `SEND_ASSET_TO_ADDRESS()`, they become **encrypted balances in user wallets** - just like native DERO. The tokens can then be transferred wallet-to-wallet with full homomorphic encryption, WITHOUT going back through the smart contract.
+
+```basic
+// Contract can send tokens without knowing balances
+SEND_ASSET_TO_ADDRESS(user, amount, SCID())  
+// "send asset without knowing original balance, this is done homomorphically"
+// Source: tests/normal/multi_deposit_test/asset.bas:13
+```
+
+**Result:** Token balances are encrypted in user wallets, not in the SC state itself.
+
+<Callout type="warning">
+  **Current Status:** Type 0 (Open) vs Type 1 (Private with `InitializePrivate()`) distinction exists in code, but appears to primarily affect initialization, not variable encryption. The privacy comes from homomorphic token transfers to encrypted wallet balances.
+</Callout>
+
+---
+
+## How It Actually Works
+
+### The Two Storage Locations
+
+**Traditional Tokens (ERC-20):**
+```solidity
+// ALL balances stored IN the contract
+mapping(address => uint256) balances;
+
+balances[alice] = 1000;  // ← Stored in contract (PUBLIC)
+balances[bob] = 500;     // ← Stored in contract (PUBLIC)
+
+Everyone can see all balances!
+```
+
+**DERO Tokens:**
+```basic
+// Tokens sent TO user wallets (ENCRYPTED)
+Function IssueAsset() Uint64
+    10 SEND_ASSET_TO_ADDRESS(SIGNER(), amount, SCID())
+    20 RETURN 0
+End Function
+
+// Result:
+Alice's wallet: E(1000 tokens)  // ← Encrypted in wallet
+Bob's wallet:   E(500 tokens)   // ← Encrypted in wallet
+
+Contract has NO record of individual balances!
+Only users know their token holdings!
+```
+
+### The Magic: SEND_ASSET_TO_ADDRESS()
+
+**What this function does:**
+
+```basic
+SEND_ASSET_TO_ADDRESS(recipient, amount, asset_id)
+```
+
+1. **Doesn't check** recipient's current balance (can't see it - encrypted!)
+2. **Sends tokens** directly to recipient's wallet
+3. **Updates wallet** using homomorphic encryption: `E(old) + E(amount) = E(new)`
+4. **Contract forgets** - no balance tracking in contract
+
+**From source code comment:**
+> "send asset without knowing original balance, this is done homomorphically"  
+> Source: `tests/normal/multi_deposit_test/asset.bas:13`
+
+---
+
+## Why This Matters
+
+### Problem: ERC-20 Token Privacy
+
+```
+Ethereum ERC-20 tokens:
+  ✓ Contract tracks all balances
+  ✓ Everyone can query: balanceOf(alice)
+  ✓ All transfers visible
+  ✓ Whale wallets identified
+  ✓ Can track all activity
+  
+Result: ZERO privacy
+```
+
+### Solution: DERO Token Model
+
+```
+DERO tokens:
+  ✓ Balances in encrypted wallets
+  ✓ Query returns: E(???) - encrypted bytes
+  ✓ Transfers use ring signatures
+  ✓ Whale wallets impossible to identify
+  ✓ Cannot track activity
+  
+Result: Complete privacy
+```
+
+**The difference:**
+- **ERC-20:** Bank model (bank tracks all accounts)
+- **DERO:** Cash model (once tokens leave, contract doesn't know who has what)
+
+---
+
+## Rug-Pull Resistance
+
+### The Security Advantage
+
+**Ethereum Tokens:**
+```solidity
+// Tokens controlled by contract
+balances[alice] = 1000;  // Contract owns the data
+
+// Malicious owner can:
+function rugPull() onlyOwner {
+    balances[owner] += totalSupply;  // Steal everything
+}
+
+Or:
+function freeze(address user) onlyOwner {
+    balances[user] = 0;  // Freeze user funds
+}
+```
+
+**DERO Tokens:**
+```basic
+// Tokens in USER wallets
+SEND_ASSET_TO_ADDRESS(alice, 1000, SCID())
+
+// Now alice has E(1000) in HER wallet
+// Contract CANNOT:
+//   ❌ Take them back
+//   ❌ Freeze them
+//   ❌ See the balance
+//   ❌ Control them
+
+// Alice controls private keys = Alice controls tokens
+```
+
+**Result:** Once tokens are in your wallet, they're YOURS. Contract can't touch them.
+
+---
+
+## Wallet-to-Wallet Token Transfers
+
+### The Unique Capability
+
+**Traditional Tokens:**
+```
+Alice wants to send 100 tokens to Bob:
+  1. Call contract.transfer(bob, 100)
+  2. Contract checks balances[alice] >= 100
+  3. Contract updates: balances[alice] -= 100
+  4. Contract updates: balances[bob] += 100
+  5. Everyone sees the transfer
+```
+
+**DERO Tokens:**
+```
+Alice wants to send 100 tokens to Bob:
+  1. Create transaction (like sending DERO)
+  2. Include token asset ID in transaction
+  3. Use ring signatures (sender hidden)
+  4. Use homomorphic encryption (amount hidden)
+  5. Bob receives: E(old_balance) + E(100) = E(new_balance)
+  
+Contract is NOT involved!
+Transfer happens wallet-to-wallet!
+Privacy complete!
+```
+
+**This is like physical cash:**
+- Bank (contract) issues cash (tokens)
+- Cash leaves bank → people use it directly
+- Bank doesn't know who has what anymore
+- People trade cash without bank's knowledge
+
+---
+
+## Private Token Example
+
+### Complete Implementation
+
+```basic
+/* Private Token Smart Contract */
+
+Function InitializePrivate() Uint64
+    10 STORE("owner", SIGNER())
+    20 STORE("total_supply", 1000000)  // Public (verifiable)
+    30 SEND_ASSET_TO_ADDRESS(SIGNER(), 1000000, SCID())
+    40 RETURN 0
+End Function
+
+Function IssueTokens() Uint64
+    10 IF LOAD("owner") != SIGNER() THEN GOTO 30
+    20 SEND_ASSET_TO_ADDRESS(SIGNER(), DEROVALUE(), SCID())
+    30 RETURN 0
+End Function
+```
+
+**What's public:**
+- ✓ Contract code (auditable for safety)
+- ✓ Total supply (verifiable)
+- ✓ Owner address (transparency)
+
+**What's private:**
+- 🔒 Individual token balances (encrypted in wallets)
+- 🔒 Who owns tokens (wallet addresses + ring sigs)
+- 🔒 Transfer amounts (homomorphic encryption)
+- 🔒 Trading patterns (unlinkable)
+
+---
+
+## Real-World Applications
+
+### 1. Private Stablecoins
+
+```basic
+Function Mint(recipient String, amount Uint64) Uint64
+    10 IF LOAD("owner") != SIGNER() THEN GOTO 30
+    20 SEND_ASSET_TO_ADDRESS(ADDRESS_RAW(recipient), amount, SCID())
+    30 RETURN 0
+End Function
+```
+
+**Privacy benefits:**
+- ✅ User holdings hidden (encrypted in wallets)
+- ✅ Transfer amounts hidden (homomorphic)
+- ✅ Cannot identify whales
+- ✅ Cannot track flows
+
+**Transparency maintained:**
+- ✅ Total supply visible (contract variable)
+- ✅ Mint function auditable (code is public)
+- ✅ No hidden inflation
+
+### 2. Private NFT/Gaming Assets
+
+```basic
+Function IssueItem(recipient String, item_id Uint64) Uint64
+    10 SEND_ASSET_TO_ADDRESS(ADDRESS_RAW(recipient), 1, item_id)
+    20 RETURN 0
+End Function
+```
+
+**Privacy:**
+- ✅ Who owns which items: Hidden
+- ✅ Inventory contents: Encrypted
+- ✅ Trades: Private
+
+### 3. Token Swaps
+
+```basic
+Function Swap(asset_in String) Uint64
+    10 DIM rate, amount_out as Uint64
+    20 LET rate = LOAD("exchange_rate")
+    30 LET amount_out = ASSETVALUE(asset_in) * rate
+    40 SEND_ASSET_TO_ADDRESS(SIGNER(), amount_out, SCID())
+    50 RETURN 0
+End Function
+```
+
+**Privacy:**
+- ✅ Swap amounts: Can be hidden (if sent privately)
+- ✅ User balances: Encrypted in wallets
+- ✅ Trading patterns: Unlinkable via ring sigs
+
+**Public:**
+- ✓ Exchange rate (transparent pricing)
+- ✓ Swap function (auditable logic)
+
+---
+
+## Technical Details
+
+### How Token Transfers Work
+
+**When contract sends tokens:**
+
+```go
+// Source: dvm/dvm_functions.go - SEND_ASSET_TO_ADDRESS()
+// blockchain/transaction_execute.go:239
+
+nb.Balance = nb.Balance.Plus(amount)  // Homomorphic addition!
+// User's encrypted balance updated WITHOUT decryption
+```
+
+**Storage structure:**
+```
+User Wallet Contains:
+  DERO balance:  E(500 DERO)    // 66 bytes encrypted
+  Token balance: E(1000 tokens) // 66 bytes encrypted
+  
+Each encrypted balance:
+  Left:  33 bytes
+  Right: 33 bytes
+  Total: 66 bytes
+```
+
+### Comparison with Other Platforms
+
+| Platform | Token Storage | Privacy | Rug-Pull Risk |
+|----------|--------------|---------|---------------|
+| **Ethereum** | Contract state | ❌ Public | ⚠️ High (contract controls) |
+| **Solana** | Token accounts | ❌ Public | ⚠️ Medium (freeze authority) |
+| **DERO** | User wallets | ✅ Encrypted | ✅ Low (you control keys) |
+
+---
+
+## What InitializePrivate() Actually Does
+
+### The Type System
+
+Based on source code analysis:
+
+```go
+// dvm/sc.go:38
+type SC_META_DATA struct {
+    Type byte  // 0 = Open, 1 = Private
+}
+
+// blockchain/transaction_execute.go:325-327
+if _, ok := sc.Functions["InitializePrivate"]; ok {
+    meta.Type = 1  // Mark as private
+}
+
+entrypoint := "Initialize"
+if meta.Type == 1 {
+    entrypoint = "InitializePrivate"  // Use different init
+}
+```
+
+**What we CAN confirm:**
+- ✅ Type marker stored in metadata
+- ✅ Different initialization function name
+- ✅ Tokens work with homomorphic encryption
+
+**What we CANNOT confirm:**
+- ❌ State variables encrypted differently
+- ❌ LOAD/STORE returning encrypted values
+- ❌ Homomorphic operations on contract state
+
+**The privacy comes from:** Tokens stored as encrypted wallet balances, NOT from encrypted contract variables.
+
+---
+
+## Key Takeaways
+
+**What DERO Actually Provides:**
+
+1. **Encrypted token balances** - Stored in user wallets (66 bytes each)
+2. **Homomorphic token transfers** - Send without revealing amounts
+3. **Ring signature hiding** - Sender identity protected
+4. **Wallet-to-wallet transfers** - No contract involvement after issuance
+5. **Rug-pull resistance** - Tokens in YOUR wallet, not contract's control
+6. **Public code** - Auditable for security and trust
+
+**What DERO Does NOT Provide (Currently):**
+
+1. ❌ Encrypted contract state variables (STORE/LOAD are public)
+2. ❌ Homomorphic operations on contract variables
+3. ❌ Different storage for Type 0 vs Type 1 (both public)
+
+**The Innovation is STILL Unique:**
+
+No other blockchain lets you:
+- Issue tokens from smart contracts
+- Have them become encrypted in user wallets
+- Transfer them peer-to-peer with full privacy
+- Keep them outside contract's control
+
+This is the "bank cash model" - once tokens are issued, they're like physical cash that can't be tracked.
+
+
+---
+
+## Related Pages
+
+**Privacy Technologies:**
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) - Encrypted SC balances
+- [Transaction Privacy](/privacy/transaction-privacy) - Private contract calls
+- [Payload Proofs](/privacy/payload-proofs) - Prove contract interactions
+
+**Build Private Contracts:**
+- [DVM-BASIC Guide](/dvm/dvm-basic) - Smart contract language
+- [Token Contract](/smartContracts/token) - Private token example
+- [Assets Exchange](/smartContracts/assets) - Private DEX example
+
+**Understanding Tokens:**
+- [DERO Tokens](/basics/tokens) - How token privacy works
+- [DERO Virtual Machine](/dvm/dero-virtual-machine) - DVM architecture

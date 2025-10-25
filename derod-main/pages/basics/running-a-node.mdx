@@ -1,0 +1,450 @@
+---
+title: "Running a DERO Node: Complete Setup Guide | DERO Blockchain"
+description: "Step-by-step guide to setting up and running your own DERO node on Linux, Windows, or Mac. Earn integrator rewards and support network decentralization."
+keywords: ["DERO node setup", "run DERO daemon", "blockchain node", "DERO installation", "node configuration", "integrator rewards", "DERO network", "decentralization"]
+date: "2025-10-19"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/daemon.jpeg"
+slug: "running-a-node"
+canonicalUrl: "https://derod.org/basics/running-a-node"
+tags: ["basics", "node", "daemon", "setup", "configuration"]
+---
+
+import { Callout } from 'nextra/components'
+import Image from 'next/image';
+
+# Running Your Own DERO Node
+
+![Run a DERO Node](/assets/dero_node.png)
+
+Running a DERO node supports network decentralization, earns you integrator rewards (10% bonus), and gives you complete privacy without relying on third-party infrastructure.
+
+<Callout type="info">
+  **Download:** [GitHub Releases](https://github.com/deroproject/derohe/releases)
+</Callout>
+
+---
+
+## Quick Start
+
+### Linux
+
+```bash
+# Download latest release
+wget https://github.com/deroproject/derohe/releases/download/latest/dero-linux-amd64.tar.gz
+
+# Extract
+tar -xzf dero-linux-amd64.tar.gz
+cd dero-linux-amd64
+
+# Run daemon
+./derod-linux-amd64 --integrator-address=YOUR_DERO_ADDRESS
+```
+
+### Windows
+
+```powershell
+# Download from GitHub releases
+# Extract ZIP file
+# Open PowerShell in extracted folder
+
+.\derod-windows-amd64.exe --integrator-address=YOUR_DERO_ADDRESS
+```
+
+### macOS
+
+```bash
+# Download for your architecture (Intel or Apple Silicon)
+# Extract archive
+cd dero-darwin-*
+
+# Run daemon  
+./derod-darwin-amd64 --integrator-address=YOUR_DERO_ADDRESS
+```
+
+---
+
+## System Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** | 2 cores | 4+ cores |
+| **RAM** | 4GB | 8GB+ |
+| **Storage** | 20GB SSD | 50GB+ SSD |
+| **Network** | Stable connection | 100+ Mbps |
+| **OS** | Linux/Windows/Mac | Linux (best performance) |
+
+**Why SSD?** 
+- Blockchain requires fast random reads/writes
+- HDD will cause sync issues and slow performance
+
+---
+
+## Configuration
+
+### Basic Setup
+
+```bash
+# Minimal configuration
+./derod-linux-amd64 --integrator-address=dero1qy...
+
+# With custom ports
+./derod-linux-amd64 \
+  --integrator-address=dero1qy... \
+  --rpc-bind=0.0.0.0:10102 \
+  --p2p-bind=0.0.0.0:10101
+```
+
+### Advanced Configuration
+
+```bash
+# Production node with optimizations
+./derod-linux-amd64 \
+  --integrator-address=dero1qy... \
+  --rpc-bind=0.0.0.0:10102 \
+  --p2p-bind=0.0.0.0:10101 \
+  --node-tag="MyNode" \
+  --lowcpuram \
+  --fastsync
+```
+
+**Key flags:**
+- `--integrator-address` - Your address for 10% rewards
+- `--rpc-bind` - RPC server address (default: 127.0.0.1:10102)
+- `--p2p-bind` - P2P network address (default: 0.0.0.0:10101)
+- `--node-tag` - Custom node identifier
+- `--lowcpuram` - Reduce memory usage
+- `--fastsync` - Faster initial sync
+
+**Full list:** `./derod --help`
+
+---
+
+## Running as a Service
+
+### Linux (systemd)
+
+Create service file `/etc/systemd/system/derod.service`:
+
+```ini
+[Unit]
+Description=DERO Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=dero
+WorkingDirectory=/opt/dero
+ExecStart=/opt/dero/derod-linux-amd64 --integrator-address=YOUR_ADDRESS
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Enable and start:**
+```bash
+sudo systemctl enable derod
+sudo systemctl start derod
+sudo systemctl status derod
+```
+
+**View logs:**
+```bash
+journalctl -u derod -f
+```
+
+---
+
+## Monitoring Your Node
+
+### Check Sync Status
+
+```bash
+# In daemon console (if running interactively)
+status
+
+Output:
+  Height: 6090778/6090778  ← Synced!
+         ^local   ^network
+  Peers: 16
+  Network: Mainnet
+```
+
+### Via RPC
+
+```bash
+# Get node info
+curl http://127.0.0.1:10102/json_rpc -d '{
+  "jsonrpc":"2.0",
+  "id":"1",
+  "method":"DERO.GetInfo"
+}' | jq
+
+# Returns:
+{
+  "height": 6090778,
+  "stableheight": 6090770,
+  "topoheight": 6090778,
+  "difficulty": 100000000,
+  "network": "mainnet"
+}
+```
+
+### Check Connected Peers
+
+```bash
+curl http://127.0.0.1:10102/json_rpc -d '{
+  "jsonrpc":"2.0",
+  "id":"1",
+  "method":"DERO.GetPeerList"
+}' | jq
+```
+
+---
+
+## Firewall Configuration
+
+### Required Ports
+
+**Mainnet:**
+```bash
+# P2P (required for syncing)
+sudo ufw allow 10101/tcp
+
+# RPC (optional, for local access only)
+sudo ufw allow from 127.0.0.1 to any port 10102
+```
+
+**Testnet:**
+```bash
+sudo ufw allow 40401/tcp
+```
+
+<Callout type="warning">
+  **Security:** Do NOT expose RPC port (10102) to the internet unless you know what you're doing. It should only be accessible locally or via trusted network.
+</Callout>
+
+---
+
+## Initial Sync
+
+### Sync Methods
+
+**1. Full Sync (Recommended)**
+```bash
+./derod-linux-amd64
+
+# Downloads and validates entire blockchain
+# Time: 2-6 hours (depends on connection/CPU)
+# Result: Fully validated node
+```
+
+**2. Fast Sync**
+```bash
+./derod-linux-amd64 --fastsync
+
+# Downloads state snapshots
+# Time: 30-60 minutes
+# Result: Functional node, still secure
+```
+
+### Monitoring Sync Progress
+
+```bash
+# Check height increasing
+watch -n 5 'curl -s http://127.0.0.1:10102/json_rpc -d '\''{"method":"DERO.GetInfo"}'\'' | jq .result.height'
+
+# Synced when local height = network height
+```
+
+---
+
+## Maintenance
+
+### Updating Your Node
+
+```bash
+# Stop daemon
+pkill derod
+
+# Download latest release
+wget https://github.com/deroproject/derohe/releases/download/latest/dero-linux-amd64.tar.gz
+
+# Extract and replace
+tar -xzf dero-linux-amd64.tar.gz
+
+# Restart with same settings
+./derod-linux-amd64 --integrator-address=YOUR_ADDRESS
+```
+
+### Pruning (Reducing Disk Usage)
+
+```bash
+# Start with pruning enabled
+./derod-linux-amd64 --prunetopo=100000
+
+# Keeps last 100,000 blocks, prunes older
+# Reduces disk usage significantly
+# Node remains fully functional
+```
+
+**Source:** Pruning implementation in `blockchain/prune_history.go`
+
+---
+
+## Earning Integrator Rewards
+
+### The 10% Bonus Explained
+
+**Every 10 miniblocks:**
+```
+Blocks 1-9:  Regular (distributed to miners)
+Block 10:    Integrator (goes to your daemon address)
+```
+
+**Requirements:**
+- Run your own daemon
+- Set `--integrator-address` to your wallet
+- Have miners connected (or mine yourself)
+
+**Rewards:**
+- Base miner rewards: 88.4%
+- Integrator bonus: 10%
+- Pool fee (you keep): 1.6%
+- **Total: 100%** (vs 98.4% on public pools)
+
+**Source:** `blockchain/miniblocks.go`
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Sync stuck:**
+```bash
+# Check peers
+curl http://127.0.0.1:10102/json_rpc -d '{"method":"DERO.GetPeerList"}'
+
+# If no peers, check firewall (port 10101)
+# Try adding seed nodes manually (usually not needed)
+```
+
+**High CPU usage:**
+```bash
+# Reduce threads
+./derod-linux-amd64 --lowcpuram
+
+# Or use nice to lower priority
+nice -n 19 ./derod-linux-amd64
+```
+
+**High memory:**
+```bash
+# Enable low memory mode
+./derod-linux-amd64 --lowcpuram --prunetopo=50000
+```
+
+**Port already in use:**
+```bash
+# Change ports
+./derod-linux-amd64 --p2p-bind=0.0.0.0:20101 --rpc-bind=127.0.0.1:20102
+```
+
+---
+
+## Performance Optimization
+
+### For VPS/Server
+
+```bash
+# Optimize for server environment
+./derod-linux-amd64 \
+  --integrator-address=YOUR_ADDRESS \
+  --rpc-bind=0.0.0.0:10102 \
+  --p2p-bind=0.0.0.0:10101 \
+  --fastsync \
+  --prunetopo=100000
+```
+
+### For Home PC
+
+```bash
+# Optimize for home use (lower resource usage)
+./derod-linux-amd64 \
+  --integrator-address=YOUR_ADDRESS \
+  --lowcpuram \
+  --rpc-bind=127.0.0.1:10102
+```
+
+---
+
+## Security Best Practices
+
+**1. Firewall Rules**
+- ✅ Allow P2P port (10101)
+- ❌ Block RPC port from internet (10102)
+- ✅ Use SSH keys (if remote server)
+
+**2. System Security**
+- ✅ Keep OS updated
+- ✅ Run daemon as non-root user
+- ✅ Use strong passwords
+- ✅ Enable automatic security updates
+
+**3. Backup**
+- ✅ Backup wallet seed phrase (25 words)
+- ✅ Document integrator address
+- ✅ Note configuration settings
+
+<Callout type="error">
+  **Never expose RPC port to the internet!** It can be used to query blockchain data and potentially DOS your node. Use SSH tunneling or VPN if remote access needed.
+</Callout>
+
+---
+
+## Benefits of Running a Node
+
+| Benefit | Description |
+|---------|-------------|
+| **Privacy** | No third party sees your transactions/queries |
+| **Integrator Rewards** | Earn 10% of blocks mined on your node |
+| **Network Health** | Contribute to decentralization |
+| **Self-Sovereignty** | Complete control, zero trust |
+| **Support Mining** | Help friends/family mine |
+| **Learning** | Understand blockchain deeply |
+
+---
+
+## Further Reading
+
+- [DERO Daemon](/basics/daemon) - Understanding the daemon
+- [Mining Guide](/basics/mining) - Start mining on your node
+- [RPC API](/rpc-api/daemon-rpc-api) - API documentation
+
+**Source Code:**
+- Daemon implementation: `cmd/derod/main.go`
+- Configuration: `config/config.go`
+- Pruning: `blockchain/prune_history.go`
+
+---
+
+## Related Pages
+
+**Node Operations:**
+- [DERO Daemon](/basics/daemon) - Understanding the daemon
+- [DERO Mining](/basics/mining) - Mine with your node
+- [Encrypted Network](/features/encrypted-network) - P2P network details
+
+**APIs & Integration:**
+- [Daemon RPC API](/rpc-api/daemon-rpc-api) - Full RPC reference
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) - Wallet automation
+
+**Advanced:**
+- [Smart Contracts](/dvm/dero-virtual-machine) - Run smart contracts on your node
+- [DERO Tokens](/basics/tokens) - Understanding asset storage
+
+

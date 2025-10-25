@@ -1,0 +1,255 @@
+---
+title: "DERO Tokens: Private Smart Contract Assets | DERO Blockchain"
+description: "Learn about DERO's innovative approach to token storage and security, offering rugpull-resistant tokens with enhanced privacy features."
+keywords: ["DERO tokens", "private smart contracts", "fungible tokens", "non-fungible tokens", "secure cryptocurrency", "blockchain assets", "anonymous tokens", "privacy-focused tokens"]
+date: "2024-08-26"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/tokens.jpeg"
+slug: "tokens"
+canonicalUrl: "https://derod.org/basics/tokens"
+tags: ["basics", "tokens", "smart-contracts", "privacy", "NFT"]
+---
+
+
+import Image from 'next/image';
+
+# DERO Tokens
+
+![Tokens](/assets/tokens.jpeg)
+
+Tokens on DERO are user-created assets deployed through smart contracts. What makes DERO unique is that tokens are stored as **encrypted balances in user wallets**, not in the smart contract itself - providing privacy and rug-pull resistance.
+
+---
+
+## How DERO Tokens Are Different
+
+| Aspect | ERC-20 (Ethereum) | DERO Tokens |
+|--------|------------------|-------------|
+| **Storage** | In smart contract | In user wallets |
+| **Balance Privacy** | 👁️ Public | 🔒 Encrypted (66 bytes) |
+| **Transfers** | Through contract | Wallet-to-wallet (like DERO) |
+| **Contract Control** | Can freeze/lock | ❌ Cannot control after issuance |
+| **Rug-Pull Risk** | ⚠️ High | ✅ Resistant |
+| **Privacy** | ❌ None | ✅ Ring sigs + encryption |
+
+---
+
+## Token Storage Model
+
+### Traditional Tokens (ERC-20)
+
+```solidity
+// ALL balances in contract
+mapping(address => uint256) balances;
+
+balances[alice] = 1000;  // Public, everyone sees
+balances[bob] = 500;     // Public, everyone sees
+```
+
+**Problem:** Contract controls everything. Owner can freeze, steal, or manipulate.
+
+### DERO Tokens
+
+```basic
+// Tokens sent to WALLETS
+Function IssueAsset() Uint64
+    10 SEND_ASSET_TO_ADDRESS(SIGNER(), amount, SCID())
+    20 RETURN 0
+End Function
+```
+
+**Result in wallet:**
+```
+Alice's wallet contains:
+  DERO:  E(500)     // Encrypted 500 DERO (66 bytes)
+  Token: E(1000)    // Encrypted 1000 tokens (66 bytes)
+  
+Each encrypted balance stored as ElGamal:
+  Left:  33 bytes
+  Right: 33 bytes
+  Total: 66 bytes per asset
+```
+
+**Source:** `cryptography/crypto/algebra_elgamal.go:91-93`, `cryptography/crypto/balance_serdes.go:31`
+
+---
+
+## Privacy Features
+
+**Token transfers use DERO's full privacy stack:**
+
+1. **Ring Signatures** - Sender hidden among 2-128 members
+2. **Homomorphic Encryption** - Amounts encrypted
+3. **Bulletproofs** - Zero-knowledge validation
+4. **TLS Network** - Encrypted transmission
+
+**Verified in source:**
+- Balance storage: `blockchain/transaction_execute.go:239` - `nb.Balance.Add(echanges)` (homomorphic)
+- Token sending: `dvm/dvm_functions.go:80` - `SEND_ASSET_TO_ADDRESS` implementation
+- Wallet updates: `dvm/simulator.go:378` - `nb.Balance.Plus()` for tokens
+
+---
+
+## Rug-Pull Resistance
+
+### Why DERO Tokens Are Safer
+
+**Ethereum ERC-20:**
+```solidity
+// Contract owner can:
+function freeze(address user) onlyOwner {
+    balances[user] = 0;  // Steal tokens
+}
+
+function pause() onlyOwner {
+    paused = true;  // Lock all transfers
+}
+```
+
+**DERO Tokens:**
+```basic
+// Once issued to wallet, contract CANNOT:
+//  ❌ Freeze tokens
+//  ❌ Take them back
+//  ❌ See your balance
+//  ❌ Control transfers
+
+// Tokens in YOUR wallet = YOU control them
+```
+
+**The "Cash Model":**
+- Bank (contract) issues cash (tokens)
+- Cash leaves bank → in your wallet (encrypted)
+- Bank can't track or control it anymore
+- You can spend it peer-to-peer
+
+---
+
+## Token Types
+
+### Fungible Tokens
+
+**Example:** Stablecoins, utility tokens, governance tokens
+
+```basic
+Function InitializePrivate() Uint64
+    10 STORE("total_supply", 1000000)
+    20 SEND_ASSET_TO_ADDRESS(SIGNER(), 1000000, SCID())
+    30 RETURN 0
+End Function
+```
+
+**Each token is identical and interchangeable**
+
+### Non-Fungible Tokens (NFTs)
+
+**Example:** Collectibles, game items, unique assets
+
+```basic
+Function MintNFT(recipient String, token_id Uint64) Uint64
+    10 SEND_ASSET_TO_ADDRESS(ADDRESS_RAW(recipient), 1, token_id)
+    20 RETURN 0
+End Function
+```
+
+**Each token has unique ID, quantity = 1**
+
+---
+
+## Using DERO Tokens
+
+### Receiving Tokens
+
+Tokens arrive in your wallet automatically via `SEND_ASSET_TO_ADDRESS()`:
+
+```
+Transaction received:
+  SCID: 0abc123def... (token identifier)
+  Amount: E(100)     (encrypted 100 tokens)
+  
+Your wallet now contains:
+  E(previous_balance) + E(100) = E(new_balance)
+  
+All done homomorphically - no decryption needed!
+```
+
+### Sending Tokens
+
+Transfer like native DERO:
+
+```bash
+# Using wallet RPC
+curl -X POST http://127.0.0.1:10103/json_rpc -d '{
+  "method": "transfer",
+  "params": {
+    "transfers": [{
+      "destination": "dero1qy...",
+      "amount": 100,
+      "scid": "token_scid_here"
+    }],
+    "ringsize": 16
+  }
+}'
+```
+
+**Privacy features:**
+- Ring signature hides sender
+- Amount encrypted
+- Balance stays encrypted
+
+---
+
+## Key Advantages
+
+**1. Wallet Storage = True Ownership**
+- ✅ You control private keys
+- ✅ Contract cannot take back
+- ✅ No freeze functions possible
+
+**2. Privacy = Full Encryption**
+- ✅ Balances encrypted (E(amount))
+- ✅ Transfers use ring signatures
+- ✅ Cannot track ownership
+
+**3. Peer-to-Peer Transfers**
+- ✅ Send without contract involvement
+- ✅ Like sending DERO
+- ✅ Fast and private
+
+**4. Multiple Assets Per Wallet**
+- ✅ DERO + unlimited tokens
+- ✅ Each encrypted separately
+- ✅ All in one wallet
+
+---
+
+## Learn More
+
+- [Private Smart Contracts](/privacy/private-smart-contracts) - How token privacy works
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) - Why balances stay encrypted
+- [DVM Smart Contracts](/dvm/dero-virtual-machine) - Building token contracts
+
+**Source Code References:**
+- Token implementation: `dvm/dvm_functions.go:398` - `SEND_ASSET_TO_ADDRESS`
+- Wallet storage: `cryptography/crypto/balance_serdes.go:31` - `Balance *ElGamal`
+- Homomorphic updates: `blockchain/transaction_execute.go:239` - `nb.Balance.Add(echanges)`
+
+---
+
+## Related Pages
+
+**Understand Token Privacy:**
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) - How encrypted balances work
+- [Ring Signatures](/privacy/ring-signatures) - Transaction privacy layer
+- [Private Smart Contracts](/privacy/private-smart-contracts) - Token contract privacy
+
+**Build with Tokens:**
+- [Token Smart Contract](/smartContracts/token) - Full token implementation example
+- [Assets Exchange](/smartContracts/assets) - Build a token swap contract
+- [DVM-BASIC Guide](/dvm/dvm-basic) - Smart contract programming language
+
+**Deploy & Use:**
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) - Send and receive tokens
+- [DERO Wallets](/basics/wallets) - Wallet options for managing tokens
+ 

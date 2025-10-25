@@ -1,0 +1,234 @@
+---
+title: "TELA Application Gallery | Live Apps on DERO Blockchain"
+description: "Explore live TELA applications on the DERO blockchain - documents, games, tools, and more. Interactive gallery of decentralized web applications."
+keywords: "TELA Applications, Decentralized Web, DERO Blockchain, TELA Links, Web3, dApps, application gallery, live apps"
+date: "2024-08-26"
+lastUpdated: "2025-10-22"
+authors: ["DHEBP"]
+image: "/assets/tela-demo-banner.png"
+slug: "tela/test-tela"
+canonicalUrl: "https://tela.derod.org/tela/test-tela"
+tags: ["gallery", "applications", "demos", "TELA", "live-apps"]
+---
+
+import { Callout } from 'nextra/components'
+import { useState, useEffect } from 'react'
+import { TelaLink } from '@components/TelaLink'
+import { TelaLinkHandler } from '@components/TelaLinkHandler'
+
+# TELA Application Gallery
+
+<TelaLinkHandler />
+
+<Callout type="error" emoji="🚨">
+  **BEFORE CLICKING A TELALINK:** You must have [**Engram wallet**](https://github.com/DEROFDN/Engram/releases) running with XSWD enabled!  
+  Without Engram, you'll see "TELA handler not ready" errors.
+</Callout>
+
+Explore live applications, documents, and games hosted entirely on the DERO blockchain. Each application is stored permanently on-chain and runs locally in your browser.
+
+## How to Use TELA Links (Step-by-Step)
+
+### **Step 1: Download & Launch Engram**
+1. Download [Engram wallet](https://github.com/DEROFDN/Engram/releases) if you don't have it
+2. Launch Engram on your computer
+3. Create or restore your DERO wallet
+
+### **Step 2: Enable Cyberdeck (XSWD Protocol)**
+1. In Engram, go to **Settings**
+2. Find **"Cyberdeck"** section
+3. Click **"Turn On"** to enable XSWD (port 44326)
+4. Keep Engram **running in the background**
+
+### **Step 3: Click TELA Links**
+1. With Engram running, click any **"Open"** button below
+2. Engram will automatically catch the `tela://` link
+3. Application opens in Engram
+
+<Callout type="info">
+  **First Time?** Engram will ask permission to connect. Click "Allow" to enable TELA link handling.
+</Callout>
+
+**Troubleshooting:**
+- ❌ **"TELA handler not ready"** → Engram is not running OR Cyberdeck is not enabled
+- ❌ **Nothing happens** → Check Engram is set as default `tela://` protocol handler
+- ✅ **App opens** → Success! Cyberdeck + Engram properly configured
+
+**Cyberdeck Status:**
+- 🟢 **Green** = Cyberdeck enabled, XSWD active on port 44326
+- ⚫ **Gray** = Cyberdeck disabled, TELA links won't work
+
+export function TelaCard({ name, description, scid, path }) {
+  const telaLink = 'tela://open/' + scid + '/' + path;
+  
+  return (
+    <div className="tela-item">
+      <h3>{name}</h3>
+      <p>{description}</p>
+      <div className="tela-link-row">
+        <code className="tela-link">{telaLink}</code>
+      </div>
+      <div className="button-row">
+        <TelaLink 
+          scid={scid} 
+          path={path}
+          className="open-button"
+        >
+          Open
+        </TelaLink>
+      </div>
+    </div>
+  );
+}
+
+## TELA Applications
+
+<div className="tela-list">
+  <TelaCard 
+    name="The Crypto Anarchist Manifesto" 
+    description="Timothy C. May's influential 1988 manifesto on cryptographic freedom"
+    scid="b7b3abffc79b96d44db23137b8559a94bd5c42467dae2868327db2061ee502a6"
+    path="The Crypto Anarchist Manifesto.html"
+  />
+  
+  <TelaCard 
+    name="The Declaration of Independence" 
+    description="United States founding document (1776)"
+    scid="fc666ae0267910ac834ae330f2dd778440243fac225f7eb14bb683695d8f8b93"
+    path="file.txt"
+  />
+  
+  <TelaCard 
+    name="The Holy Quran" 
+    description="Complete Islamic holy text"
+    scid="8aa6a2524717c9eb7dbbd11100a4d2b853b913a03eb35dc88c01ab493e415db9"
+    path="Quran.html"
+  />
+  
+  <TelaCard 
+    name="Algorithm of Faith" 
+    description="Philosophical exploration of belief systems and logic"
+    scid="813b020791998dbefafb72e89c812f8cb0b9c04efbe11963a1ca140e2da72eb9"
+    path="algo4.html"
+  />
+  
+  <TelaCard 
+    name="Declaration of Human Rights (1789)" 
+    description="French revolutionary human rights document"
+    scid="e343d6c06146a75c99d1a2c4443688ae3075747f48567c6b8de27adc8fe3bae7"
+    path="1789_declaration_human_rights.html"
+  />
+  
+  <TelaCard 
+    name="Calculator" 
+    description="Simple calculator application"
+    scid="f81e6b736cc57adbc1de533160db25186a34613e6b613c290535dcb8f8a35aa4"
+    path="index.html"
+  />
+  
+  <TelaCard 
+    name="Snake Deluxe" 
+    description="Classic snake game reimagined on the blockchain"
+    scid="f5ebd1e5265ecdaa05255e074f4b285e4064c2e6531fc1078eac32dabc693b90"
+    path="Snake Deluxe.html"
+  />
+  
+  <TelaCard 
+    name="Ghost Exchange" 
+    description="Phantom Powered Finance"
+    scid="d721b743f45a724f981a7da9a9a70bfdf21b1f0f69471c1f904d8718be4313ef"
+    path="index.html"
+  />
+  
+  <TelaCard 
+    name="Civilware's TELA Demo" 
+    description="Original TELA demonstration application"
+    scid="a6832a5a09b82dc4b1034fd726b118da1df8ca9ad33e76bee4563e3f69d1d99a"
+    path="index.html"
+  />
+  
+  <TelaCard 
+    name="Hello from Azylem" 
+    description="self post"
+    scid="d284191c5566d540e92c502216081b1b149cd864ab4b5893c49718c4675ee99d"
+    path="index.html"
+  />
+  
+  <TelaCard 
+    name="AS's Playground" 
+    description="Make it, test it, break it, fix it."
+    scid="a79a7346910d4a04307bc649ea64e160f68d89e6af262a37e278d2d0867a8681"
+    path="index.html"
+  />
+</div>
+
+<style jsx global>{`
+  .tela-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .tela-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  .tela-item h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  .tela-item p {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  .tela-link-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .tela-link {
+    font-family: monospace;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #333;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+  .button-row {
+    display: flex;
+    justify-content: center;
+  }
+  .open-button {
+    background-color: #4CAF50;
+    color: white !important;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none !important;
+    display: inline-block;
+    min-width: 120px;
+  }
+  :global(.dark) .tela-link {
+    color: #e0e0e0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .open-button:hover {
+    background-color: #3d8b40;
+  }
+`}</style>
+
+## Resources
+
+- [TELA GitHub Repository](https://github.com/civilware/tela)
+- [TELA-CLI Documentation](https://github.com/civilware/tela/tree/main/cmd/tela-cli) 

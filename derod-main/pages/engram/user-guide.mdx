@@ -1,0 +1,236 @@
+---
+title: "Engram User Guide: How to Use the DERO dApp Platform | DERO Blockchain"
+description: "Learn how to use Engram, the desktop application for accessing and interacting with decentralized applications on the DERO blockchain."
+keywords: ["Engram user guide", "DERO dApp platform", "how to use Engram", "blockchain app tutorial", "TELA applications", "DERO wallet connection"]
+date: "2024-08-26"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/engram-user-guide.jpeg"
+slug: "engram/user-guide"
+canonicalUrl: "https://derod.org/engram/user-guide"
+tags: ["engram", "guide", "tutorial", "dapp", "blockchain", "user"]
+---
+
+import { Callout } from 'nextra/components'
+import { Tabs } from 'nextra/components'
+
+# Engram User Guide
+
+This guide will help you navigate and use Engram effectively to access decentralized applications on the DERO blockchain.
+
+## Getting Started
+
+After [downloading Engram from GitHub](https://github.com/DEROFDN/Engram/releases), launch the application from your desktop or applications folder.
+
+## Connecting to a DERO Node
+
+Before using any applications, you'll need to connect to a DERO node:
+
+<Tabs items={['Local Node', 'Remote Node', 'Public Node']}>
+  <Tabs.Tab>
+    If you're running a local DERO node:
+    
+    1. Go to **Settings** > **Node Configuration**
+    2. Select **Local Node**
+    3. Enter `127.0.0.1:10102` for mainnet or `127.0.0.1:40402` for testnet
+    4. Click **Connect**
+  </Tabs.Tab>
+  <Tabs.Tab>
+    To connect to your own remote node:
+    
+    1. Go to **Settings** > **Node Configuration**
+    2. Select **Remote Node**
+    3. Enter the node address and port
+    4. Provide authentication details if required
+    5. Click **Connect**
+  </Tabs.Tab>
+  <Tabs.Tab>
+    To use a predefined public node:
+    
+    1. Go to **Settings** > **Node Configuration**
+    2. Select **Public Node**
+    3. Choose a node from the dropdown list
+    4. Click **Connect**
+    
+    <Callout type="warning">
+      Using public nodes may reduce privacy. For maximum privacy, consider running your own node.
+    </Callout>
+  </Tabs.Tab>
+</Tabs>
+
+## Connecting Your Wallet
+
+To interact with dApps that require wallet functionality:
+
+1. Go to **Wallet** > **Connect Wallet**
+2. Choose your connection method:
+   - **XSWD Protocol**: Connect to a wallet supporting XSWD (recommended)
+   - **Manual Connection**: Enter your wallet's connection details
+3. Authorize the connection in your wallet application
+4. Verify the connection status in the status bar
+
+For detailed instructions, see the [Wallet Integration guide](/engram/wallet-integration).
+
+## Discovering Applications
+
+Engram provides several ways to discover dApps:
+
+### Featured Applications
+
+The home screen displays featured and popular applications. Click on any application card to view more details or launch the application.
+
+### Application Directory
+
+To browse all available applications:
+
+1. Click **Apps** in the navigation bar
+2. Use the category filters to narrow your search
+3. Sort by popularity, rating, or recency
+4. Click on an application to view its details
+
+### Manual Entry
+
+If you know the SCID (Smart Contract ID) of an application:
+
+1. Click **Apps** > **Add Application**
+2. Enter the SCID in the input field
+3. Click **Load Application**
+4. Verify and confirm the application details
+
+## Using Applications
+
+### Launching an Application
+
+To launch an application:
+
+1. Find the application in your library or directory
+2. Click the **Launch** button
+3. The application will open in the main Engram window
+
+### Application Permissions
+
+When an application requests permissions:
+
+1. Review the requested permissions carefully
+2. Choose to allow or deny each permission
+3. Optionally select "Remember my choice" for future use
+
+<Callout type="info">
+  You can review and modify application permissions at any time in **Settings** > **Application Permissions**.
+</Callout>
+
+### Interacting with Blockchain
+
+When an application needs to interact with the blockchain:
+
+1. The application will request authorization through your connected wallet
+2. Review the transaction details carefully
+3. Approve or reject the transaction in your wallet
+4. Wait for confirmation from the blockchain
+
+## Managing Your Applications
+
+### Favorites
+
+To mark an application as a favorite:
+
+1. Navigate to the application details
+2. Click the star icon next to the application name
+3. The application will appear in your **Favorites** list for quick access
+
+### Updating Applications
+
+Engram automatically checks for application updates:
+
+1. When updates are available, you'll see a notification badge
+2. Go to **Apps** > **Updates Available**
+3. Review the changes in each update
+4. Click **Update** to apply the latest version
+
+### Removing Applications
+
+To remove an application from your library:
+
+1. Navigate to the application details
+2. Click **⋮** (more options)
+3. Select **Remove from Library**
+4. Confirm the removal
+
+<Callout type="info">
+  Removing an application only removes it from your local library. The application remains on the blockchain and can be re-added later.
+</Callout>
+
+## Customizing Engram
+
+### Appearance
+
+To customize the application appearance:
+
+1. Go to **Settings** > **Appearance**
+2. Choose between light and dark themes
+3. Adjust the application scaling if needed
+4. Configure other visual preferences
+
+### Privacy Settings
+
+To adjust your privacy settings:
+
+1. Go to **Settings** > **Privacy**
+2. Configure application permission defaults
+3. Manage local data storage options
+4. Set wallet connection preferences
+
+## Troubleshooting
+
+### Connection Issues
+
+If you're having trouble connecting to a node:
+
+1. Verify the node address and port are correct
+2. Check that your firewall isn't blocking the connection
+3. Try an alternative node temporarily
+4. Restart Engram and try connecting again
+
+### Application Loading Problems
+
+If an application fails to load:
+
+1. Check your connection to the DERO node
+2. Verify the SCID is correct
+3. Try clearing the application cache in **Settings** > **Advanced** > **Clear Cache**
+4. Restart Engram and try again
+
+### Wallet Connection Issues
+
+If you're having trouble connecting your wallet:
+
+1. Ensure your wallet supports the XSWD protocol
+2. Verify your wallet is running and unlocked
+3. Check network connectivity between Engram and your wallet
+4. Try restarting both Engram and your wallet
+
+## Advanced Features
+
+### Developer Mode
+
+If you're a developer testing applications:
+
+1. Go to **Settings** > **Advanced**
+2. Enable **Developer Mode**
+3. Access additional tools through the **Developer** menu
+
+### Console Access
+
+To view application logs and debug information:
+
+1. With Developer Mode enabled, press `Ctrl+Shift+I` (or `Cmd+Option+I` on macOS)
+2. The developer console will open with logs and errors
+3. Use the **Console** tab to interact with the application
+
+## Next Steps
+
+Now that you're familiar with using Engram:
+
+- [Explore available dApps](/engram/hosting-dapps)
+- [Learn about wallet integration](/engram/wallet-integration)
+- [Discover how to develop for Engram](/engram/developer-api) 

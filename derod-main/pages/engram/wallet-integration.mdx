@@ -1,0 +1,234 @@
+---
+title: "Engram Wallet Integration: Connecting Your DERO Wallet | DERO Blockchain"
+description: "Learn how to connect your DERO wallet to Engram for seamless interaction with decentralized applications on the DERO blockchain."
+keywords: ["Engram wallet integration", "DERO wallet connection", "XSWD protocol", "blockchain wallet", "dApp wallet integration", "DERO applications"]
+date: "2024-08-26"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+image: "/assets/engram-wallet.jpeg"
+slug: "engram/wallet-integration"
+canonicalUrl: "https://derod.org/engram/wallet-integration"
+tags: ["engram", "wallet", "integration", "xswd", "dapp", "blockchain"]
+---
+
+import { Callout } from 'nextra/components'
+import { Tabs } from 'nextra/components'
+
+# Wallet Integration with Engram
+
+Connecting your DERO wallet to Engram allows you to interact with decentralized applications that require blockchain transactions. This guide explains the integration process and available options.
+
+## Understanding XSWD Protocol
+
+Engram uses the XSWD (Cross-Site WebSocket DERO) protocol for secure wallet communication:
+
+<Callout type="info">
+  **Learn About XSWD**: This guide uses the [XSWD protocol](/tools/xswd) for wallet communication. See the protocol page for technical details and how XSWD provides secure, permissioned access to your wallet.
+</Callout>
+
+<Callout type="info">
+  XSWD enables permissioned web socket interactions between applications and DERO wallets, allowing for secure transactions while maintaining control over your funds.
+</Callout>
+
+The protocol provides several key benefits:
+
+- **Secure connection**: All communication is encrypted
+- **Permissioned access**: You control what applications can do
+- **No private key exposure**: Your wallet's private keys never leave your wallet
+- **Transaction verification**: All transactions require explicit approval
+
+## Compatible Wallets
+
+Engram works with wallets that support the XSWD protocol:
+
+- [DERO WebSocket Wallet](https://github.com/DEROFDN/xswd)
+- [Engram Wallet](https://github.com/DEROFDN/Engram-Wallet)
+- [Other third-party wallets with XSWD support]
+
+## Connection Methods
+
+<Tabs items={['XSWD Connection', 'Manual Connection']}>
+  <Tabs.Tab>
+    ### Connecting via XSWD (Recommended)
+    
+    This is the preferred method for connecting your wallet to Engram:
+    
+    1. Ensure your XSWD-compatible wallet is running
+    2. In Engram, go to **Wallet** > **Connect Wallet**
+    3. Select **XSWD Connection**
+    4. Engram will automatically detect available wallets
+    5. Select your wallet from the list
+    6. Approve the connection request in your wallet
+    7. You'll see a confirmation message in Engram when connected
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ### Manual Connection
+    
+    If automatic detection doesn't work, you can manually connect:
+    
+    1. In your wallet, find your XSWD connection details (typically in settings)
+    2. Note the connection address (usually `127.0.0.1:PORT`)
+    3. In Engram, go to **Wallet** > **Connect Wallet**
+    4. Select **Manual Connection**
+    5. Enter the connection address
+    6. Click **Connect**
+    7. Approve the connection request in your wallet
+    8. You'll see a confirmation message when connected
+  </Tabs.Tab>
+</Tabs>
+
+## Wallet Permissions
+
+When connecting your wallet, Engram will request certain permissions:
+
+### Basic Permissions
+
+- **View Balance**: See your DERO balance
+- **View Addresses**: Access your wallet addresses
+- **Network Information**: See blockchain status
+
+### Extended Permissions (Optional)
+
+- **Create Transactions**: Generate unsigned transactions
+- **Sign Transactions**: Authorize and sign transactions
+- **Deploy Smart Contracts**: Create new contracts on the blockchain
+
+<Callout type="warning">
+  Always review permission requests carefully. Only grant permissions that you're comfortable with.
+</Callout>
+
+## Managing Wallet Connections
+
+### Viewing Connection Status
+
+To check your wallet connection status:
+
+1. Look for the wallet icon in the status bar
+   - Green: Connected and ready
+   - Yellow: Connected with limited permissions
+   - Red: Not connected or connection issues
+2. Hover over the icon for more details
+
+### Disconnecting Your Wallet
+
+To disconnect your wallet from Engram:
+
+1. Go to **Wallet** > **Disconnect Wallet**
+2. Confirm the disconnection
+3. The wallet status icon will update to show you're disconnected
+
+### Changing Connected Wallet
+
+To switch to a different wallet:
+
+1. First disconnect your current wallet
+2. Go to **Wallet** > **Connect Wallet**
+3. Select the new wallet to connect
+4. Follow the standard connection process
+
+## Using Your Wallet with dApps
+
+### Transaction Approval
+
+When using a dApp that requires blockchain transactions:
+
+1. The application will create a transaction request
+2. Engram will forward this request to your connected wallet
+3. Your wallet will display the transaction details for review
+4. Review the details carefully before approving
+5. Approve or reject the transaction in your wallet
+6. The result will be sent back to the application
+
+### Viewing Transaction History
+
+To see your transaction history:
+
+1. Go to **Wallet** > **Transaction History**
+2. View a list of all transactions made through Engram
+3. Click on any transaction for more details
+4. Filter transactions by application, type, or status
+
+## Security Considerations
+
+### Best Practices
+
+Follow these security best practices when connecting your wallet:
+
+- **Verify applications**: Only connect to trusted dApps
+- **Check transaction details**: Always review transactions before approval
+- **Use session timeouts**: Configure your wallet to disconnect after inactivity
+- **Separate wallets**: Consider using different wallets for different purposes
+- **Regular updates**: Keep both Engram and your wallet software updated
+
+### Privacy Settings
+
+Enhance your privacy with these settings:
+
+1. Go to **Settings** > **Privacy**
+2. Enable **Request Confirmation for All Transactions**
+3. Configure **Wallet Connection Timeout**
+4. Set **Default Permission Level** to your preference
+
+## Troubleshooting Wallet Connections
+
+### Common Issues
+
+#### Wallet Not Detected
+
+If Engram doesn't detect your wallet:
+
+1. Ensure your wallet is running and unlocked
+2. Verify the wallet supports XSWD protocol
+3. Check that no firewall is blocking communication
+4. Try the manual connection method
+
+#### Connection Timeouts
+
+If the connection times out:
+
+1. Verify your wallet is still running
+2. Check network settings on both applications
+3. Restart both Engram and your wallet
+4. Try using a different port for connection
+
+#### Transaction Failures
+
+If transactions fail:
+
+1. Check your wallet has sufficient balance
+2. Verify your network connection is stable
+3. Ensure your wallet is properly synchronized with the blockchain
+4. Try creating a simple test transaction
+
+## Advanced Wallet Features
+
+### Multi-Wallet Support
+
+Engram supports connecting multiple wallets simultaneously:
+
+1. Go to **Wallet** > **Manage Wallets**
+2. Click **Add Wallet**
+3. Follow the connection process for each wallet
+4. Choose which wallet to use for each application
+
+### Hardware Wallet Integration
+
+For hardware wallet users:
+
+1. Connect your hardware wallet to your computer
+2. Use an XSWD-compatible wallet as a bridge
+3. Connect the bridge wallet to Engram
+4. Transactions will be forwarded to your hardware wallet for approval
+
+## Next Steps
+
+Now that your wallet is connected:
+
+- [Explore available dApps](/engram/hosting-dapps)
+- [Learn how to use Engram](/engram/user-guide)
+- [Understand XSWD Protocol](/tools/xswd) - Technical details of the connection protocol
+
+**For Developers:**
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) - Available wallet methods
+- [TELA Development](https://tela.derod.org/tela-development-guide) - Build XSWD-enabled apps
+- [Complete XSWD API](https://tela.derod.org/xswd/overview) - Full protocol reference 
