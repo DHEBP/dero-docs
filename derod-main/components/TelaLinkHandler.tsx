@@ -104,7 +104,10 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
     
     // Create a new WebSocket connection
     const wsUrl = `ws://localhost:${port}/xswd`;
-    console.log(`Attempting connection to ${wsUrl} (attempt ${attemptNumber + 1})`);
+    // Only log on first attempt to reduce console noise
+    if (attemptNumber === 0) {
+      console.log(`Attempting XSWD connection for TELA links...`);
+    }
     
     try {
       socketRef.current = new WebSocket(wsUrl);
@@ -129,7 +132,7 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
       };
 
       socketRef.current.onclose = (event) => {
-        console.log(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
+        // Silently handle disconnections to avoid console spam
         
         // If socket is closing because of page navigation, don't try to reconnect
         if (event.wasClean && event.code === 1000) {
@@ -156,7 +159,7 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
       };
 
       socketRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Silently handle errors - expected when Engram not running
         
         // Only change status if not already authorized
         if (!isAuthorized) {
@@ -433,17 +436,6 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
   };
 
   useEffect(() => {
-    // Only run on localhost - documentation sites don't need XSWD connections
-    const isLocalhost = typeof window !== 'undefined' && (
-      window.location.hostname === 'localhost' || 
-      window.location.hostname === '127.0.0.1'
-    );
-    
-    if (!isLocalhost) {
-      console.log('TelaLinkHandler: Skipping WebSocket connection (not on localhost)');
-      return;
-    }
-    
     // Prevent double mounting in React StrictMode (dev only)
     let isMounted = true;
     
@@ -456,6 +448,7 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
     lastUsedPortRef.current = 8085; // Reset to starting port
 
     // Start the connection process only if still mounted
+    // This enables TELA links for users with Engram running
     if (isMounted) {
       connectWebSocket();
     }

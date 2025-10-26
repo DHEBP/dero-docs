@@ -55,8 +55,8 @@ export const TelaLink: React.FC<TelaLinkProps> = ({
         processingRef.current = false;
       }
     } else {
-      console.error('TELA link handler not initialized');
-      alert('TELA handler not ready. Ensure wallet is connected.');
+      console.log('TELA link handler not initialized - Engram wallet not detected');
+      alert('⚠️ Engram Wallet Required\n\nTo open TELA applications:\n1. Download Engram from github.com/DEROFDN/Engram/releases\n2. Launch Engram and enable Cyberdeck (XSWD)\n3. Click the TELA link again\n\nEngram must be running in the background.');
       processingRef.current = false;
     }
   }, [scid, path, telaLink]);
