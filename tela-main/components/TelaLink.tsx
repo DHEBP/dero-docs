@@ -28,20 +28,20 @@ export const TelaLink: React.FC<TelaLinkProps> = ({
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    // Prevent multiple clicks from being processed
-    if (processingRef.current) {
-      console.log('Already processing a TELA link request, please wait');
-      return;
-    }
-    
-    processingRef.current = true;
-    
     console.log(`Processing TELA link: ${telaLink}`);
     
-    // Access the global handler
+    // Try WebSocket handler first if available
     if (typeof window !== 'undefined' && window.handleTelaLink) {
+      e.preventDefault();
+      
+      // Prevent multiple clicks from being processed
+      if (processingRef.current) {
+        console.log('Already processing a TELA link request, please wait');
+        return;
+      }
+      
+      processingRef.current = true;
+      
       try {
         window.handleTelaLink(telaLink);
         
@@ -55,9 +55,11 @@ export const TelaLink: React.FC<TelaLinkProps> = ({
         processingRef.current = false;
       }
     } else {
-      console.log('TELA link handler not initialized - Engram wallet not detected');
-      alert('⚠️ Engram Wallet Required\n\nTo open TELA applications:\n1. Download Engram from github.com/DEROFDN/Engram/releases\n2. Launch Engram and enable Cyberdeck (XSWD)\n3. Click the TELA link again\n\nEngram must be running in the background.');
-      processingRef.current = false;
+      // Let browser handle tela:// protocol natively
+      // Don't prevent default - this allows Engram to catch the protocol
+      console.log('Attempting to open via tela:// protocol handler');
+      // Browser will try to open with registered protocol handler (Engram)
+      // If that fails, browser will show its own "no protocol handler" message
     }
   }, [scid, path, telaLink]);
 

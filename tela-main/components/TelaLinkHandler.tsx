@@ -38,8 +38,14 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
   // Track last used port to increment for new apps
   const lastUsedPortRef = useRef<number>(8085); // Start from one below 8086 as we'll increment
 
-  // Alternative ports to try (mainnet only)
-  const ports = [44326, 10103]; // XSWD standard (Engram), DERO mainnet wallet RPC
+  // Alternative ports and protocols to try
+  // Try both ws:// and wss:// for better compatibility
+  const connectionAttempts = [
+    { protocol: 'ws', port: 44326 },  // Engram XSWD (insecure)
+    { protocol: 'wss', port: 44326 }, // Engram XSWD (secure)
+    { protocol: 'ws', port: 10103 },  // Wallet RPC (insecure)
+    { protocol: 'wss', port: 10103 }  // Wallet RPC (secure)
+  ];
   
   // Function to generate a random 64-character hex string for app ID
   const generateAppId = () => {
@@ -62,10 +68,9 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
       return;
     }
     
-    // Check if we're at max attempts
-    if (attemptNumber >= MAX_RECONNECT_ATTEMPTS) {
+    // Check if we're at max attempts (try all connection combinations)
+    if (attemptNumber >= connectionAttempts.length) {
       // Silent fail - this is expected when Engram isn't running
-      // console.log(`No XSWD connection available. Engram wallet not detected.`);
       connectionAttemptedRef.current = false; // Reset so user can try again later
       isConnectingRef.current = false;
       return;
@@ -98,12 +103,10 @@ export const TelaLinkHandler: React.FC<TelaLinkHandlerProps> = ({
       socketRef.current = null;
     }
     
-    // Choose which port to try based on the attempt number
-    const portIndex = attemptNumber % ports.length;
-    const port = ports[portIndex];
+    // Choose which connection attempt to try
+    const attempt = connectionAttempts[attemptNumber];
+    const wsUrl = `${attempt.protocol}://localhost:${attempt.port}/xswd`;
     
-    // Create a new WebSocket connection
-    const wsUrl = `ws://localhost:${port}/xswd`;
     // Only log on first attempt to reduce console noise
     if (attemptNumber === 0) {
       console.log(`Attempting XSWD connection for TELA links...`);
