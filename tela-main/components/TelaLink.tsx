@@ -28,20 +28,20 @@ export const TelaLink: React.FC<TelaLinkProps> = ({
   }, []);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // Always prevent default to show our custom message
+    
     console.log(`Processing TELA link: ${telaLink}`);
+    
+    // Prevent multiple clicks from being processed
+    if (processingRef.current) {
+      console.log('Already processing a TELA link request, please wait');
+      return;
+    }
+    
+    processingRef.current = true;
     
     // Try WebSocket handler first if available
     if (typeof window !== 'undefined' && window.handleTelaLink) {
-      e.preventDefault();
-      
-      // Prevent multiple clicks from being processed
-      if (processingRef.current) {
-        console.log('Already processing a TELA link request, please wait');
-        return;
-      }
-      
-      processingRef.current = true;
-      
       try {
         window.handleTelaLink(telaLink);
         
@@ -55,11 +55,31 @@ export const TelaLink: React.FC<TelaLinkProps> = ({
         processingRef.current = false;
       }
     } else {
-      // Let browser handle tela:// protocol natively
-      // Don't prevent default - this allows Engram to catch the protocol
-      console.log('Attempting to open via tela:// protocol handler');
-      // Browser will try to open with registered protocol handler (Engram)
-      // If that fails, browser will show its own "no protocol handler" message
+      // WebSocket handler not available - show helpful instructions
+      console.log('TELA WebSocket handler not available - Engram not connected');
+      
+      const message = `⚠️ Engram Wallet Required
+
+To open TELA applications, you need Engram wallet running with XSWD enabled:
+
+📥 SETUP STEPS:
+1. Download Engram from:
+   github.com/DEROFDN/Engram/releases
+
+2. Launch Engram on your computer
+
+3. In Engram Settings:
+   • Enable "Cyberdeck" (XSWD protocol)
+   • Verify it shows port 44326
+
+4. Keep Engram running in background
+
+5. Refresh this page and try again
+
+💡 Engram must be running to open TELA apps!`;
+      
+      alert(message);
+      processingRef.current = false;
     }
   }, [scid, path, telaLink]);
 
