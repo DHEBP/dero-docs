@@ -20,39 +20,55 @@ import { TelaLinkHandler } from '@components/TelaLinkHandler'
 
 <TelaLinkHandler />
 
-<Callout type="error" emoji="🚨">
-  **BEFORE CLICKING A TELALINK:** You must have [**Engram wallet**](https://github.com/DEROFDN/Engram/releases) running with XSWD enabled!  
-  Without Engram, you'll see "TELA handler not ready" errors.
+<Callout type="warning" emoji="⚠️">
+  **Browser Security Limitation:** TELA links on this HTTPS documentation site cannot connect to localhost due to browser security policies. This gallery serves as a **reference catalog** of available applications.
 </Callout>
 
-Explore live applications, documents, and games hosted entirely on the DERO blockchain. Each application is stored permanently on-chain and runs locally in your browser.
-
-## How to Use TELA Links (Step-by-Step)
-
-### **Step 1: Download & Launch Engram**
-1. Download [Engram wallet](https://github.com/DEROFDN/Engram/releases) if you don't have it
-2. Launch Engram on your computer
-3. Create or restore your DERO wallet
-
-### **Step 2: Enable Cyberdeck (XSWD Protocol)**
-1. In Engram, go to **Settings**
-2. Find **"Cyberdeck"** section
-3. Click **"Turn On"** to enable XSWD (port 44326)
-4. Keep Engram **running in the background**
-
-### **Step 3: Click TELA Links**
-1. With Engram running, click any **"Open"** button below
-2. Engram will automatically catch the `tela://` link
-3. Application opens in Engram
-
-<Callout type="info">
-  **First Time?** Engram will ask permission to connect. Click "Allow" to enable TELA link handling.
+<Callout type="success" emoji="✅">
+  **To Actually Run These Apps:** Use TELA-CLI to search and serve applications on your local machine:
+  ```bash
+  tela-cli --mainnet --gnomon
+  » search min-likes 70
+  » serve <scid>
+  ```
+  See the [TELA-CLI Guide](/tela-cli/installation) for setup instructions.
 </Callout>
 
-**Troubleshooting:**
-- ❌ **"TELA handler not ready"** → Engram is not running OR Cyberdeck is not enabled
-- ❌ **Nothing happens** → Check Engram is set as default `tela://` protocol handler
-- ✅ **App opens** → Success! Cyberdeck + Engram properly configured
+Explore applications, documents, and games hosted entirely on the DERO blockchain. Each application is stored permanently on-chain. The SCIDs below can be used with TELA-CLI to run the apps locally.
+
+## How to Access These Applications
+
+### Method 1: TELA-CLI (Recommended)
+
+The proper way to access TELA applications:
+
+```bash
+# Install TELA-CLI
+# See: /tela-cli/installation
+
+# Start with Gnomon indexer
+tela-cli --mainnet --gnomon
+» gnomon start
+
+# Search for quality apps
+» search min-likes 70
+
+# Serve any app from the list below
+» serve b7b3abffc79b96d44db23137b8559a94bd5c42467dae2868327db2061ee502a6
+# Opens at http://localhost:8082
+```
+
+### Method 2: Copy SCID (Quick Reference)
+
+Use this page as a catalog:
+1. Find an app below
+2. Copy its SCID (the long hex string)
+3. Use with TELA-CLI: `» serve <scid>`
+4. App opens on localhost with full functionality
+
+<Callout type="info" emoji="💡">
+  **Why not click "Open" buttons?** Browser security prevents HTTPS sites from connecting to localhost. TELA-CLI is the proper way to serve blockchain apps locally.
+</Callout>
 
 **Cyberdeck Status:**
 - 🟢 **Green** = Cyberdeck enabled, XSWD active on port 44326
