@@ -44,7 +44,7 @@ const config: DocsThemeConfig = {
   primaryHue: { dark: 193, light: 193 }, // Adjust the hue value to get the desired shade of purple
   primarySaturation: { dark: 63, light: 63 }, // Adjust the saturation value for the desired intensity
   project: {
-    link: 'https://github.com/TELA/tela-main'
+    link: 'https://github.com/civilware/tela'
   },
   docsRepositoryBase: 'https://github.com/DHEBP/dero-docs',
   useNextSeoProps() {
