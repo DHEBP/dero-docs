@@ -12,9 +12,9 @@
     "title": "Getting Started"
   },
   "tela": "Introduction to TELA",
-  "tela-development-guide": "Quick Start Guide",
-  "tutorials": "Tutorials",
   "tela-cli": "TELA-CLI",
+  "tutorials": "Tutorials",
+  "best-practices": "Best Practices",
 
   "-- Advanced Topics": {
     "type": "separator",
@@ -28,18 +28,16 @@
     "type": "separator",
     "title": "Developer Reference"
   },
-  "beginner-guide": "Beginner's Guide",
   "api-reference": "API Reference",
   "go-package-reference": "Go Package Reference",
-  "javascript-guidelines": "Working Code",
+  "javascript-guidelines": "JavaScript Guidelines",
   "templates": "Project Templates",
   "design-reference": "Design Reference",
 
-  "-- Compliance": {
+  "-- Optimization": {
     "type": "separator",
-    "title": "Compliance"
+    "title": "Optimization"
   },
-  "size-optimization": "Size Optimization", 
   "error-troubleshooting": "Error Troubleshooting",
 
   "DERO Homepage": {

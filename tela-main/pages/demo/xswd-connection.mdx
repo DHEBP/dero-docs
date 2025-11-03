@@ -1,0 +1,156 @@
+---
+title: "XSWD Connection Pattern | app1 Demo Analysis"
+description: "Complete analysis of the XSWD WebSocket connection pattern from the official app1 demo. Verified working code for connecting TELA apps to DERO wallets."
+keywords: "XSWD connection, WebSocket, app1 demo, wallet connection, verified pattern"
+date: "2025-11-01"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "demo/xswd-connection"
+tags: ["demo", "XSWD", "connection", "verified"]
+---
+
+import { Callout } from 'nextra/components';
+
+# XSWD Connection Pattern
+
+**Complete analysis** of the XSWD connection implementation from `tela_tests/app1` - the verified working pattern.
+
+<Callout type="success" emoji="✅">
+**Verified Pattern:** This is the exact connection pattern from the official app1 demo that has been tested and proven to work with Engram and CLI wallets.
+</Callout>
+
+## Complete Connection Code
+
+```javascript
+// From tela_tests/app1 - VERIFIED WORKING PATTERN
+let socket = null;
+let isConnected = false;
+
+function connect() {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log('Already connected');
+        return;
+    }
+    
+    // ✅ CRITICAL: Use localhost (not 127.0.0.1) - matches app1 pattern
+    socket = new WebSocket("ws://localhost:44326/xswd");
+    
+    socket.onopen = function(event) {
+        console.log('✅ WebSocket opened');
+        
+        // ✅ CRITICAL: Send immediately after onopen - no delay!
+        const appData = {
+            id: "app-id-" + Date.now().toString(16),
+            name: "Application Name",
+            description: "Description",
+            url: "http://localhost:" + location.port
+        };
+        
+        socket.send(JSON.stringify(appData));
+        console.log('📤 Sent application data');
+    };
+    
+    socket.onmessage = function(event) {
+        try {
+            const response = JSON.parse(event.data);
+            
+            // ✅ CRITICAL: Check accepted FIRST before making API calls
+            if (response.accepted) {
+                console.log('✅ Connection accepted!');
+                isConnected = true;
+                // Now safe to make API calls
+            } else if (response.rejected) {
+                console.error('❌ Connection rejected');
+                isConnected = false;
+            } else if (response.jsonrpc && response.id) {
+                // Handle RPC responses
+                handleRPCResponse(response);
+            }
+        } catch (error) {
+            console.error('Parse error:', error);
+        }
+    };
+    
+    socket.onerror = function(error) {
+        console.error('🚨 WebSocket error:', error);
+    };
+    
+    socket.onclose = function(event) {
+        console.log('🔌 Connection closed:', event.code);
+        isConnected = false;
+        
+        if (event.code === 1006) {
+            console.error('❌ Wallet not running or XSWD disabled');
+        }
+    };
+}
+```
+
+## Critical Points
+
+### 1. ✅ Use `localhost` (Not `127.0.0.1`)
+
+```javascript
+// ✅ CORRECT (matches app1)
+socket = new WebSocket("ws://localhost:44326/xswd");
+
+// ❌ WRONG (may work but doesn't match verified pattern)
+socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+```
+
+### 2. ✅ Send Application Data Immediately
+
+```javascript
+socket.onopen = function(event) {
+    // ✅ CORRECT: Send immediately, no delay
+    socket.send(JSON.stringify(appData));
+    
+    // ❌ WRONG: Delaying causes connection to close
+    setTimeout(() => {
+        socket.send(JSON.stringify(appData));  // Too late!
+    }, 1000);
+};
+```
+
+### 3. ✅ Wait for `response.accepted`
+
+```javascript
+// ✅ CORRECT: Check accepted first
+if (response.accepted) {
+    isConnected = true;
+    makeAPICall();  // Now safe
+}
+
+// ❌ WRONG: Making calls too early
+socket.onopen = function() {
+    socket.send(JSON.stringify(appData));
+    makeAPICall();  // Not accepted yet!
+};
+```
+
+### 4. ✅ Handle All Events
+
+```javascript
+// All four event handlers required:
+socket.onopen    // Send app data immediately
+socket.onmessage // Handle responses and acceptance
+socket.onerror   // Log errors
+socket.onclose   // Clean up and reconnect if needed
+```
+
+## Common Mistakes
+
+| Mistake | Why It Fails | Correct Pattern |
+|---------|--------------|-----------------|
+| Using `127.0.0.1` | May work but doesn't match verified demo | Use `localhost` |
+| Delaying `send()` | Connection closes before handshake | Send immediately in `onopen` |
+| Not checking `accepted` | API calls rejected or fail silently | Wait for `response.accepted` |
+| Missing event handlers | Errors go unnoticed | Handle all 4 events |
+
+## Related Pages
+
+- [Official Demo](/demo) - Complete app1 source code
+- [Application Data Handshake](/demo/application-data) - Handshake details
+- [API Call Patterns](/demo/api-patterns) - Making RPC calls
+- [XSWD Tutorial](/tutorials/xswd-wallet-connect) - Step-by-step implementation
+

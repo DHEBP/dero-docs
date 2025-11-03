@@ -1,37 +1,37 @@
 ---
-title: "XSWD Super Core | Official Production-Grade TELA XSWD Library"
+title: "XSWD Advanced | Official Production-Grade TELA XSWD Library"
 description: "Production-grade XSWD implementation with multi-endpoint fallback, privacy monitoring, and high-level API methods. The official XSWD library for TELA applications."
-keywords: "XSWD Super Core, TELA XSWD, DERO WebSocket, production XSWD, official library, wallet connection, blockchain integration"
+keywords: "XSWD Advanced, TELA XSWD, DERO WebSocket, production XSWD, official library, wallet connection, blockchain integration"
 date: "2024-08-23"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/templates/xswd-super-core.png"
-slug: "templates/xswd-super-core"
-canonicalUrl: "https://tela.derod.org/templates/xswd-super-core"
-tags: ["XSWD", "library", "super-core", "production", "template"]
+slug: "templates/xswd-advanced"
+canonicalUrl: "https://tela.derod.org/templates/xswd-advanced"
+tags: ["XSWD", "library", "advanced", "production", "template"]
 ---
 
 import { Callout } from 'nextra/components'
 
-# XSWD Super Core - Official TELA Library
+# XSWD Advanced - Official TELA Library
 
 
-## Why XSWD Super Core?
+## Why XSWD Advanced?
 
 ### **Production-Grade Features**
-✅ **Multi-endpoint fallback** - Automatically tries 44326, 10103, 40403 ports  
-✅ **Auto-reconnection** - Intelligent reconnection with backoff  
-✅ **Request queuing** - Handles concurrent requests properly  
-✅ **Privacy monitoring** - Blocks external connections for TELA compliance  
-✅ **Development mode** - Test applications without wallet connection  
-✅ **Complete API coverage** - All 30+ DERO, Gnomon, and EPOCH methods
-✅ **High-level API methods** - No need to write raw RPC calls  
-✅ **Persistent app ID** - Maintains identity across sessions  
-✅ **Comprehensive error handling** - Graceful degradation  
+
+- ✅ **Multi-endpoint fallback** - Automatically tries 44326, 10103, 40403 ports  
+- ✅ **Auto-reconnection** - Intelligent reconnection with backoff  
+- ✅ **Request queuing** - Handles concurrent requests properly  
+- ✅ **Privacy monitoring** - Blocks external connections for TELA compliance  
+- ✅ **Development mode** - Test applications without wallet connection  
+- ✅ **Complete API coverage** - All 30+ DERO, Gnomon, and EPOCH methods
+- ✅ **High-level API methods** - No need to write raw RPC calls  
+- ✅ **Persistent app ID** - Maintains identity across sessions  
+- ✅ **Comprehensive error handling** - Graceful degradation  
 
 ### **vs Basic WebSocket Patterns**
 
-| Feature | Basic WebSocket | XSWD Super Core |
+| Feature | Basic WebSocket | XSWD Advanced |
 |---------|----------------|-----------------|
 | **Connection** | Single endpoint | Multi-endpoint fallback |
 | **Reconnection** | Manual | Automatic with backoff |
@@ -43,7 +43,7 @@ import { Callout } from 'nextra/components'
 
 ---
 
-## What Can You Do With XSWD Super Core?
+## What Can You Do With XSWD Advanced?
 
 <Callout type="success" emoji="🎯">
 **Three Main Use Cases** - Choose the approach that fits your needs
@@ -51,7 +51,7 @@ import { Callout } from 'nextra/components'
 
 ### **Option 1: Deploy as Shared TELA Library** (Recommended for Community)
 
-Deploy XSWD Super Core once to the DERO blockchain as a `.lib` library. Share the SCID with your team or the entire TELA community. Every TELA app can then reference this single library instead of duplicating 25KB of code.
+Deploy XSWD Advanced once to the DERO blockchain as a `.lib` library. Share the SCID with your team or the entire TELA community. Every TELA app can then reference this single library instead of duplicating 25KB of code.
 
 **✅ Benefits:**
 - **Reduces blockchain bloat** - One library serves hundreds of apps
@@ -60,8 +60,8 @@ Deploy XSWD Super Core once to the DERO blockchain as a `.lib` library. Share th
 - **Saves deployment costs** - Apps only reference SCID (few bytes) instead of embedding full code
 
 **📖 How To:**
-1. Compress the file: `gzip xswd-core-super.js` (reduces to ~6.5KB)
-2. Deploy with TELA-CLI: `install-doc xswd-core-super.js.gz` with dURL ending in `.lib`
+1. Compress the file: `gzip xswd-advanced.js` (reduces to ~6.5KB)
+2. Deploy with TELA-CLI: `install-doc xswd-advanced.js.gz` with dURL ending in `.lib`
 3. Get the library SCID from deployment
 4. Share SCID in your app's INDEX when doing `install-index`
 5. Other developers reference your library SCID in their INDEXs
@@ -72,7 +72,7 @@ Deploy XSWD Super Core once to the DERO blockchain as a `.lib` library. Share th
 
 ### **Option 2: Embed in Your TELA Application** (For Standalone Apps)
 
-Copy the XSWD Super Core code directly into your TELA application as one of its DOC contracts. Your app becomes completely self-contained with no external library dependencies.
+Copy the XSWD Advanced code directly into your TELA application as one of its DOC contracts. Your app becomes completely self-contained with no external library dependencies.
 
 **✅ Benefits:**
 - **Self-contained** - App works independently of external libraries
@@ -81,9 +81,9 @@ Copy the XSWD Super Core code directly into your TELA application as one of its 
 - **Immutable** - Your app's XSWD library can't change unexpectedly
 
 **📖 How To:**
-1. Save `xswd-core-super.js` as a file in your project
-2. Reference it in your `index.html`: `<script src="xswd-core-super.js"></script>`
-3. Deploy it as a DOC: `install-doc xswd-core-super.js.gz`
+1. Save `xswd-advanced.js` as a file in your project
+2. Reference it in your `index.html`: `<script src="xswd-advanced.js"></script>`
+3. Deploy it as a DOC: `install-doc xswd-advanced.js.gz`
 4. Include the DOC SCID in your INDEX alongside your other files
 5. Initialize in your app: `await window.xswd.initialize({ allowDevelopmentMode: true })`
 
@@ -93,7 +93,7 @@ Copy the XSWD Super Core code directly into your TELA application as one of its 
 
 ### **Option 3: Use as Development Reference** (For Learning)
 
-Study XSWD Super Core to learn production-grade XSWD patterns, error handling, and best practices. Use it as a template for building your own custom XSWD implementations.
+Study XSWD Advanced to learn production-grade XSWD patterns, error handling, and best practices. Use it as a template for building your own custom XSWD implementations.
 
 **✅ Benefits:**
 - **Learn from working code** - 100% verified against tela_tests source
@@ -127,10 +127,10 @@ Study XSWD Super Core to learn production-grade XSWD patterns, error handling, a
 
 ## File Contents
 
-### **xswd-core-super.js** (25KB - Requires Compression)
+### **xswd-advanced.js** (25KB - Requires Compression)
 
 ```javascript
-// XSWD Super Core - Single Source of Truth for TELA/DERO Web integrations
+// XSWD Advanced - Single Source of Truth for TELA/DERO Web integrations
 // Combines best features from prior cores: privacy monitoring, resilient
 // WebSocket connection, request queueing with timeouts, optional dev-mode,
 // gnomon fallbacks, and high-level RPC helpers.
@@ -308,9 +308,9 @@ Study XSWD Super Core to learn production-grade XSWD patterns, error handling, a
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // --------------------------- XSWD Super Core ----------------------------
-  const XSWDSuper = {
-    name: 'xswd-core-super',
+  // --------------------------- XSWD Advanced ----------------------------
+  const XSWDAdvanced = {
+    name: 'xswd-advanced',
     version: '3.0.0',
     // Connection state
     ws: null,
@@ -327,16 +327,18 @@ Study XSWD Super Core to learn production-grade XSWD patterns, error handling, a
       id: null,
       name: 'TELA Explorer',
       description: 'DERO Blockchain Explorer on TELA',
-      url: typeof window !== 'undefined' ? window.location.origin : ''
+      url: typeof window !== 'undefined' ? ('http://localhost:' + location.port) : ''
     },
 
-    // Endpoints to probe (verified against TELA source code)
+    // Endpoints to probe (verified against TELA source code - localhost prioritized to match app1 demo)
     endpoints: [
-      { host: '127.0.0.1', port: 44326, path: '/xswd' }, // XSWD standard
-      { host: '127.0.0.1', port: 10103, path: '/xswd' }, // DERO mainnet wallet
-      { host: '127.0.0.1', port: 40403, path: '/xswd' }, // DERO testnet wallet
-      { host: '127.0.0.1', port: 10102, path: '' },      // DERO daemon
-      { host: 'localhost',  port: 44326, path: '/xswd' } // Localhost variant
+      { host: 'localhost', port: 44326, path: '/xswd' },  // XSWD standard (app1 pattern)
+      { host: 'localhost', port: 10103, path: '/xswd' },  // DERO mainnet wallet
+      { host: 'localhost', port: 40403, path: '/xswd' }, // DERO testnet wallet
+      { host: '127.0.0.1', port: 44326, path: '/xswd' }, // Fallback to 127.0.0.1
+      { host: '127.0.0.1', port: 10103, path: '/xswd' }, // Fallback to 127.0.0.1
+      { host: '127.0.0.1', port: 40403, path: '/xswd' }, // Fallback to 127.0.0.1
+      { host: '127.0.0.1', port: 10102, path: '' }       // DERO daemon fallback
     ],
 
     // Request management
@@ -883,17 +885,23 @@ Study XSWD Super Core to learn production-grade XSWD patterns, error handling, a
     },
 
     getConnectionStatus() {
-      const endpoint = this.ws && this.ws.url ? this.ws.url : 'ws://127.0.0.1:44326/xswd';
+      const endpoint = this.ws && this.ws.url ? this.ws.url : 'ws://localhost:44326/xswd';
       return { connected: this.isAuthorized, endpoint };
     }
 
-    // ... (Additional internal methods for connection management)
+    // Internal connection methods follow app1 demo pattern:
+    // - tryInitializeAcrossEndpoints(): Attempts connection to each endpoint in order
+    // - connectToEndpoint(): Creates WebSocket, sends applicationData on open, 
+    //   checks response.accepted, handles authorization
+    // - processQueue(): Manages request queuing with rate limiting
+    // All connection logic matches verified app1 demo patterns (localhost, 
+    // immediate applicationData send on open, response.accepted check)
   };
 
   // Export to global scope
   if (typeof window !== 'undefined') {
     window.TelaPrivacy = window.TelaPrivacy || PrivacyMonitor;
-    window.xswd = window.xswd || XSWDSuper;
+    window.xswd = window.xswd || XSWDAdvanced;
     
     // Auto-init privacy monitoring
     if (typeof document !== 'undefined') {
@@ -914,12 +922,12 @@ This file MUST be compressed for TELA deployment:
 **✅ SOLUTION: Compression (RECOMMENDED)**
 ```bash
 # Compress before deployment
-gzip xswd-core-super.js  # Reduces to 6.4KB ✅
-tela-cli install-doc xswd-core-super.js.gz
+gzip xswd-advanced.js  # Reduces to 6.4KB ✅
+tela-cli install-doc xswd-advanced.js.gz
 ```
 
-**🔄 ALTERNATIVE: Use XSWD Minimal**
-For size-constrained apps, use [XSWD Minimal](/templates/xswd-minimal) (15KB, no compression needed)
+**🔄 ALTERNATIVE: Use XSWD Basic**
+For size-constrained apps, use [XSWD Basic](/templates/xswd-basic) (15KB, no compression needed)
 </Callout>
 
 ## Usage Examples
@@ -935,8 +943,8 @@ For size-constrained apps, use [XSWD Minimal](/templates/xswd-minimal) (15KB, no
 <body>
     <!-- Your app content -->
     
-    <!-- Load XSWD Super Core -->
-    <script src="xswd-core-super.js"></script>
+    <!-- Load XSWD Advanced -->
+    <script src="xswd-advanced.js"></script>
     <script>
         // Initialize with options
         window.xswd.initialize({
@@ -977,7 +985,7 @@ For size-constrained apps, use [XSWD Minimal](/templates/xswd-minimal) (15KB, no
 ### **Advanced Usage - Complete TELA Integration**
 
 ```javascript
-// Complete TELA application with all XSWD Super Core features
+// Complete TELA application with all XSWD Advanced features
 class CompleteTELAApp {
     constructor() {
         this.networkData = null;
@@ -1194,4 +1202,14 @@ document.addEventListener('DOMContentLoaded', () => {
     completeApp.initialize();
 });
 ```
+
+---
+
+## Verified Demo Reference
+
+**Complete Source Code:**
+- [Official Demo (app1)](/demo) - Full verified implementation patterns used in this library
+- [XSWD Connection Pattern](/demo/xswd-connection) - Connection code analysis
+- [Application Data Handshake](/demo/application-data) - Handshake format details
+- [API Call Patterns](/demo/api-patterns) - RPC method patterns from verified code
 

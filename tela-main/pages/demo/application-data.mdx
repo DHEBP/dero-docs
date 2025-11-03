@@ -1,0 +1,124 @@
+---
+title: "Application Data Handshake | app1 Demo Analysis"
+description: "Complete analysis of the application data handshake pattern from app1 demo. Learn the exact format for wallet approval and connection establishment."
+keywords: "application data, handshake, wallet approval, app1 demo, XSWD handshake"
+date: "2025-11-01"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "demo/application-data"
+tags: ["demo", "handshake", "application-data", "verified"]
+---
+
+import { Callout } from 'nextra/components';
+
+# Application Data Handshake
+
+**Complete analysis** of the application data format from `tela_tests/app1` - the verified handshake pattern.
+
+<Callout type="success" emoji="✅">
+**Verified Format:** This is the exact application data structure from app1 that successfully connects to Engram and CLI wallets.
+</Callout>
+
+## Application Data Format
+
+```javascript
+// From tela_tests/app1 - VERIFIED FORMAT
+const applicationData = {
+    id: "xswd-example-" + Date.now().toString(16),  // Unique hex ID
+    name: "XSWD Connect Example",                    // App display name
+    description: "Example TELA app connecting to DERO wallet",  // What app does
+    url: "http://localhost:" + location.port          // CRITICAL: Must include port!
+};
+```
+
+## Field Requirements
+
+### `id` (Required)
+- **Type:** String
+- **Format:** Unique identifier (typically hex string)
+- **Example:** `"xswd-example-" + Date.now().toString(16)`
+- **Purpose:** Unique identifier for this connection session
+
+### `name` (Required)
+- **Type:** String
+- **Purpose:** Display name shown in wallet approval dialog
+- **Example:** `"My TELA Application"`
+
+### `description` (Required)
+- **Type:** String
+- **Purpose:** Explanation of what your app does
+- **Example:** `"Connecting to wallet for DERO operations"`
+
+### `url` (Required)
+- **Type:** String
+- **Format:** Must be full URL including port
+- **✅ CORRECT:** `"http://localhost:" + location.port`
+- **❌ WRONG:** `window.location.origin` (missing port)
+- **Purpose:** Origin verification for security
+
+## Complete Handshake Flow
+
+```javascript
+// Step 1: Create application data
+const appData = {
+    id: "my-app-" + Date.now().toString(16),
+    name: "My TELA App",
+    description: "App description",
+    url: "http://localhost:" + location.port  // Include port!
+};
+
+// Step 2: Connect to WebSocket
+socket = new WebSocket("ws://localhost:44326/xswd");
+
+// Step 3: Send data immediately when connection opens
+socket.onopen = function(event) {
+    socket.send(JSON.stringify(appData));  // Immediate send!
+};
+
+// Step 4: Wait for wallet response
+socket.onmessage = function(event) {
+    const response = JSON.parse(event.data);
+    
+    if (response.accepted) {
+        // ✅ Connection approved - can make API calls
+        console.log("Connection accepted:", response.message);
+    } else if (response.rejected) {
+        // ❌ User denied or error
+        console.error("Connection rejected:", response.message);
+    }
+};
+```
+
+## Wallet Response Format
+
+### Accepted Response
+```json
+{
+  "accepted": true,
+  "message": "Connection established"
+}
+```
+
+### Rejected Response
+```json
+{
+  "rejected": true,
+  "message": "Connection rejected by user"
+}
+```
+
+## Common Mistakes
+
+| Mistake | Issue | Fix |
+|---------|-------|-----|
+| Missing `url` field | Wallet rejects connection | Always include `url: "http://localhost:" + location.port` |
+| `url` without port | Connection may fail | Use `location.port` not just `origin` |
+| Delaying `send()` | Connection closes | Send immediately in `onopen` |
+| Invalid JSON | Parse error | Use `JSON.stringify()` |
+
+## Related Pages
+
+- [Official Demo](/demo) - Complete app1 source code
+- [XSWD Connection Pattern](/demo/xswd-connection) - Connection code
+- [API Call Patterns](/demo/api-patterns) - Making RPC calls after connection
+

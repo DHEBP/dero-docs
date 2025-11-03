@@ -5,7 +5,6 @@ keywords: "TELA upgrades, version management, TELA updates, breaking changes, DE
 date: "2025-01-12"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/tutorials/version-upgrades.png"
 slug: "tutorials/version-upgrades"
 canonicalUrl: "https://tela.derod.org/tutorials/version-upgrades"
 tags: ["tutorial", "upgrades", "versioning", "updates", "TELA"]
@@ -390,7 +389,7 @@ async function setVariable(scid, key, value) {
 #### Connection Changes
 
 <Callout type="info">
-For production XSWD implementations, use [XSWD Super Core](/templates/xswd-super-core) or [XSWD Minimal](/templates/xswd-minimal) which handle version compatibility automatically.
+For production XSWD implementations, use [XSWD Advanced](/templates/xswd-advanced) or [XSWD Basic](/templates/xswd-basic) which handle version compatibility automatically.
 </Callout>
 
 **XSWD Handshake Format (Current)**
@@ -403,8 +402,8 @@ const applicationData = {
     url: "http://localhost:" + location.port  // Must match origin
 };
 
-// Connection flow
-const socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+// Connection flow (use localhost to match app1 pattern)
+const socket = new WebSocket("ws://localhost:44326/xswd");
 socket.addEventListener("open", (event) => {
     socket.send(JSON.stringify(applicationData));
 });
@@ -739,7 +738,7 @@ Upgrade issues? Get support:
 
 After mastering version management:
 
-- **TELA Deployment**: Read [Deployment Guide](/deployment-guide) for production best practices
+- **TELA Deployment**: Read [Best Practices](/best-practices) for production deployment guide
 - **Advanced Features**: Explore [DocShards](/advanced-features/docshards) for handling large applications
 - **Security**: Review [Security Model](/tela/tela-security-model) to understand immutability guarantees
 - **Community**: Share your experience in [Discord](https://discord.gg/H95TJDp) or [Forum](https://forum.dero.io)

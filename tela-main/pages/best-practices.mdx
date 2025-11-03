@@ -1,0 +1,324 @@
+---
+title: "Best Practices | Production-Ready TELA Development"
+description: "Best practices guide for building production-ready TELA applications with size constraints, performance optimization, and DERO integration"
+keywords: "TELA best practices, size constraints, DERO blockchain, XSWD protocol, optimization, production development"
+date: "2024-08-23"
+lastUpdated: "2025-10-19"
+authors: ["DHEBP"]
+slug: "best-practices"
+canonicalUrl: "https://tela.derod.org/best-practices"
+---
+
+import { Callout } from 'nextra/components'
+
+# Best Practices
+
+Essential guide for building production-ready TELA applications with size constraints, performance optimization, and DERO blockchain integration.
+
+<Callout type="warning">
+**Critical Size Constraints**
+TELA has strict size limitations that are **absolute requirements**. Never exceed these limits or deployment will fail.
+</Callout>
+
+## 📏 Size Constraints (CRITICAL)
+
+### File Size Limits
+
+| File Type | Content Limit | Total Limit | Status |
+|-----------|--------------|-------------|--------|
+| **TELA-DOC-1** | 18.00 KB | 19.20 KB | ⚠️ Absolute max |
+| **TELA-INDEX-1** | 9 KB recommended | 11.64 KB max | ⚠️ May break updates |
+| **Shard Size** | 17,500 bytes | - | ⚠️ Auto-split point |
+
+<Callout type="error">
+**Actual Error Messages from parse.go**: 
+- `"docCode size is to large, max %.2fKB"`
+- `"DOC SC size is to large, max %.2fKB"`
+- `"contract exceeds max INDEX install size by %.2fKB"`
+</Callout>
+
+### Size Planning Guide
+
+| File Size | Action | Strategy | Compression |
+|-----------|--------|----------|------------|
+| **< 10 KB** | ✅ Deploy | Direct deployment | Optional |
+| **10-15 KB** | ⚠️ Monitor | Standard workflow | Consider `.gz` |
+| **15-18 KB** | ⚠️ Critical | Optimize first | **Required** |
+| **18 KB+** | ❌ Too large | Split into modules | Use DocShards |
+
+## 🎯 Core Principles
+
+### HTML-First Development
+
+<Callout type="info">
+**TELA Principle: HTML-First, JavaScript-Minimal**
+Write fast, zippy static HTML-based applications using proven patterns from `tela_tests/app1`.
+</Callout>
+
+### Proven JavaScript Patterns
+
+```javascript
+// ✅ PROVEN PATTERN - Based on working tela_tests/app1
+let socket;
+const applicationData = {
+    "id": Array.from({length:64},()=>Math.floor(Math.random()*16).toString(16)).join(''),
+    "name": "Your TELA Application",
+    "url": "http://localhost:" + location.port
+};
+
+function connectWebSocket() {
+    socket = new WebSocket("ws://localhost:44326/xswd");
+    socket.addEventListener("open", function(event) {
+        socket.send(JSON.stringify(applicationData));
+    });
+}
+```
+
+## ⚡ Size Optimization Quick Reference
+
+### Optimization Techniques Comparison
+
+| Technique | Before | After | Savings |
+|-----------|--------|-------|---------|
+| **Variable Names** | `calculateDEROAmount()` | `calcDERO()` | ~40% |
+| **String Concatenation** | 4 statements | 1 statement | Overhead reduction |
+| **Function Compression** | 127 bytes | 64 bytes | 50% |
+| **CSS Shorthand** | 4 properties | 1 property | 75% |
+| **Template Compression** | Multi-line | Single-line | ~30% |
+
+### CSS Optimization
+
+| What | ❌ Avoid | ✅ Optimize |
+|------|----------|------------|
+| **Properties** | `margin-top: 1rem; margin-right: 0; margin-bottom: 1rem; margin-left: 0;` | `margin: 1rem 0;` |
+| **Colors** | `rgba(255, 255, 255, 1)` | `#fff` |
+| **Formatting** | Multi-line verbose | Single-line compressed |
+| **Selectors** | Long descriptive names | Short functional names |
+
+### JavaScript Optimization
+
+| What | ❌ Avoid | ✅ Optimize |
+|------|----------|------------|
+| **Variables** | `currentBlockHeight`, `transactionHashList` | `h`, `txs` |
+| **Functions** | Separate helpers | Combined operations |
+| **Templates** | Multi-line template literals | Single concatenation |
+| **Objects** | `applicationName`, `connectionTimeout` | `name`, `timeout` |
+| **Styles** | Repeated inline styles | Shared constants |
+
+**Quick Examples**:
+
+```javascript
+// Variable shortening: 47 bytes → 28 bytes
+function calcDERO(a) {
+    return a ? (parseFloat(a)/1e12).toFixed(6)+' DERO' : '0.000000 DERO';
+}
+
+// Template compression: Multi-line → Single-line
+var t = '<div class="card"><h2>'+title+'</h2><p>'+content+'</p></div>';
+
+// Shared styles: Repeated → Constant
+var s = 'background:rgba(0,0,0,0.2);border:1px solid rgba(82,200,219,0.3);';
+function renderCard() { return '<div style="'+s+'">Card</div>'; }
+```
+
+### HTML Optimization
+
+| What | ❌ Avoid | ✅ Optimize |
+|------|----------|------------|
+| **Attributes** | `id="main-container" style="display: block;"` | `id="main"` |
+| **Whitespace** | Formatted with indentation | Compressed single-line |
+| **Structure** | Verbose nested divs | Minimal semantic HTML |
+
+## 📦 Module Organization
+
+| Scenario | Strategy | File Count | Example |
+|----------|----------|------------|---------|
+| **< 18 KB total** | Single file | 1 | Simple apps |
+| **18-35 KB** | Split by feature | 2-3 | Core + UI modules |
+| **35 KB+** | Full modular split | 4+ | Use DocShards system |
+
+**Single File Pattern**:
+```javascript
+({
+    name: 'simple-app',
+    version: '1.0.0',
+    init: function() { /* ... */ },
+    render: function() { /* ... */ }
+});
+```
+
+**Multi-Module Pattern**:
+```javascript
+// core.js (15KB) - Core logic
+// ui.js (12KB) - UI components  
+// data.js (10KB) - Data handling
+```
+
+## 🔗 DERO Blockchain Integration
+
+### XSWD Protocol Requirements
+
+<Callout type="error">
+**MANDATORY: XSWD Protocol Only**
+ALL blockchain data must come from DERO daemon via XSWD WebSocket protocol. External APIs are forbidden.
+</Callout>
+
+| Data Source | ✅ Allowed | ❌ Forbidden |
+|-------------|-----------|-------------|
+| **DERO Daemon** | `xswd.call('DERO.GetInfo')` | - |
+| **Wallet via XSWD** | `xswd.call('GetBalance')` | - |
+| **External APIs** | - | `fetch('https://api.example.com')` |
+| **CDN Libraries** | - | `<script src="https://cdn...">` |
+
+```javascript
+// ✅ CORRECT: XSWD data fetching
+async function getBlockData(height) {
+    const block = await xswd.call('DERO.GetBlock', { height });
+    return block;
+}
+
+// ❌ FORBIDDEN: External API calls
+// fetch('https://api.example.com/block/' + height)  // NEVER
+```
+
+### Real Data Only Policy
+
+```javascript
+// ✅ CORRECT: Live blockchain data
+const balance = await xswd.call('GetBalance');
+const deroAmount = balance.balance / 100000;
+
+// ❌ FORBIDDEN: Demo or placeholder data
+// const demoBalance = 123.45678;  // NEVER USE FAKE DATA
+```
+
+## 🚫 No External Dependencies
+
+| Dependency Type | ❌ Forbidden | ✅ Solution |
+|-----------------|--------------|------------|
+| **CSS Frameworks** | Bootstrap, Tailwind CDN | Custom minimal CSS |
+| **JavaScript Libraries** | jQuery, Chart.js CDN | Lightweight custom implementations |
+| **Fonts** | Google Fonts CDN | System fonts or embedded |
+| **Icons** | Font Awesome CDN | SVG icons or emoji |
+
+```javascript
+// ✅ GOOD: Custom lightweight implementation
+const MiniChart = {
+    draw(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const max = Math.max(...data);
+        // Minimal chart drawing code...
+    }
+};
+
+// ❌ AVOID: Heavy external libraries
+// import Chart from 'chart.js';  // Too large for TELA
+```
+
+## ⚡ Performance Targets
+
+| Metric | Target | Critical |
+|--------|--------|----------|
+| **Load Time** | < 2 seconds | Required |
+| **Animation FPS** | 60 fps | Smooth |
+| **Memory Footprint** | Minimal | Long-running apps |
+
+**Efficient DOM Updates**:
+```javascript
+// ✅ GOOD: Batch updates
+function updateBlockList(blocks) {
+    const html = blocks.map(b => 
+        `<div class="b" data-h="${b.height}">...</div>`
+    ).join('');
+    document.getElementById('blocks').innerHTML = html;
+}
+
+// ❌ AVOID: Individual manipulations
+blocks.forEach(block => {
+    const div = document.createElement('div'); // Slow
+    container.appendChild(div);
+});
+```
+
+## 🔐 Security & Privacy
+
+| Practice | ✅ Good | ❌ Avoid |
+|----------|---------|----------|
+| **Data Storage** | Local preferences only | Sensitive wallet data |
+| **External Tracking** | None | Analytics services |
+| **User Input** | Sanitize all inputs | Direct injection |
+| **Content Security** | CSP compliant | Inline scripts from user data |
+
+```javascript
+// ✅ GOOD: Secure patterns
+const SecureTELAApp = {
+    savePreference(key, value) {
+        localStorage.setItem(`tela-app-${key}`, JSON.stringify(value));
+    },
+    executeSecurely(userInput) {
+        return userInput.replace(/[<>'"&]/g, ''); // Sanitize
+    }
+};
+```
+
+## ✅ What Works in TELA
+
+### Proven JavaScript Features
+
+| Feature | Status | Example |
+|---------|--------|---------|
+| **ES6 `let`/`const`** | ✅ Works | `let socket; const data = {};` |
+| **Arrow Functions** | ✅ Works | `document.addEventListener('mousemove', (e) => {...})` |
+| **Template Literals** | ✅ Works | `` `${title}` `` |
+| **String Concatenation** | ✅ Works | `"http://localhost:" + location.port` |
+| **Traditional Functions** | ✅ Works | `function connect() {...}` |
+| **Event Listeners** | ✅ Works | `socket.addEventListener('open', fn)` |
+
+### CSS Features That Work
+
+| Feature | Status | Example |
+|---------|--------|---------|
+| **CSS Variables** | ✅ Works | `:root { --color: #52c8db; }` |
+| **Animations** | ✅ Works | `@keyframes spin { 0% { ... } }` |
+| **Grid/Flexbox** | ✅ Works | `display: grid; grid-template-columns: ...` |
+| **Gradients** | ✅ Works | `background: linear-gradient(...)` |
+| **Transforms** | ✅ Works | `transform: rotate(360deg)` |
+
+## 📋 Development Checklist
+
+<Callout type="tip">
+**Quick Development Checklist** - Use this for every TELA application
+</Callout>
+
+### Pre-Development
+- [ ] Plan file structure (< 18KB per file)
+- [ ] Identify modules needed
+- [ ] Design XSWD-only data access
+- [ ] Plan caching strategy
+
+### During Development
+- [ ] Monitor sizes: `wc -c *.js *.css *.html`
+- [ ] Test with real DERO daemon
+- [ ] Validate XSWD integration
+- [ ] Optimize for < 2s load time
+
+### Pre-Deployment
+- [ ] All files < 18KB verified
+- [ ] Test compression if 15-18KB
+- [ ] Validate with `tela-cli serve local ./project`
+- [ ] No external dependencies
+
+### Post-Deployment
+- [ ] Test deployed functionality
+- [ ] Monitor performance
+- [ ] Gather user feedback
+
+## Related Documentation
+
+- **[First App Tutorial](/tutorials/first-app)** - Step-by-step tutorial for beginners
+- **[Basic App Template](/templates/basic-app)** - Complete starter application
+- **[XSWD Advanced](/templates/xswd-advanced)** - Production XSWD library
+- **[Advanced Features](/advanced-features)** - DocShards and compression
+- **[TELA-CLI](/tela-cli)** - Development tools
+- **[JavaScript Guidelines](/javascript-guidelines)** - Proven code patterns
+- **[XSWD Protocol](/xswd/overview)** - Wallet integration

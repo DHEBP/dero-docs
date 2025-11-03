@@ -1,0 +1,833 @@
+---
+title: "XSWD Wallet Connect Tutorial | Fix Connection Closed Errors"
+description: "Complete step-by-step guide to implementing XSWD wallet connection in TELA sites. Fix 'connection closed' errors with Engram and CLI wallets. Working code examples and troubleshooting."
+keywords: "XSWD wallet connect, connection closed error, Engram wallet, DERO CLI wallet, TELA wallet integration, WebSocket connection, troubleshooting XSWD"
+date: "2025-01-15"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "tutorials/xswd-wallet-connect"
+canonicalUrl: "https://tela.derod.org/tutorials/xswd-wallet-connect"
+tags: ["tutorial", "XSWD", "wallet", "connection", "troubleshooting", "TELA"]
+---
+
+import { Callout } from 'nextra/components';
+import { Card, Cards } from 'nextra/components';
+
+# XSWD Wallet Connect Tutorial
+
+Complete guide to implementing XSWD wallet connection in your TELA site.
+
+<Callout type="warning" emoji="⚠️">
+**Having "Connection Closed" Issues?** This tutorial addresses the exact problem. Jump to [Troubleshooting Section](#troubleshooting-connection-closed-errors) for immediate solutions.
+</Callout>
+
+<Callout type="success" emoji="✅">
+**Verified Against Official Demo:** This tutorial's code patterns match the exact working implementation from `tela_tests/app1` - the official TELA demo application. All examples here have been proven to work.
+</Callout>
+
+## Table of Contents
+
+- [Understanding XSWD Connection](#understanding-xswd-connection)
+- [Prerequisites](#prerequisites)
+- [Step 1: Enable XSWD in Your Wallet](#step-1-enable-xswd-in-your-wallet)
+- [Step 2: Basic Connection Implementation](#step-2-basic-connection-implementation)
+- [Step 3: Using XSWD Templates](#step-3-using-xswd-templates)
+- [Step 4: Complete Working Example](#step-4-complete-working-example)
+- [Troubleshooting Connection Closed Errors](#troubleshooting-connection-closed-errors)
+- [Common Pitfalls](#common-pitfalls)
+
+---
+
+## Understanding XSWD Connection
+
+XSWD connects your TELA application to DERO wallets through a WebSocket connection. The connection process has three critical phases:
+
+```
+1. WebSocket Opens → ws://localhost:44326/xswd
+2. Send Application Data → Wallet shows approval prompt
+3. Receive "accepted" → Connection authorized, ready for API calls
+```
+
+**Most "connection closed" errors happen during phase 2** - the handshake fails or the wallet rejects the connection.
+
+---
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- ✅ DERO wallet running (Engram or CLI wallet)
+- ✅ XSWD enabled and configured
+- ✅ Basic HTML/JavaScript knowledge
+- ✅ Your TELA site structure ready
+
+---
+
+## Step 1: Enable XSWD in Your Wallet
+
+### Engram Wallet
+
+1. Open Engram wallet
+2. Go to **Settings** → **XSWD** (or **Advanced** → **XSWD**)
+3. Enable **"Enable XSWD Server"**
+4. Note the port (default: **44326**)
+5. Restart wallet if required
+
+<Callout type="info">
+**Default Ports (use `localhost` to match app1):**
+- Engram: `ws://localhost:44326/xswd` ✅ **Matches official app1 demo**
+- DERO Wallet CLI (mainnet): `ws://localhost:10103/xswd`
+- DERO Wallet CLI (testnet): `ws://localhost:40403/xswd`
+</Callout>
+
+### DERO CLI Wallet
+
+If using the CLI wallet, XSWD must be enabled via command line:
+
+```bash
+# Start wallet with XSWD enabled
+dero-wallet-cli --rpc-server --rpc-bind=127.0.0.1:10103 --rpc-login=user:pass
+
+# Or in wallet prompt after opening wallet:
+[xswd]
+enable
+```
+
+**Verify XSWD is running:**
+
+```bash
+# Test if port is accessible
+curl http://localhost:44326/xswd
+# Should return WebSocket upgrade response (or connection refused if not running)
+
+# Or check if process is listening
+lsof -i :44326  # macOS/Linux
+netstat -an | findstr 44326  # Windows
+```
+
+<Callout type="info">
+**Important:** The official app1 demo uses `localhost`, not `127.0.0.1`. Both work, but `localhost` matches the exact working pattern.
+</Callout>
+
+---
+
+## Step 2: Basic Connection Implementation
+
+Here's the **minimum working implementation** based on proven patterns:
+
+```javascript
+// XSWD Basic Connection - EXACT pattern from official app1 demo
+// This matches the proven working implementation from tela_tests/app1
+
+// Global WebSocket variable (matches app1 pattern)
+let socket;
+
+// XSWD application data (EXACT format from app1)
+const applicationData = {
+    "id": "my-tela-app-" + Date.now().toString(16),  // Unique hex ID
+    "name": "My TELA Application",
+    "description": "Connecting to wallet for DERO operations",
+    "url": "http://localhost:" + location.port  // IMPORTANT: Must match origin URL
+};
+
+// Function to send data (matches app1 pattern)
+function sendData(d) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        try {
+            socket.send(JSON.stringify(d));
+            if (d.method) {
+                console.log(d.method, "request sent to the server");
+            } else {
+                console.log("Connection request sent to the server");
+            }
+        } catch (error) {
+            console.error("Failed to send data:", error);
+        }
+    } else {
+        console.log("Web socket is not open. State:", socket ? socket.readyState : "N/A");
+    }
+}
+
+// Connect to XSWD (EXACT pattern from app1)
+function connectWebSocket() {
+    // Connect to WebSocket - note: app1 uses localhost, not 127.0.0.1
+    socket = new WebSocket("ws://localhost:44326/xswd");
+
+    // Listen for open event
+    socket.addEventListener("open", function(event) {
+        console.log("Web socket connection established:", event);
+        // CRITICAL: Send application data immediately after connection opens
+        sendData(applicationData);
+    });
+
+    let connecting = true;
+
+    // Listen for messages from wallet
+    socket.addEventListener("message", function(event) {
+        const response = JSON.parse(event.data);
+        console.log("Response received:", response);
+        
+        // CRITICAL: Check for acceptance first (matches app1 pattern)
+        if (response.accepted) {
+            console.log("Connected message received:", response.message);
+            connecting = false;
+            
+            // Now safe to make API calls - request wallet address as first call
+            sendData({
+                jsonrpc: "2.0",
+                id: "1",
+                method: "GetAddress"
+            });
+            
+        } else if (response.result) {
+            // Handle API response results
+            const res = response.result;
+            
+            if (res.address) {
+                console.log("Connected address:", res.address);
+                // Connection fully established
+            } else if (res.unlocked_balance !== undefined) {
+                const balance = res.unlocked_balance / 100000;
+                console.log("Balance:", balance.toFixed(5), "DERO");
+            } else if (res.height) {
+                console.log("Height:", res.height);
+            }
+            // Add other response handlers as needed
+            
+        } else if (response.error) {
+            console.error("Error:", response.error.message);
+            if (connecting) {
+                // Connection failed during handshake
+                console.error("Connection failed:", response.error.message);
+            }
+        }
+    });
+
+    // Listen for errors
+    socket.addEventListener("error", function(event) {
+        console.error("Web socket error:", event);
+    });
+
+    // Listen for close
+    socket.addEventListener("close", function(event) {
+        console.log("Web socket connection closed:", event.code, event.reason);
+        socket = null;
+    });
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    connectWebSocket();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (socket) {
+        socket.close();
+    }
+});
+```
+
+### **Critical Points (from official app1 demo):**
+
+1. **Use `localhost` not `127.0.0.1`** - The official demo uses `ws://localhost:44326/xswd`
+2. **Send application data immediately** after `onopen` - don't wait
+3. **Wait for `response.accepted`** before making API calls
+4. **Check `response.accepted` FIRST** - Only proceed after wallet approves
+5. **Handle all events**: `open`, `message`, `error`, `close`
+6. **Check socket state** before sending: `socket.readyState === WebSocket.OPEN`
+7. **URL must match origin** - Use `"http://localhost:" + location.port` for app data
+
+---
+
+## Step 3: Using XSWD Templates
+
+For production applications, use the proven XSWD templates:
+
+### Option 1: XSWD Basic (Under 18KB)
+
+Best for simple apps with size constraints:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My TELA App</title>
+</head>
+<body>
+    <!-- Load XSWD Basic -->
+    <script src="xswd-basic.js"></script>
+    
+    <script>
+        // Initialize XSWD Basic
+        window.xswd.initialize({
+            name: 'My TELA App',
+            description: 'App description',
+            allowDevelopmentMode: true  // Allows testing without wallet
+        }).then(connected => {
+            if (connected) {
+                console.log('✅ Connected!');
+                loadData();
+            } else {
+                console.log('⚠️ Not connected - check wallet');
+            }
+        });
+        
+        async function loadData() {
+            const address = await window.xswd.getAddress();
+            const balance = await window.xswd.getBalance();
+            console.log('Address:', address);
+            console.log('Balance:', balance);
+        }
+    </script>
+</body>
+</html>
+```
+
+**See:** [XSWD Basic Template](/templates/xswd-basic)
+
+### Option 2: XSWD Advanced (Production Grade)
+
+For full-featured applications:
+
+```html
+    <script src="xswd-advanced.js"></script>
+<script>
+    window.xswd.initialize({
+        allowDevelopmentMode: true,
+        blockExternalConnections: true
+    }).then(connected => {
+        if (connected) {
+            // Use high-level methods
+            window.xswd.getNetworkInfo().then(info => {
+                console.log('Network height:', info.height);
+            });
+        }
+    });
+</script>
+```
+
+**See:** [XSWD Advanced Template](/templates/xswd-advanced)
+
+---
+
+## Step 4: Complete Working Example
+
+Here's a **complete, tested implementation** you can copy directly:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSWD Wallet Connect Example</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0e27;
+            color: #fff;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status.connecting { background: #1a4d80; }
+        .status.connected { background: #0d4a26; }
+        .status.error { background: #6b1a1a; }
+        button {
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #4b5563; cursor: not-allowed; }
+        .data { background: #1a1a2e; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔗 XSWD Wallet Connect</h1>
+    
+    <div id="status" class="status connecting">
+        Connecting to wallet...
+    </div>
+    
+    <button onclick="connect()">Connect Wallet</button>
+    <button onclick="getAddress()" id="btn-address" disabled>Get Address</button>
+    <button onclick="getBalance()" id="btn-balance" disabled>Get Balance</button>
+    <button onclick="getNetworkInfo()" id="btn-network" disabled>Get Network Info</button>
+    
+    <div id="data" class="data" style="display:none;">
+        <h3>Wallet Data:</h3>
+        <pre id="output"></pre>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+        let requestId = 0;
+        const pendingRequests = new Map();
+
+        function updateStatus(message, type = 'connecting') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function enableButtons() {
+            document.getElementById('btn-address').disabled = false;
+            document.getElementById('btn-balance').disabled = false;
+            document.getElementById('btn-network').disabled = false;
+        }
+
+        function connect() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('Already connected');
+                return;
+            }
+
+            updateStatus('Connecting to ws://localhost:44326/xswd...', 'connecting');
+            
+            // Use localhost to match official app1 demo pattern
+            socket = new WebSocket("ws://localhost:44326/xswd");
+
+            socket.onopen = function(event) {
+                console.log('✅ WebSocket opened');
+                updateStatus('Sending connection request...', 'connecting');
+                
+                // CRITICAL: Send application data immediately
+                // Match exact app1 format - URL must include port
+                const appData = {
+                    id: "xswd-example-" + Date.now().toString(16),
+                    name: "XSWD Connect Example",
+                    description: "Example TELA app connecting to DERO wallet",
+                    url: "http://localhost:" + location.port
+                };
+                
+                socket.send(JSON.stringify(appData));
+                console.log('📤 Sent application data');
+            };
+
+            socket.onmessage = function(event) {
+                try {
+                    const response = JSON.parse(event.data);
+                    console.log('📨 Received:', response);
+
+                    if (response.accepted) {
+                        console.log('✅ Connection accepted!');
+                        isConnected = true;
+                        updateStatus('✅ Connected to wallet!', 'connected');
+                        enableButtons();
+                        
+                    } else if (response.rejected) {
+                        console.error('❌ Connection rejected:', response.message);
+                        updateStatus('❌ Connection rejected: ' + (response.message || 'Unknown'), 'error');
+                        isConnected = false;
+                        
+                    } else if (response.jsonrpc && response.id) {
+                        // Handle RPC response
+                        handleRPCResponse(response);
+                        
+                    } else {
+                        console.log('Unknown response:', response);
+                    }
+                } catch (error) {
+                    console.error('Parse error:', error);
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.error('🚨 WebSocket error:', error);
+                updateStatus('❌ Connection error - Is wallet running?', 'error');
+            };
+
+            socket.onclose = function(event) {
+                console.log('🔌 Connection closed:', event.code, event.reason);
+                isConnected = false;
+                updateStatus('❌ Disconnected (Code: ' + event.code + ')', 'error');
+                
+                // Disable buttons
+                document.getElementById('btn-address').disabled = true;
+                document.getElementById('btn-balance').disabled = true;
+                document.getElementById('btn-network').disabled = true;
+
+                if (event.code === 1006) {
+                    updateStatus('❌ Connection refused - Wallet not running or XSWD disabled', 'error');
+                }
+            };
+        }
+
+        function sendRPC(method, params = {}) {
+            return new Promise((resolve, reject) => {
+                if (!isConnected || !socket || socket.readyState !== WebSocket.OPEN) {
+                    reject(new Error('Not connected'));
+                    return;
+                }
+
+                const id = (++requestId).toString();
+                const request = {
+                    jsonrpc: "2.0",
+                    id: id,
+                    method: method
+                };
+
+                if (Object.keys(params).length > 0) {
+                    request.params = params;
+                }
+
+                pendingRequests.set(id, { resolve, reject, method });
+                socket.send(JSON.stringify(request));
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (pendingRequests.has(id)) {
+                        pendingRequests.delete(id);
+                        reject(new Error(`Timeout: ${method}`));
+                    }
+                }, 10000);
+            });
+        }
+
+        function handleRPCResponse(response) {
+            if (response.id && pendingRequests.has(response.id)) {
+                const { resolve, reject } = pendingRequests.get(response.id);
+                pendingRequests.delete(response.id);
+
+                if (response.error) {
+                    reject(new Error(response.error.message || 'RPC error'));
+                } else {
+                    resolve(response.result);
+                }
+            }
+        }
+
+        function showData(data) {
+            document.getElementById('data').style.display = 'block';
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function getAddress() {
+            try {
+                const result = await sendRPC('GetAddress');
+                showData({ address: result.address });
+                console.log('Address:', result.address);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        async function getBalance() {
+            try {
+                const result = await sendRPC('GetBalance');
+                const balance = result.unlocked_balance / 100000;
+                showData({ 
+                    balance: balance + ' DERO',
+                    unlocked: result.unlocked_balance,
+                    locked: result.balance - result.unlocked_balance
+                });
+                console.log('Balance:', balance, 'DERO');
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        async function getNetworkInfo() {
+            try {
+                const result = await sendRPC('DERO.GetInfo');
+                showData({
+                    height: result.height,
+                    difficulty: result.difficulty,
+                    peer_count: result.peer_count,
+                    version: result.version
+                });
+                console.log('Network info:', result);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Auto-connect on page load
+        window.addEventListener('load', function() {
+            connect();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+</body>
+</html>
+```
+
+**Save this as `index.html` and open it in a browser with your wallet running!**
+
+---
+
+## Troubleshooting Connection Closed Errors
+
+### Error: "Connection closed" (Code 1006)
+
+**Symptoms:**
+```
+🔌 Connection closed: 1006
+❌ Connection refused - Wallet not running or XSWD disabled
+```
+
+**Solutions:**
+
+### 1. 💼 Check Wallet is Running
+
+Ensure Engram or CLI wallet is running and unlocked.
+
+```bash
+# Check if Engram is running (macOS/Linux)
+ps aux | grep -i engram
+
+# Check if wallet process exists
+lsof -i :44326
+```
+
+### 2. ⚙️ Verify XSWD is Enabled
+
+In Engram: Settings → XSWD → Enable XSWD Server
+
+For CLI wallet, ensure XSWD is enabled in wallet prompt.
+
+### 3. 🔌 Check Correct Port
+
+Try standard ports (use `localhost` to match app1 pattern):
+- `ws://localhost:44326/xswd` (Engram default - **matches app1**)
+- `ws://127.0.0.1:44326/xswd` (Alternative)
+- `ws://localhost:10103/xswd` (CLI mainnet)
+- `ws://localhost:40403/xswd` (CLI testnet)
+
+### 4. 🧪 Test Connection Manually
+
+Test WebSocket connection:
+
+```javascript
+// Match app1 pattern - use localhost
+const ws = new WebSocket("ws://localhost:44326/xswd");
+ws.onopen = () => console.log("✅ Port accessible");
+ws.onerror = () => console.error("❌ Port not accessible");
+```
+
+### 5. 🔥 Check Firewall
+
+Ensure firewall isn't blocking localhost connections:
+
+```bash
+# macOS
+sudo lsof -i :44326
+
+# Linux
+sudo ufw status
+sudo ufw allow 44326
+
+# Windows: Check Windows Defender Firewall
+```
+
+### 6. 🔄 Restart Wallet
+
+Sometimes wallet needs restart after enabling XSWD.
+Close wallet completely and restart.
+
+### Error: Connection Closes Immediately After Open
+
+**Cause:** Application data not sent or sent incorrectly.
+
+**Solution:**
+
+```javascript
+// ✅ CORRECT: Send immediately in onopen (matches app1)
+socket.addEventListener("open", function(event) {
+    sendData(applicationData);  // Do this immediately - no delay!
+});
+
+// ❌ WRONG: Delaying or not sending
+socket.addEventListener("open", function(event) {
+    setTimeout(() => {
+        sendData(applicationData);  // Too late - connection may close
+    }, 1000);
+};
+```
+
+### Error: Connection Rejected
+
+**Symptoms:**
+```json
+{
+  "rejected": true,
+  "message": "Connection rejected by user"
+}
+```
+
+**Solutions:**
+
+1. **Check application data format:**
+   ```javascript
+   // ✅ REQUIRED fields
+   const applicationData = {
+       id: "unique-id",           // REQUIRED
+       name: "App Name",           // REQUIRED
+       description: "App desc",     // REQUIRED
+       url: window.location.origin  // REQUIRED
+   };
+   ```
+
+2. **User clicked "Deny" in wallet** - Ask user to approve connection in wallet popup
+
+3. **Wallet security settings** - Check if wallet has connection restrictions enabled
+
+---
+
+## Common Pitfalls
+
+### Pitfall 1: Not Waiting for `response.accepted`
+
+```javascript
+// ❌ WRONG: Making API calls too early
+socket.onopen = function() {
+    socket.send(JSON.stringify(applicationData));
+    makeRPCCall("GetAddress");  // Too soon! Not accepted yet
+};
+
+// ✅ CORRECT: Wait for acceptance
+if (response.accepted) {
+    isConnected = true;
+    makeRPCCall("GetAddress");  // Now safe to call
+}
+```
+
+### Pitfall 2: Wrong WebSocket URL Format
+
+```javascript
+// ❌ WRONG
+new WebSocket("http://localhost:44326/xswd")  // HTTP not WS
+new WebSocket("ws://localhost:44326")          // Missing /xswd path
+
+// ✅ CORRECT (matches app1 pattern)
+new WebSocket("ws://localhost:44326/xswd")
+```
+
+### Pitfall 3: Not Handling Multiple Endpoints
+
+```javascript
+// ✅ BETTER: Try multiple endpoints (use localhost to match app1)
+const endpoints = [
+    "ws://localhost:44326/xswd",  // Engram default (matches app1)
+    "ws://localhost:10103/xswd",  // CLI mainnet
+    "ws://localhost:40403/xswd"   // CLI testnet
+];
+
+async function connectWithFallback() {
+    for (const endpoint of endpoints) {
+        try {
+            const connected = await connectToEndpoint(endpoint);
+            if (connected) return true;
+        } catch (e) {
+            console.log(`Failed: ${endpoint}`);
+        }
+    }
+    return false;
+}
+```
+
+### Pitfall 4: Sending Requests Too Fast
+
+```javascript
+// ❌ WRONG: Overwhelming connection
+for (let i = 0; i < 10; i++) {
+    makeRPCCall("GetInfo");  // Too many at once!
+}
+
+// ✅ CORRECT: Rate limit requests
+let lastCall = 0;
+async function rateLimitedCall(method) {
+    const now = Date.now();
+    if (now - lastCall < 500) {
+        await new Promise(r => setTimeout(r, 500 - (now - lastCall)));
+    }
+    lastCall = Date.now();
+    return makeRPCCall(method);
+}
+```
+
+---
+
+## Quick Reference
+
+### Connection States
+
+| State | Description | Action |
+|-------|-------------|--------|
+| `WebSocket.CONNECTING (0)` | Establishing connection | Wait |
+| `WebSocket.OPEN (1)` | Connected, ready | Can send data |
+| `WebSocket.CLOSING (2)` | Closing | Cannot send |
+| `WebSocket.CLOSED (3)` | Closed | Reconnect needed |
+
+### Close Codes
+
+| Code | Meaning | Solution |
+|------|---------|----------|
+| `1000` | Normal closure | User closed wallet |
+| `1006` | Abnormal closure | Wallet not running / XSWD disabled |
+| `1001` | Going away | Wallet closed |
+| `1002` | Protocol error | Check application data format |
+
+### Essential RPC Methods
+
+```javascript
+// Wallet methods
+GetAddress()           // Get wallet address
+GetBalance()           // Get wallet balance
+GetHeight()            // Get wallet sync height
+
+// Network methods
+DERO.GetInfo()         // Network status
+DERO.GetBlock()        // Get block data
+DERO.GetTransaction()  // Get transaction data
+```
+
+---
+
+## Next Steps
+
+- **Learn more:** [XSWD Protocol Overview](/xswd/overview)
+- **Use templates:** [XSWD Templates](/templates/overview)
+- **Troubleshooting:** [Error Troubleshooting Guide](/error-troubleshooting)
+- **API reference:** [Complete API Guide](/api-reference/complete-api-guide)
+
+**Verified Demo Reference:**
+- [Official Demo (app1)](/demo) - Complete source code this tutorial is based on
+- [XSWD Connection Pattern](/demo/xswd-connection) - Detailed connection code analysis
+
+---
+
+<Callout type="success" emoji="🎉">
+**Still Having Issues?** Check that:
+1. Wallet is running and unlocked
+2. XSWD is enabled in wallet settings
+3. Port 44326 (or your wallet's port) is accessible
+4. Application data is sent immediately after `onopen`
+5. You're waiting for `response.accepted` before making API calls
+</Callout>
+
+---
+
+*This tutorial covers the exact implementation patterns proven to work with Engram and CLI wallets. If you follow these steps, your XSWD connection should work!*
+

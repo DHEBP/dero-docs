@@ -5,7 +5,6 @@ keywords: "TELA template, starter app, XSWD integration, TELA development, app t
 date: "2024-08-26"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/templates/basic-app.png"
 slug: "templates/basic-app"
 canonicalUrl: "https://tela.derod.org/templates/basic-app"
 tags: ["template", "starter", "basic-app", "XSWD", "TELA"]
@@ -15,10 +14,16 @@ import { Callout } from 'nextra/components'
 
 # Basic TELA App Template
 
-Production-ready starter template using the **XSWD connection patterns proven in tela_tests/app1**. While the core WebSocket handling follows tested patterns, this template provides a modern dashboard UI designed for real applications, not API testing.
+Production-ready starter template using the **XSWD connection patterns proven in tela_tests/app1**. The core WebSocket handling follows verified patterns from the official demo, while this template adds a complete dashboard UI for building real applications.
 
 <Callout type="info">
-**What's from tela_tests:** XSWD connection, handshake, response handling  
+**Relationship to XSWD Libraries**
+- **This template**: Complete starter app with embedded XSWD connection code
+- **[XSWD Basic](/templates/xswd-basic)**: Lightweight library (15KB) for apps that need a reusable XSWD module
+- **[XSWD Advanced](/templates/xswd-advanced)**: Production library (25KB) with advanced features
+- **Choose this template** if you want a full starter app, or use the libraries to build your own structure
+
+**What's from tela_tests/app1:** XSWD connection, handshake (`response.accepted`), response handling, traditional JavaScript patterns  
 **What's new:** Modern UI, production features, dashboard components
 </Callout>
 
@@ -190,12 +195,12 @@ basic-tela-app/
 // Global WebSocket connection (proven pattern from tela_tests)
 let socket;
 
-// XSWD application data (matches tela_tests structure)
+// XSWD application data (matches tela_tests/app1 structure)
 const applicationData = {
-    "id": "basic-tela-app-" + Date.now(),
+    "id": Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''), // Hex ID like app1
     "name": "Basic TELA Application", 
     "description": "Simple TELA app with wallet integration",
-    "url": "http://localhost:" + location.port
+    "url": "http://localhost:" + location.port  // Must match origin URL (app1 pattern)
 };
 
 // Global variables for app state
@@ -248,11 +253,11 @@ function connectWebSocket() {
                     method: "GetBalance"
                 });
                 
-                // Get network info
+                // Get network info (corrected to DERO.GetInfo)
                 sendData({
                     jsonrpc: "2.0",
                     id: "3", 
-                    method: "GetInfo"
+                    method: "DERO.GetInfo"
                 });
                 
             } else if (res.unlocked_balance !== undefined) {
@@ -264,13 +269,15 @@ function connectWebSocket() {
                 }
                 updateWalletDisplay();
                 
-            } else if (res.height) {
-                console.log("📊 Network height:", res.height);
+            } else if (res.height || res.topoheight) {
+                // DERO.GetInfo returns height or topoheight (app1 pattern)
+                const blockHeight = res.height || res.topoheight || 0;
+                console.log("📊 Network height:", blockHeight);
                 networkData = {
-                    height: res.height,
-                    stableheight: res.stableheight,
-                    difficulty: res.difficulty,
-                    hashrate: Math.round(res.difficulty / 16)
+                    height: blockHeight,
+                    stableheight: res.stableheight || 0,
+                    difficulty: res.difficulty || 0,
+                    hashrate: Math.round((res.difficulty || 0) / 16)
                 };
                 updateNetworkDisplay();
                 showAllSections();
@@ -379,11 +386,11 @@ function refreshData() {
         method: "GetBalance"
     });
     
-    // Refresh network info
+    // Refresh network info (corrected to DERO.GetInfo)
     sendData({
         jsonrpc: "2.0",
         id: "refresh-info",
-        method: "GetInfo"
+        method: "DERO.GetInfo"
     });
 }
 

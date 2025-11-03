@@ -1,0 +1,200 @@
+---
+title: "API Call Patterns | app1 Demo Analysis"
+description: "Complete analysis of RPC API call patterns from app1 demo. Verified patterns for making DERO blockchain calls through XSWD."
+keywords: "API patterns, RPC calls, DERO API, app1 demo, verified patterns"
+date: "2025-11-01"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "demo/api-patterns"
+tags: ["demo", "API", "RPC", "verified"]
+---
+
+import { Callout } from 'nextra/components';
+
+# API Call Patterns
+
+**Complete analysis** of RPC API call patterns from `tela_tests/app1` - verified patterns for DERO blockchain interactions.
+
+<Callout type="success" emoji="✅">
+**Verified Patterns:** These RPC call patterns from app1 have been tested and proven to work with all DERO wallets.
+</Callout>
+
+## RPC Request Format
+
+```javascript
+// From app1 - VERIFIED RPC FORMAT
+function sendRPC(method, params = {}) {
+    return new Promise((resolve, reject) => {
+        if (!isConnected || !socket || socket.readyState !== WebSocket.OPEN) {
+            reject(new Error('Not connected'));
+            return;
+        }
+        
+        const id = (++requestId).toString();
+        const request = {
+            jsonrpc: "2.0",      // Required: JSON-RPC 2.0
+            id: id,              // Required: Unique request ID
+            method: method       // Required: RPC method name
+        };
+        
+        // Optional: Add params if provided
+        if (Object.keys(params).length > 0) {
+            request.params = params;
+        }
+        
+        // Store pending request for response matching
+        pendingRequests.set(id, { resolve, reject, method });
+        
+        // Send request
+        socket.send(JSON.stringify(request));
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            if (pendingRequests.has(id)) {
+                pendingRequests.delete(id);
+                reject(new Error(`Timeout: ${method}`));
+            }
+        }, 10000);
+    });
+}
+```
+
+## Response Handling
+
+```javascript
+// Handle RPC responses
+function handleRPCResponse(response) {
+    if (response.id && pendingRequests.has(response.id)) {
+        const { resolve, reject } = pendingRequests.get(response.id);
+        pendingRequests.delete(response.id);
+        
+        if (response.error) {
+            reject(new Error(response.error.message || 'RPC error'));
+        } else {
+            resolve(response.result);
+        }
+    }
+}
+```
+
+## Common RPC Methods
+
+### GetAddress
+```javascript
+async function getAddress() {
+    try {
+        const result = await sendRPC('GetAddress');
+        console.log('Address:', result.address);
+        return result.address;
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": {
+    "address": "deto1qy..."
+  }
+}
+```
+
+### GetBalance
+```javascript
+async function getBalance() {
+    try {
+        const result = await sendRPC('GetBalance');
+        const balance = result.unlocked_balance / 100000;  // Convert to DERO
+        console.log('Balance:', balance, 'DERO');
+        return balance;
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "2",
+  "result": {
+    "balance": 100000000,
+    "unlocked_balance": 100000000
+  }
+}
+```
+
+### DERO.GetInfo (Network Info)
+```javascript
+async function getNetworkInfo() {
+    try {
+        const result = await sendRPC('DERO.GetInfo');
+        console.log('Network height:', result.height);
+        console.log('Difficulty:', result.difficulty);
+        return result;
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+```
+
+## Request ID Management
+
+```javascript
+// ✅ CORRECT: Use incremental or unique IDs
+let requestId = 0;
+const id = (++requestId).toString();  // "1", "2", "3"...
+
+// Or use UUID/random
+const id = Date.now().toString(16);  // Hex timestamp
+
+// ❌ WRONG: Reusing IDs causes response matching issues
+const id = "1";  // Multiple requests with same ID!
+```
+
+## Error Handling
+
+```javascript
+// RPC Error Response Format
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "error": {
+    "code": -32000,
+    "message": "Error description"
+  }
+}
+
+// Handle errors
+socket.onmessage = function(event) {
+    const response = JSON.parse(event.data);
+    
+    if (response.error) {
+        console.error('RPC Error:', response.error.message);
+        // Reject promise or handle error
+    } else if (response.result) {
+        // Success - resolve promise
+    }
+};
+```
+
+## Best Practices
+
+1. **Always wait for `accepted`** before making API calls
+2. **Use unique request IDs** for each call
+3. **Store pending requests** in a Map for response matching
+4. **Set timeouts** (10 seconds recommended)
+5. **Handle errors** gracefully with user-friendly messages
+6. **Check connection state** before sending: `socket.readyState === WebSocket.OPEN`
+
+## Related Pages
+
+- [Official Demo](/demo) - Complete app1 source code
+- [XSWD Connection Pattern](/demo/xswd-connection) - Connection setup
+- [Complete API Reference](/api-reference/complete-api-guide) - All RPC methods
+

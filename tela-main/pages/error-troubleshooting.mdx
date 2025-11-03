@@ -5,7 +5,6 @@ keywords: "TELA errors, troubleshooting, debugging, XSWD errors, DERO errors, de
 date: "2025-01-12"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/troubleshooting.png"
 slug: "error-troubleshooting"
 canonicalUrl: "https://tela.derod.org/error-troubleshooting"
 tags: ["troubleshooting", "debugging", "errors", "TELA", "development"]
@@ -51,12 +50,12 @@ WebSocket connection to 'ws://127.0.0.1:44326/xswd' failed
 
 **Diagnosis:**
 ```javascript
-// Test XSWD connectivity
+// Test XSWD connectivity (use localhost to match app1 pattern)
 function testXSWDPorts() {
     const ports = [44326, 10103, 40403];
     
     ports.forEach(port => {
-        const ws = new WebSocket(`ws://127.0.0.1:${port}/xswd`);
+        const ws = new WebSocket(`ws://localhost:${port}/xswd`);
         
         ws.onopen = () => {
             console.log(`✅ Port ${port} is accessible`);
@@ -891,9 +890,9 @@ async function runDiagnostics() {
     results.browser.webSocketSupport = typeof WebSocket !== 'undefined';
     results.browser.localStorageSupport = typeof localStorage !== 'undefined';
     
-    // XSWD checks
+    // XSWD checks (use localhost to match app1 pattern)
     try {
-        const testSocket = new WebSocket('ws://127.0.0.1:44326/xswd');
+        const testSocket = new WebSocket('ws://localhost:44326/xswd');
         await new Promise((resolve, reject) => {
             testSocket.onopen = resolve;
             testSocket.onerror = reject;
@@ -957,16 +956,25 @@ When reporting issues, include:
 ## Additional Resources
 
 <Cards>
-  <Card title="Deployment Guide" href="/deployment-guide">
-    Production deployment best practices
+  <Card title="Best Practices" href="/best-practices">
+    Production deployment and development best practices
   </Card>
   <Card title="XSWD Protocol" href="/xswd/overview">
     XSWD connection details
   </Card>
-  <Card title="Development Guide" href="/tela-development-guide">
-    Development best practices
+  <Card title="TELA CLI Workflows" href="/tela-cli/workflows">
+    Command-line deployment and workflows
   </Card>
   <Card title="API Reference" href="/api-reference/complete-api-guide">
     Complete API documentation
   </Card>
 </Cards>
+
+---
+
+## Verified Demo Reference
+
+**Working Examples for Reference:**
+- [Official Demo (app1)](/demo) - Complete verified source code with working error handling
+- [XSWD Connection Pattern](/demo/xswd-connection) - Verified connection code that avoids common errors
+- [API Call Patterns](/demo/api-patterns) - Error handling patterns from working code

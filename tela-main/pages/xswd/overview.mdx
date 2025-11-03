@@ -1,11 +1,10 @@
 ---
 title: "XSWD Protocol Overview | Secure WebSocket for DERO Wallet Integration"
-description: "Complete guide to XSWD (Cross-Platform Secure WebSocket for DERO) protocol for TELA application development. Learn secure wallet integration and blockchain communication."
+description: "Complete guide to XSWD protocol for TELA application development. Learn secure wallet integration and blockchain communication."
 keywords: "XSWD protocol, DERO WebSocket, wallet integration, secure connection, TELA development, blockchain communication, secure protocol"
 date: "2024-08-26"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/xswd-protocol.png"
 slug: "xswd/overview"
 canonicalUrl: "https://tela.derod.org/xswd/overview"
 tags: ["XSWD", "protocol", "wallet", "security", "DERO"]
@@ -15,7 +14,7 @@ import { Callout } from 'nextra/components';
 
 # XSWD Protocol Overview
 
-XSWD (Cross-Platform Secure WebSocket for DERO) is the secure communication protocol that connects TELA applications to DERO wallets and the blockchain network.
+XSWD is the secure communication protocol that connects TELA applications to DERO wallets and the blockchain network.
 
 <Callout emoji="🔐">
   **Security First**: XSWD provides secure, encrypted communication between your TELA application and the user's DERO wallet, ensuring private keys never leave the wallet environment.
@@ -66,7 +65,7 @@ function connectToXSWD() {
         "url": "http://localhost:" + location.port
     };
     
-    const socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+    const socket = new WebSocket("ws://localhost:44326/xswd");
     
     socket.addEventListener("open", function(event) {
         console.log("🔗 XSWD connection opened");
@@ -249,29 +248,25 @@ async function robustXSWDCall(socket, method, params, retries = 3) {
 
 ## Related Documentation
 
-- **[Protocol Deep Dive](/xswd/protocol-deep-dive)** - Advanced implementation details
-- **[Connection Fixes](/xswd/connection-fixes)** - Troubleshooting connection issues
-- **[Core Library Guide](/xswd/core-library)** - Reusable XSWD implementation
-- **[Debug Tools](/xswd/debugging)** - XSWD debugging utilities
+**Getting Started:**
+- **[XSWD Wallet Connect Tutorial](/tutorials/xswd-wallet-connect)** - Step-by-step guide to fix "connection closed" errors
+- **[Official Demo (app1)](/demo)** - Complete working XSWD implementation
+- **[XSWD Connection Pattern](/demo/xswd-connection)** - Detailed connection code analysis
 
----
+**Ready-to-Use Solutions:**
+- **[XSWD Templates](/templates/overview)** - Copy-paste XSWD implementations
+  - [XSWD Basic](/templates/xswd-basic) - Lightweight (15KB)
+  - [XSWD Advanced](/templates/xswd-advanced) - Production-grade (25KB)
 
-*XSWD is the foundation of TELA application development, providing secure and efficient access to the DERO blockchain through the user's own wallet and node.*
----
-
-## Related Pages
-
-**XSWD Deep Dive:**
-- [Protocol Deep Dive](/xswd/protocol-deep-dive) - How XSWD works
-- [TELA Integration](/xswd/tela-integration) - Using XSWD with TELA
-- [Debugging](/xswd/debugging) - Troubleshooting XSWD
-
-**Build with XSWD:**
-- [Templates](/templates/overview) - XSWD-enabled templates
-- [SDK Guide](/sdk/beginner-guide) - Development workflow
-- [API Reference](/api-reference/complete-api-guide) - Complete docs
+**Troubleshooting:**
+- **[Error Troubleshooting Guide](/error-troubleshooting)** - Fix common XSWD connection errors
+- **[API Reference](/api-reference/complete-api-guide)** - Complete DERO RPC methods
 
 **Understanding TELA:**
 - [TELA Overview](/tela/overview) - Platform architecture
 - [Security Model](/tela/tela-security-model) - Privacy features
-- [Deployment Guide](/deployment-guide) - Publishing your app
+- [Best Practices](/best-practices) - Production development workflow
+
+---
+
+*XSWD is the foundation of TELA application development, providing secure and efficient access to the DERO blockchain through the user's own wallet and node. This overview matches the proven patterns from the official `app1` demo.*

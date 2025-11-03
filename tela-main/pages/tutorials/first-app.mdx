@@ -1,21 +1,20 @@
 ---
-title: "TELA Beginner Guide | Complete Tutorial from Setup to First Deployment"
-description: "Complete beginner's guide to TELA development - from environment setup to your first deployed application on DERO blockchain. Learn XSWD integration and build private web apps."
-keywords: "TELA beginner, getting started, TELA tutorial, first TELA app, DERO development, XSWD setup, deploy to blockchain, TELA development"
+title: "First App Tutorial | Build Your First TELA Application"
+description: "Complete step-by-step tutorial to build your first TELA application - from environment setup to deployment on DERO blockchain. Learn XSWD integration and deploy private web apps."
+keywords: "TELA first app, TELA tutorial, first TELA app, DERO development, XSWD setup, deploy to blockchain, TELA development, beginner tutorial"
 date: "2024-08-26"
 lastUpdated: "2025-10-22"
 authors: ["DHEBP"]
-image: "/assets/beginner-guide.png"
-slug: "beginner-guide"
-canonicalUrl: "https://tela.derod.org/beginner-guide"
-tags: ["beginner", "tutorial", "getting-started", "TELA", "DERO"]
+slug: "tutorials/first-app"
+canonicalUrl: "https://tela.derod.org/tutorials/first-app"
+tags: ["tutorial", "first-app", "getting-started", "TELA", "DERO"]
 ---
 
 import { Callout } from 'nextra/components';
 
-# TELA Beginner Guide
+# First App Tutorial
 
-Complete beginner's guide to TELA development - from setup to your first deployed application.
+Complete step-by-step tutorial to build your first TELA application - from setup to deployment.
 
 <Callout emoji="🎯">
   **Goal**: By the end of this guide, you'll have a working TELA application deployed on the DERO blockchain!
@@ -201,16 +200,16 @@ Create `hello-tela.js`:
         try {
             self.updateStatus('connecting', 'Connecting to DERO...');
             
-            // Application identification
+            // Application identification (match app1 demo format)
             var appData = {
                 "id": "hello-tela-app-v1",
                 "name": "Hello TELA",
                 "description": "My first TELA application",
-                "url": window.location.origin
+                "url": "http://localhost:" + location.port  // Must include port (app1 pattern)
             };
             
-            // Create WebSocket connection
-            self.socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+            // Create WebSocket connection (use localhost to match app1 demo pattern)
+            self.socket = new WebSocket("ws://localhost:44326/xswd");
             
             self.socket.onopen = function() {
                 console.log('🔗 WebSocket opened, sending handshake...');
@@ -496,7 +495,7 @@ window.addEventListener('load', function() {
 // XSWD connection flow
 connectXSWD: function() {
     // 1. Create WebSocket connection
-    this.socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+    this.socket = new WebSocket("ws://localhost:44326/xswd");
     
     // 2. Send application identification
     this.socket.onopen = function() {
@@ -568,10 +567,10 @@ call: function(method, params) {
 
 ### Explore Advanced Features
 
-1. **[TELA Libraries](/libraries/overview)** - Use reusable code components
-2. **[Design System](/design-system)** - Professional UI patterns
+1. **[Advanced Features](/advanced-features)** - DocShards, compression, and libraries
+2. **[Design Reference](/design-reference)** - Professional UI patterns
 3. **[EPOCH Mining](/epoch-mining)** - Add mining functionality
-4. **[Advanced API](/api-reference/complete-api-guide)** - Explore all available methods
+4. **[Complete API Guide](/api-reference/complete-api-guide)** - Explore all available methods
 
 ## 🚨 Common Beginner Mistakes
 
@@ -640,8 +639,8 @@ function loadData() {
 
 ### Essential Reading
 1. **[TELA-CLI Guide](/tela-cli)** - Command-line interface
-2. **[API Reference](/api/complete-guide)** - All available methods
-3. **[Compliance Rules](/compliance/deployment-rules)** - Deployment requirements
+2. **[Complete API Guide](/api-reference/complete-api-guide)** - All available methods
+3. **[Best Practices](/best-practices)** - Deployment and optimization guide
 
 ### Video Tutorials
 - DERO community YouTube channel
@@ -655,7 +654,7 @@ function loadData() {
 - **Smart Contract Browser** - Explore deployed contracts
 
 <Callout type="info" emoji="🎓">
-  **Learning Path**: Start with this beginner guide, then explore the [Complete API Guide](/api/complete-guide), and finally dive into [Advanced TELA Features](/libraries/overview) when you're ready to build more complex applications.
+  **Learning Path**: Start with this tutorial, then explore the [Best Practices](/best-practices), [Complete API Guide](/api-reference/complete-api-guide), and finally dive into [Advanced Features](/advanced-features) when you're ready to build more complex applications.
 </Callout>
 
 ## Your TELA Journey
@@ -665,6 +664,15 @@ function loadData() {
 3. 🎨 **Apply design patterns** - Make it look professional
 4. 🚀 **Build something amazing** - Create your unique application
 5. 🌟 **Share with community** - Help others learn TELA
+
+---
+
+## Verified Demo Reference
+
+**Complete Working Examples:**
+- [Official Demo (app1)](/demo) - Complete source code from verified working application
+- [XSWD Connection Pattern](/demo/xswd-connection) - Exact connection pattern used in this guide
+- [Application Data Handshake](/demo/application-data) - Application data format details
 
 ---
 

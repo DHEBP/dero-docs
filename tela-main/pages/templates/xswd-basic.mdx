@@ -1,47 +1,47 @@
 ---
-title: "XSWD Minimal Core | Lightweight XSWD Library Under 18KB"
+title: "XSWD Basic Core | Lightweight XSWD Library Under 18KB"
 description: "Lightweight XSWD implementation under 18KB for basic TELA applications. Simple DERO wallet connectivity without advanced features for size-constrained apps."
-keywords: "XSWD minimal, lightweight XSWD, TELA XSWD, basic WebSocket, size-optimized, minimal library"
+keywords: "XSWD basic, lightweight XSWD, TELA XSWD, basic WebSocket, size-optimized, basic library"
 date: "2024-08-23"
-lastUpdated: "2025-10-22"
+lastUpdated: "2025-11-01"
 authors: ["DHEBP"]
-image: "/assets/templates/xswd-minimal.png"
-slug: "templates/xswd-minimal"
-canonicalUrl: "https://tela.derod.org/templates/xswd-minimal"
-tags: ["XSWD", "minimal", "lightweight", "optimization", "template"]
+slug: "templates/xswd-basic"
+canonicalUrl: "https://tela.derod.org/templates/xswd-basic"
+tags: ["XSWD", "basic", "lightweight", "optimization", "template"]
 ---
 
 import { Callout } from 'nextra/components'
 
-# XSWD Minimal Core
+# XSWD Basic Core
 
 A **lightweight XSWD implementation** under 18KB for basic TELA applications that need simple DERO connectivity without advanced features.
 
 <Callout type="info">
-**When to Use Minimal vs Super Core**
-- **Use Minimal** (this page): Simple apps, tight size constraints, basic connectivity
-- **Use Super Core**: Production apps, complex features, robust error handling
+**When to Use Basic vs Advanced**
+- **Copy app1 pattern directly**: For truly minimal code (~50 lines, single endpoint)
+- **Use Basic**: Simple apps, tight size constraints, basic connectivity with multi-endpoint fallback
+- **Use Advanced**: Production apps, complex features, robust error handling
 </Callout>
 
 ## Features
 
-✅ **Under 18KB** - Fits TELA size constraints without compression  
-✅ **Multi-endpoint fallback** - Tries 44326, 10103, 40403 ports  
-✅ **Basic reconnection** - Simple retry logic  
-✅ **Essential API methods** - Core DERO RPC calls  
-✅ **Development mode** - Test without wallet  
-✅ **Proven patterns** - Based on tela_tests code  
+- ✅ **Under 18KB** - Fits TELA size constraints without compression  
+- ✅ **Multi-endpoint fallback** - Tries 44326, 10103, 40403 ports  
+- ✅ **Basic reconnection** - Simple retry logic  
+- ✅ **Essential API methods** - Core DERO RPC calls  
+- ✅ **Development mode** - Test without wallet  
+- ✅ **Uses connection patterns from app1 demo** - Based on proven working code  
 
-## xswd-minimal.js (15KB)
+## xswd-basic.js (15KB)
 
 ```javascript
-// XSWD Minimal Core - Lightweight DERO connectivity for TELA
-// Based on proven patterns from tela_tests/app1
+// XSWD Basic Core - Lightweight DERO connectivity for TELA
+// Uses connection patterns from app1 demo, with added multi-endpoint fallback
 
 (function() {
   'use strict';
 
-  const XSWDMinimal = {
+  const XSWDBasic = {
     // Connection state
     socket: null,
     isConnected: false,
@@ -50,19 +50,19 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
     reconnectAttempts: 0,
     maxReconnectAttempts: 5,
     
-    // Configuration
+    // Configuration (use localhost to match app1 demo pattern)
     endpoints: [
-      'ws://127.0.0.1:44326/xswd',  // XSWD standard
-      'ws://127.0.0.1:10103/xswd',  // DERO mainnet wallet
-      'ws://127.0.0.1:40403/xswd'   // DERO testnet wallet
+      'ws://localhost:44326/xswd',  // XSWD standard
+      'ws://localhost:10103/xswd',  // DERO mainnet wallet
+      'ws://localhost:40403/xswd'   // DERO testnet wallet
     ],
     
-    // Application identity
+    // Application identity (matches app1 demo pattern)
     applicationData: {
       id: null,
       name: 'TELA Application',
       description: 'TELA application with DERO connectivity',
-      url: typeof window !== 'undefined' ? window.location.origin : ''
+      url: typeof window !== 'undefined' ? ('http://localhost:' + location.port) : ''
     },
     
     // Request management
@@ -147,7 +147,7 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
           
           socket.onopen = () => {
             clearTimeout(timeout);
-            // Send application data for approval (tela_tests pattern)
+            // Send application data for approval (app1 demo pattern)
             socket.send(JSON.stringify(this.applicationData));
           };
           
@@ -155,7 +155,7 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
             try {
               const response = JSON.parse(event.data);
               
-              // Handle handshake acceptance (tela_tests pattern)
+              // Handle handshake acceptance (app1 demo pattern)
               if (response.accepted) {
                 clearTimeout(timeout);
                 this.socket = socket;
@@ -415,7 +415,7 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
   
   // Export to global scope
   if (typeof window !== 'undefined') {
-    window.xswd = window.xswd || XSWDMinimal;
+    window.xswd = window.xswd || XSWDBasic;
   }
 })();
 ```
@@ -425,9 +425,9 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
 ### **Basic Integration**
 
 ```html
-<script src="xswd-minimal.js"></script>
+<script src="xswd-basic.js"></script>
 <script>
-// Initialize minimal XSWD
+// Initialize basic XSWD
 window.xswd.initialize({
   name: 'My TELA App',
   description: 'Simple TELA application',
@@ -452,14 +452,14 @@ async function loadAppData() {
 
 ## File Size: 15KB ✅
 
-This minimal version provides essential XSWD functionality while staying under the 18KB TELA limit.
+This basic version provides essential XSWD functionality while staying under the 18KB TELA limit.
 
 ### **Features Included:**
 - ✅ Multi-endpoint connection
 - ✅ Basic reconnection logic  
 - ✅ Essential RPC methods
 - ✅ Development mode
-- ✅ Proven connection patterns
+- ✅ Connection patterns from app1 demo
 
 ### **Features Removed:**
 - ❌ Advanced privacy monitoring
@@ -470,11 +470,22 @@ This minimal version provides essential XSWD functionality while staying under t
 
 <Callout type="tip">
 **Recommendation**
-- **Use XSWD Minimal** for simple apps with size constraints
-- **Use XSWD Super Core (compressed)** for production applications
-- **Upgrade from Minimal to Super** as your app grows in complexity
+- **Use XSWD Basic** for simple apps with size constraints that need multi-endpoint fallback
+- **Copy app1 pattern directly** for truly minimal code (~50 lines, single endpoint)
+- **Use XSWD Advanced (compressed)** for production applications
+- **Upgrade from Basic to Advanced** as your app grows in complexity
 </Callout>
 
 ---
 
-**Perfect for:** Basic TELA apps, learning projects, size-constrained deployments
+**Perfect for:** Basic TELA apps that need multi-endpoint fallback or basic reconnection, learning projects, size-constrained deployments
+
+---
+
+## Verified Demo Reference
+
+**Complete Source Code:**
+- [Official Demo (app1)](/demo) - Full verified implementation this template is based on
+- [XSWD Connection Pattern](/demo/xswd-connection) - Connection code analysis
+- [API Call Patterns](/demo/api-patterns) - RPC method patterns
+

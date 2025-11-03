@@ -18,7 +18,7 @@ This comprehensive guide combines all available APIs for DERO blockchain and TEL
 
 ### XSWD WebSocket Connection
 
-**Endpoint**: `ws://127.0.0.1:44326/xswd`
+**Endpoint**: `ws://localhost:44326/xswd` (matches app1 demo pattern)
 
 ```javascript
 // Basic XSWD connection setup
@@ -29,7 +29,7 @@ const applicationData = {
     "url": "http://localhost:" + location.port
 };
 
-const socket = new WebSocket("ws://127.0.0.1:44326/xswd");
+const socket = new WebSocket("ws://localhost:44326/xswd");
 
 socket.addEventListener("open", function(event) {
     // Send handshake
@@ -1116,9 +1116,9 @@ const networkInfo = await getCachedData('network-info', () =>
 ## Next Steps
 
 - **[XSWD Connection Guide](/xswd/overview)** - Deep dive into wallet integration
-- **[Design System](/design-system)** - UI components and styling
-- **[Compliance Rules](/compliance/deployment-rules)** - Deployment requirements
-- **[TELA Libraries](/libraries/overview)** - Reusable code components
+- **[Design Reference](/design-reference)** - UI components and styling
+- **[Best Practices](/best-practices)** - Deployment requirements and optimization
+- **[Libraries Overview](/advanced-features/libraries-overview)** - Reusable code components
 
 ---
 

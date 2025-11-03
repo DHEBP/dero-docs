@@ -1,0 +1,126 @@
+---
+title: "File Structure & Size | app1 Demo Analysis"
+description: "Complete file structure and size analysis from app1 demo. Learn how to organize TELA applications within 18KB limits."
+keywords: "file structure, size limits, TELA-DOC-1, 18KB limit, file organization"
+date: "2025-11-01"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "demo/file-structure"
+tags: ["demo", "file-structure", "size", "verified"]
+---
+
+import { Callout } from 'nextra/components';
+
+# File Structure & Size
+
+**Complete analysis** of file structure and size from `tela_tests/app1` - optimized for TELA-DOC-1 18KB limit.
+
+<Callout type="warning" emoji="⚠️">
+**Size Limits:** Each TELA-DOC-1 contract has a hard limit of 18KB for code content (20KB total including headers). Plan your file structure accordingly.
+</Callout>
+
+## app1 File Structure
+
+```
+tela_tests/app1/
+├── index.html      (~4.5 KB)  ✅ Single file example
+└── (complete self-contained application)
+```
+
+## Single-File Example
+
+The app1 demo uses a **single HTML file** approach:
+
+- ✅ **One file** = One DOC contract
+- ✅ **Easy deployment** - Single SCID
+- ✅ **Size optimized** - No external dependencies
+- ✅ **Proven pattern** - Works reliably
+
+## Size Breakdown
+
+| Component | Size | Notes |
+|-----------|------|-------|
+| HTML Structure | ~800 bytes | Minimal semantic HTML |
+| CSS Styles | ~600 bytes | Inline styles |
+| JavaScript | ~3.1 KB | XSWD connection + API calls |
+| **Total** | **~4.5 KB** | ✅ Well under 18KB limit |
+
+## Multi-File Structure (Advanced)
+
+For larger applications, split across multiple DOC contracts:
+
+```
+Your TELA App/
+├── index.html     (DOC 1) - Entry point, ~5KB
+├── styles.css     (DOC 2) - Styles, ~3KB
+├── app.js         (DOC 3) - Application logic, ~8KB
+└── INDEX contract - References all DOCs
+```
+
+**INDEX Structure:**
+```go
+// TELA-INDEX-1 contract
+STORE("DOC1", "index-html-scid")   // index.html
+STORE("DOC2", "styles-css-scid")   // styles.css
+STORE("DOC3", "app-js-scid")       // app.js
+```
+
+## Size Optimization Tips
+
+### 1. Minify Code
+```javascript
+// Before: 200 bytes
+function updateStatus(message, type) {
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = message;
+    statusEl.className = 'status ' + type;
+}
+
+// After: 120 bytes (minified)
+function updateStatus(m,t){const e=document.getElementById('status');e.textContent=m;e.className='status '+t;}
+```
+
+### 2. Use Shorthand
+```javascript
+// Before: 50 bytes
+const appData = {
+    "id": "my-id",
+    "name": "My App",
+    "description": "Description",
+    "url": "http://localhost:" + location.port
+};
+
+// After: 45 bytes (remove quotes, shorter keys)
+const appData = {
+    id:"my-id",
+    name:"My App",
+    desc:"Description",
+    url:"http://localhost:"+location.port
+};
+```
+
+### 3. Inline Small Functions
+```javascript
+// Before: Separate function (50 bytes)
+function enableButtons() {
+    document.getElementById('btn-address').disabled = false;
+}
+
+// After: Inline (30 bytes)
+document.getElementById('btn-address').disabled = false;
+```
+
+## File Size Limits
+
+| Contract Type | Code Limit | Total Limit | Recommended |
+|---------------|------------|-------------|-------------|
+| **TELA-DOC-1** | 18.00 KB | 20.00 KB | Stay under 18KB |
+| **TELA-INDEX-1** | Variable | 11.64 KB | Stay under 9KB |
+
+## Related Pages
+
+- [Official Demo](/demo) - Complete app1 source code
+- [Size Optimization](/best-practices#size-optimization-techniques) - Advanced size techniques
+- [Compression Guide](/advanced-features/compression) - File compression
+- [DocShards](/advanced-features/docshards) - Large file handling
+

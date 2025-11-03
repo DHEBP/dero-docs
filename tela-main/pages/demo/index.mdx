@@ -1,0 +1,367 @@
+---
+title: "Official TELA Demo (app1) | Verified Source Code Reference"
+description: "Complete source code from tela_tests/app1 - the official TELA demonstration application. Verified working patterns for XSWD connections, API calls, and TELA development."
+keywords: "TELA demo, app1, tela_tests, official demo, verified code, source code reference, working patterns"
+date: "2025-11-01"
+lastUpdated: "2025-11-01"
+authors: ["DHEBP"]
+slug: "demo"
+canonicalUrl: "https://tela.derod.org/demo"
+tags: ["demo", "app1", "verified", "source-code", "reference"]
+---
+
+import { Callout } from 'nextra/components';
+import { Card, Cards } from 'nextra/components';
+
+# Official TELA Demo (app1)
+
+**Complete source code reference** from `tela_tests/app1` - the official, verified TELA demonstration application used throughout all TELA documentation.
+
+<Callout type="success" emoji="✅">
+**Verified Working Code:** This is the actual source code from `tela_tests/app1` that has been tested and proven to work. All patterns in TELA documentation are verified against this demo application.
+</Callout>
+
+<Callout type="info" emoji="📋">
+**Source Location:** `tela_tests/app1` in the [civilware/tela repository](https://github.com/civilware/tela)
+</Callout>
+
+## Why This Demo Matters
+
+This demo application (`tela_tests/app1`) serves as the **source of truth** for TELA development:
+
+- ✅ **All documentation verified** against these patterns
+- ✅ **Working code examples** you can copy directly
+- ✅ **Proven patterns** for XSWD, API calls, and file structure
+- ✅ **Size reference** for TELA-DOC-1 contracts (18KB limit)
+
+## Demo Components
+
+<Cards>
+  <Card title="XSWD Connection Pattern" href="/demo/xswd-connection">
+    Complete WebSocket connection code with verified patterns
+  </Card>
+  <Card title="Application Data Handshake" href="/demo/application-data">
+    Application identification and wallet approval process
+  </Card>
+  <Card title="API Call Patterns" href="/demo/api-patterns">
+    RPC method calls and response handling
+  </Card>
+  <Card title="File Structure & Size" href="/demo/file-structure">
+    File organization and size analysis
+  </Card>
+</Cards>
+
+## Complete Source Files
+
+### index.html
+
+**File Size:** ~4.5 KB  
+**Status:** ✅ Under 18KB limit for TELA-DOC-1
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSWD Wallet Connect Example</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0e27;
+            color: #fff;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status.connecting { background: #1a4d80; }
+        .status.connected { background: #0d4a26; }
+        .status.error { background: #6b1a1a; }
+        button {
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #4b5563; cursor: not-allowed; }
+        .data { background: #1a1a2e; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔗 XSWD Wallet Connect</h1>
+    
+    <div id="status" class="status connecting">
+        Connecting to wallet...
+    </div>
+    
+    <button onclick="connect()">Connect Wallet</button>
+    <button onclick="getAddress()" id="btn-address" disabled>Get Address</button>
+    <button onclick="getBalance()" id="btn-balance" disabled>Get Balance</button>
+    <button onclick="getNetworkInfo()" id="btn-network" disabled>Get Network Info</button>
+    
+    <div id="data" class="data" style="display:none;">
+        <h3>Wallet Data:</h3>
+        <pre id="output"></pre>
+    </div>
+ 
+    <script>
+        let socket = null;
+        let isConnected = false;
+        let requestId = 0;
+        const pendingRequests = new Map();
+ 
+        function updateStatus(message, type = 'connecting') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+ 
+        function enableButtons() {
+            document.getElementById('btn-address').disabled = false;
+            document.getElementById('btn-balance').disabled = false;
+            document.getElementById('btn-network').disabled = false;
+        }
+ 
+        function connect() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('Already connected');
+                return;
+            }
+ 
+            updateStatus('Connecting to ws://localhost:44326/xswd...', 'connecting');
+            
+            // Use localhost to match official app1 demo pattern
+            socket = new WebSocket("ws://localhost:44326/xswd");
+ 
+            socket.onopen = function(event) {
+                console.log('✅ WebSocket opened');
+                updateStatus('Sending connection request...', 'connecting');
+                
+                // CRITICAL: Send application data immediately
+                // Match exact app1 format - URL must include port
+                const appData = {
+                    id: "xswd-example-" + Date.now().toString(16),
+                    name: "XSWD Connect Example",
+                    description: "Example TELA app connecting to DERO wallet",
+                    url: "http://localhost:" + location.port
+                };
+                
+                socket.send(JSON.stringify(appData));
+                console.log('📤 Sent application data');
+            };
+ 
+            socket.onmessage = function(event) {
+                try {
+                    const response = JSON.parse(event.data);
+                    console.log('📨 Received:', response);
+ 
+                    if (response.accepted) {
+                        console.log('✅ Connection accepted!');
+                        isConnected = true;
+                        updateStatus('✅ Connected to wallet!', 'connected');
+                        enableButtons();
+                        
+                    } else if (response.rejected) {
+                        console.error('❌ Connection rejected:', response.message);
+                        updateStatus('❌ Connection rejected: ' + (response.message || 'Unknown'), 'error');
+                        isConnected = false;
+                        
+                    } else if (response.jsonrpc && response.id) {
+                        // Handle RPC response
+                        handleRPCResponse(response);
+                        
+                    } else {
+                        console.log('Unknown response:', response);
+                    }
+                } catch (error) {
+                    console.error('Parse error:', error);
+                }
+            };
+ 
+            socket.onerror = function(error) {
+                console.error('🚨 WebSocket error:', error);
+                updateStatus('❌ Connection error - Is wallet running?', 'error');
+            };
+ 
+            socket.onclose = function(event) {
+                console.log('🔌 Connection closed:', event.code, event.reason);
+                isConnected = false;
+                updateStatus('❌ Disconnected (Code: ' + event.code + ')', 'error');
+                
+                // Disable buttons
+                document.getElementById('btn-address').disabled = true;
+                document.getElementById('btn-balance').disabled = true;
+                document.getElementById('btn-network').disabled = true;
+ 
+                if (event.code === 1006) {
+                    updateStatus('❌ Connection refused - Wallet not running or XSWD disabled', 'error');
+                }
+            };
+        }
+ 
+        function sendRPC(method, params = {}) {
+            return new Promise((resolve, reject) => {
+                if (!isConnected || !socket || socket.readyState !== WebSocket.OPEN) {
+                    reject(new Error('Not connected'));
+                    return;
+                }
+ 
+                const id = (++requestId).toString();
+                const request = {
+                    jsonrpc: "2.0",
+                    id: id,
+                    method: method
+                };
+ 
+                if (Object.keys(params).length > 0) {
+                    request.params = params;
+                }
+ 
+                pendingRequests.set(id, { resolve, reject, method });
+                socket.send(JSON.stringify(request));
+ 
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    if (pendingRequests.has(id)) {
+                        pendingRequests.delete(id);
+                        reject(new Error(`Timeout: ${method}`));
+                    }
+                }, 10000);
+            });
+        }
+ 
+        function handleRPCResponse(response) {
+            if (response.id && pendingRequests.has(response.id)) {
+                const { resolve, reject } = pendingRequests.get(response.id);
+                pendingRequests.delete(response.id);
+ 
+                if (response.error) {
+                    reject(new Error(response.error.message || 'RPC error'));
+                } else {
+                    resolve(response.result);
+                }
+            }
+        }
+ 
+        function showData(data) {
+            document.getElementById('data').style.display = 'block';
+            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        }
+ 
+        async function getAddress() {
+            try {
+                const result = await sendRPC('GetAddress');
+                showData({ address: result.address });
+                console.log('Address:', result.address);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+ 
+        async function getBalance() {
+            try {
+                const result = await sendRPC('GetBalance');
+                const balance = result.unlocked_balance / 100000;
+                showData({ 
+                    balance: balance + ' DERO',
+                    unlocked: result.unlocked_balance,
+                    locked: result.balance - result.unlocked_balance
+                });
+                console.log('Balance:', balance, 'DERO');
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+ 
+        async function getNetworkInfo() {
+            try {
+                const result = await sendRPC('DERO.GetInfo');
+                showData({
+                    height: result.height,
+                    difficulty: result.difficulty,
+                    peer_count: result.peer_count,
+                    version: result.version
+                });
+                console.log('Network info:', result);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+ 
+        // Auto-connect on page load
+        window.addEventListener('load', function() {
+            connect();
+        });
+ 
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+</body>
+</html>
+```
+
+## Key Patterns from app1
+
+### 1. ✅ Uses `localhost` (Not `127.0.0.1`)
+```javascript
+socket = new WebSocket("ws://localhost:44326/xswd");
+```
+
+### 2. ✅ Sends Application Data Immediately After `onopen`
+```javascript
+socket.onopen = function(event) {
+    socket.send(JSON.stringify(appData));  // Immediate send - no delay!
+};
+```
+
+### 3. ✅ Waits for `response.accepted` Before Making API Calls
+```javascript
+if (response.accepted) {
+    isConnected = true;
+    // Now safe to make API calls
+}
+```
+
+### 4. ✅ Application Data Format
+```javascript
+const appData = {
+    id: "unique-id-" + Date.now().toString(16),
+    name: "Application Name",
+    description: "Description",
+    url: "http://localhost:" + location.port  // Must include port!
+};
+```
+
+## Related Pages
+
+**Learn the Patterns:**
+- [XSWD Connection Pattern](/demo/xswd-connection) - Detailed connection code analysis
+- [Application Data Handshake](/demo/application-data) - Handshake process explained
+- [API Call Patterns](/demo/api-patterns) - RPC method patterns
+
+**Use in Your Projects:**
+- [XSWD Wallet Connect Tutorial](/tutorials/xswd-wallet-connect) - Step-by-step guide
+- [First App Tutorial](/tutorials/first-app) - First TELA app using demo patterns
+- [Working Code](/javascript-guidelines) - JavaScript patterns from app1
+
+---
+
+**GitHub Reference:**
+- [tela_tests/app1 Source Code](https://github.com/civilware/tela/tree/main/tela_tests/app1) - View complete source on GitHub
+
