@@ -195,9 +195,20 @@ basic-tela-app/
 // Global WebSocket connection (proven pattern from tela_tests)
 let socket;
 
+// Generate and store application ID (maintains permission continuity - matches app1 pattern)
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        // Generate 64-character hex string
+        appId = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
+}
+
 // XSWD application data (matches tela_tests/app1 structure)
 const applicationData = {
-    "id": Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''), // Hex ID like app1
+    "id": getOrCreateAppId(),  // Static ID - maintains permission continuity
     "name": "Basic TELA Application", 
     "description": "Simple TELA app with wallet integration",
     "url": "http://localhost:" + location.port  // Must match origin URL (app1 pattern)

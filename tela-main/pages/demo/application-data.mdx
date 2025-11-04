@@ -22,22 +22,27 @@ import { Callout } from 'nextra/components';
 ## Application Data Format
 
 ```javascript
-// From tela_tests/app1 - VERIFIED FORMAT
+// From tela_tests/app1 - VERIFIED FORMAT (EXACT from main.js line 5-10)
 const applicationData = {
-    id: "xswd-example-" + Date.now().toString(16),  // Unique hex ID
-    name: "XSWD Connect Example",                    // App display name
-    description: "Example TELA app connecting to DERO wallet",  // What app does
-    url: "http://localhost:" + location.port          // CRITICAL: Must include port!
+    "id": "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b",  // 64-character hex string (static)
+    "name": "TELA Demo Application",
+    "description": "Basic WS connection parts for TELA application",
+    "url": "http://localhost:" + location.port  // CRITICAL: Must include port!
 };
 ```
+
+<Callout type="warning" emoji="⚠️">
+**Critical ID Requirement:** The `id` field must be exactly **64 hexadecimal characters** (0-9, a-f). IDs that are shorter, longer, or contain invalid characters will cause "Invalid ID size" errors.
+</Callout>
 
 ## Field Requirements
 
 ### `id` (Required)
 - **Type:** String
-- **Format:** Unique identifier (typically hex string)
-- **Example:** `"xswd-example-" + Date.now().toString(16)`
-- **Purpose:** Unique identifier for this connection session
+- **Format:** Exactly 64 hexadecimal characters (0-9, a-f)
+- **Example:** `"71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b"` (from app1)
+- **Purpose:** Application identifier for connection and permission management
+- **Important:** Use a static ID (generate once and store in localStorage). The wallet tracks permissions by ID, so reusing the same ID maintains permission continuity across sessions. This matches the app1 demo pattern.
 
 ### `name` (Required)
 - **Type:** String
@@ -60,8 +65,21 @@ const applicationData = {
 
 ```javascript
 // Step 1: Create application data
+// Generate and store ID for reuse (matches app1 pattern - maintains permission continuity)
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        // Generate 64-character hex string
+        appId = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
+}
+
 const appData = {
-    id: "my-app-" + Date.now().toString(16),
+    id: getOrCreateAppId(),  // Static ID - maintains permission continuity across connections
     name: "My TELA App",
     description: "App description",
     url: "http://localhost:" + location.port  // Include port!
@@ -111,6 +129,7 @@ socket.onmessage = function(event) {
 
 | Mistake | Issue | Fix |
 |---------|-------|-----|
+| Variable-length or wrong-size ID | "Invalid ID size" error | Use exactly 64 hexadecimal characters |
 | Missing `url` field | Wallet rejects connection | Always include `url: "http://localhost:" + location.port` |
 | `url` without port | Connection may fail | Use `location.port` not just `origin` |
 | Delaying `send()` | Connection closes | Send immediately in `onopen` |

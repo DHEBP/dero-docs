@@ -147,12 +147,12 @@ This demo application (`tela_tests/app1`) serves as the **source of truth** for 
                 updateStatus('Sending connection request...', 'connecting');
                 
                 // CRITICAL: Send application data immediately
-                // Match exact app1 format - URL must include port
+                // Match exact app1 format - ID must be 64-character hex string (static)
                 const appData = {
-                    id: "xswd-example-" + Date.now().toString(16),
+                    id: "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b",  // Static 64-char hex (from app1)
                     name: "XSWD Connect Example",
                     description: "Example TELA app connecting to DERO wallet",
-                    url: "http://localhost:" + location.port
+                    url: "http://localhost:" + location.port  // Must include port!
                 };
                 
                 socket.send(JSON.stringify(appData));
@@ -340,8 +340,20 @@ if (response.accepted) {
 
 ### 4. ✅ Application Data Format
 ```javascript
+// Generate and store static ID (maintains permission continuity)
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        appId = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
+}
+
 const appData = {
-    id: "unique-id-" + Date.now().toString(16),
+    id: getOrCreateAppId(),  // Static 64-character hex string (maintains permission continuity)
     name: "Application Name",
     description: "Description",
     url: "http://localhost:" + location.port  // Must include port!

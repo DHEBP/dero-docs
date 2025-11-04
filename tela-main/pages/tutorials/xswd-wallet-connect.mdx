@@ -60,6 +60,16 @@ Before starting, ensure you have:
 - ✅ XSWD enabled and configured
 - ✅ Basic HTML/JavaScript knowledge
 - ✅ Your TELA site structure ready
+- ✅ Page served via HTTP (not `file://` URLs)
+
+<Callout type="warning">
+**Important:** The code examples in this tutorial require your page to be served via HTTP (e.g., `http://localhost:8080`). Opening HTML files directly as `file://` URLs will not work because:
+- `location.port` is empty for `file://` URLs
+- The wallet validates that the `url` field in application data matches the page origin
+- TELA apps are deployed via HTTP, so this matches real-world usage
+
+**For local testing:** Use a local HTTP server (e.g., `python3 -m http.server 8080`).
+</Callout>
 
 ---
 
@@ -122,9 +132,23 @@ Here's the **minimum working implementation** based on proven patterns:
 // Global WebSocket variable (matches app1 pattern)
 let socket;
 
-// XSWD application data (EXACT format from app1)
+// Generate and store 64-character hex ID (required by wallet)
+// This matches the app1 pattern of using a static ID for proper permission management
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        // Generate 64-character hex string (matches xswd-core.js pattern)
+        appId = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
+}
+
+// XSWD application data (matches app1 format)
 const applicationData = {
-    "id": "my-tela-app-" + Date.now().toString(16),  // Unique hex ID
+    "id": getOrCreateAppId(),  // 64-character hex string (static - maintains permission continuity)
     "name": "My TELA Application",
     "description": "Connecting to wallet for DERO operations",
     "url": "http://localhost:" + location.port  // IMPORTANT: Must match origin URL
@@ -230,13 +254,19 @@ window.addEventListener('beforeunload', function() {
 
 ### **Critical Points (from official app1 demo):**
 
-1. **Use `localhost` not `127.0.0.1`** - The official demo uses `ws://localhost:44326/xswd`
-2. **Send application data immediately** after `onopen` - don't wait
-3. **Wait for `response.accepted`** before making API calls
-4. **Check `response.accepted` FIRST** - Only proceed after wallet approves
-5. **Handle all events**: `open`, `message`, `error`, `close`
-6. **Check socket state** before sending: `socket.readyState === WebSocket.OPEN`
-7. **URL must match origin** - Use `"http://localhost:" + location.port` for app data
+1. **ID must be exactly 64 hexadecimal characters** - The wallet requires a 64-character hex string (e.g., `"71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b"`)
+2. **Use a static ID (store and reuse)** - Generate once and store in localStorage. This maintains permission continuity across connections and matches the app1 pattern. The wallet tracks permissions by ID, so using the same ID ensures permissions persist across sessions.
+3. **Use `localhost` not `127.0.0.1`** - The official demo uses `ws://localhost:44326/xswd`
+4. **Send application data immediately** after `onopen` - don't wait
+5. **Wait for `response.accepted`** before making API calls
+6. **Check `response.accepted` FIRST** - Only proceed after wallet approves
+7. **Handle all events**: `open`, `message`, `error`, `close`
+8. **Check socket state** before sending: `socket.readyState === WebSocket.OPEN`
+9. **URL must match origin** - Use `"http://localhost:" + location.port` for app data. **Must be served via HTTP** (not `file://` URLs) - `location.port` is empty for `file://` URLs, causing origin mismatch errors.
+10. **Requirements for code to work:**
+    - ✅ Wallet running with XSWD enabled
+    - ✅ Page served via HTTP (not `file://`)
+    - ✅ User approves connection in wallet popup
 
 ---
 
@@ -404,12 +434,12 @@ Here's a **complete, tested implementation** you can copy directly:
                 updateStatus('Sending connection request...', 'connecting');
                 
                 // CRITICAL: Send application data immediately
-                // Match exact app1 format - URL must include port
+                // Match exact app1 format - ID must be 64-character hex string (static)
                 const appData = {
-                    id: "xswd-example-" + Date.now().toString(16),
+                    id: "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b",  // Static 64-char hex (from app1)
                     name: "XSWD Connect Example",
                     description: "Example TELA app connecting to DERO wallet",
-                    url: "http://localhost:" + location.port
+                    url: "http://localhost:" + location.port  // Must include port!
                 };
                 
                 socket.send(JSON.stringify(appData));
@@ -682,16 +712,104 @@ socket.addEventListener("open", function(event) {
    ```javascript
    // ✅ REQUIRED fields
    const applicationData = {
-       id: "unique-id",           // REQUIRED
+       id: "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b",  // 64-char hex (REQUIRED)
        name: "App Name",           // REQUIRED
        description: "App desc",     // REQUIRED
-       url: window.location.origin  // REQUIRED
+       url: "http://localhost:" + location.port  // REQUIRED (must include port)
    };
    ```
 
 2. **User clicked "Deny" in wallet** - Ask user to approve connection in wallet popup
 
 3. **Wallet security settings** - Check if wallet has connection restrictions enabled
+
+### Error: "Invalid ID size"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Invalid ID size"
+}
+```
+
+**Cause:** The `id` field must be exactly 64 hexadecimal characters. Variable-length IDs or IDs with incorrect format will cause this error.
+
+**Solution:**
+
+```javascript
+// ✅ CORRECT: Generate and store static ID (recommended approach)
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        // Generate exactly 64 hexadecimal characters
+        appId = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
+}
+
+const applicationData = {
+    id: getOrCreateAppId(),  // Static ID - maintains permission continuity
+    name: "My TELA Application",
+    description: "App description",
+    url: "http://localhost:" + location.port
+};
+
+// ❌ WRONG: Variable-length ID (causes "Invalid ID size" error)
+const applicationData = {
+    id: "my-app-" + Date.now().toString(16),  // Wrong size!
+    // ...
+};
+```
+
+**Important:** The ID must be static (same across all connections) for proper permission management. Generate once and store in localStorage using `getOrCreateAppId()`.
+
+### Error: "Invalid URL compared to origin"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Invalid URL compared to origin"
+}
+```
+
+**Cause:** The `url` field in application data must exactly match the page origin. This happens when:
+- Opening HTML file as `file://` URL (no port available)
+- URL in application data doesn't match the actual page URL
+- `location.port` is empty or incorrect
+
+**Solution:**
+
+```javascript
+// ✅ CORRECT: Use location.port for HTTP pages
+const applicationData = {
+    id: getOrCreateAppId(),
+    name: "My App",
+    description: "App description",
+    url: "http://localhost:" + location.port  // Matches origin
+};
+
+// ❌ WRONG: file:// URLs don't have a port
+// If opened as file://, location.port is empty string
+url: "http://localhost:" + location.port  // Becomes "http://localhost:" (invalid)
+
+// ❌ WRONG: URL doesn't match origin
+url: "http://example.com:8080"  // Doesn't match actual page origin
+```
+
+**For local testing:** Always serve your page via HTTP server:
+```bash
+# Start local HTTP server
+python3 -m http.server 8080
+
+# Then open: http://localhost:8080/your-page.html
+```
+
+**Note:** TELA apps are deployed via HTTP, so this matches real-world usage. The `file://` limitation only affects local development/testing.
 
 ---
 
@@ -724,7 +842,40 @@ new WebSocket("ws://localhost:44326")          // Missing /xswd path
 new WebSocket("ws://localhost:44326/xswd")
 ```
 
-### Pitfall 3: Not Handling Multiple Endpoints
+### Pitfall 3: Invalid Application ID Format
+
+```javascript
+// ❌ WRONG: Variable-length ID (causes "Invalid ID size" error)
+const applicationData = {
+    id: "my-app-" + Date.now().toString(16),  // ~20-25 chars, wrong!
+    // ...
+};
+
+// ❌ NOT RECOMMENDED: Generating new ID each time (breaks permission continuity)
+// const applicationData = {
+//     id: Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+//     // ... This works functionally but breaks permission management
+// };
+
+// ✅ CORRECT: Generate and store static 64-character hex ID (recommended)
+function getOrCreateAppId() {
+    let id = localStorage.getItem('xswd_app_id');
+    if (!id) {
+        id = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', id);
+    }
+    return id;
+}
+
+const applicationData = {
+    id: getOrCreateAppId(),  // Static ID - maintains permission continuity
+    // ...
+};
+```
+
+### Pitfall 4: Not Handling Multiple Endpoints
 
 ```javascript
 // ✅ BETTER: Try multiple endpoints (use localhost to match app1)

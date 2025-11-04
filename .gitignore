@@ -49,3 +49,9 @@ tela-main/build/
 *_COMPLETE.md
 *_GUIDE.md
 
+# Verification/Test files (local development only)
+**/test-wallet-connection.html
+**/verify-xswd-id.html
+**/VERIFICATION.md
+**/VERIFICATION_RESULTS.md
+

@@ -39,8 +39,9 @@ function connect() {
         console.log('✅ WebSocket opened');
         
         // ✅ CRITICAL: Send immediately after onopen - no delay!
+        // ✅ CRITICAL: ID must be exactly 64 hexadecimal characters (static)
         const appData = {
-            id: "app-id-" + Date.now().toString(16),
+            id: "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b",  // Static 64-char hex
             name: "Application Name",
             description: "Description",
             url: "http://localhost:" + location.port
@@ -142,6 +143,8 @@ socket.onclose   // Clean up and reconnect if needed
 
 | Mistake | Why It Fails | Correct Pattern |
 |---------|--------------|-----------------|
+| Invalid ID size/format | "Invalid ID size" error - wallet requires exactly 64 hex chars | Use static 64-character hex string |
+| Generating new ID each connection | Breaks permission continuity - user must approve repeatedly | Generate once and store in localStorage |
 | Using `127.0.0.1` | May work but doesn't match verified demo | Use `localhost` |
 | Delaying `send()` | Connection closes before handshake | Send immediately in `onopen` |
 | Not checking `accepted` | API calls rejected or fail silently | Wait for `response.accepted` |
