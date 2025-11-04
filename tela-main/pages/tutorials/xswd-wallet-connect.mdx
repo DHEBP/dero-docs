@@ -60,16 +60,7 @@ Before starting, ensure you have:
 - ✅ XSWD enabled and configured
 - ✅ Basic HTML/JavaScript knowledge
 - ✅ Your TELA site structure ready
-- ✅ Page served via HTTP (not `file://` URLs)
-
-<Callout type="warning">
-**Important:** The code examples in this tutorial require your page to be served via HTTP (e.g., `http://localhost:8080`). Opening HTML files directly as `file://` URLs will not work because:
-- `location.port` is empty for `file://` URLs
-- The wallet validates that the `url` field in application data matches the page origin
-- TELA apps are deployed via HTTP, so this matches real-world usage
-
-**For local testing:** Use a local HTTP server (e.g., `python3 -m http.server 8080`).
-</Callout>
+- ✅ Page served via HTTP (for local testing: `python3 -m http.server 8080`)
 
 ---
 
@@ -262,11 +253,7 @@ window.addEventListener('beforeunload', function() {
 6. **Check `response.accepted` FIRST** - Only proceed after wallet approves
 7. **Handle all events**: `open`, `message`, `error`, `close`
 8. **Check socket state** before sending: `socket.readyState === WebSocket.OPEN`
-9. **URL must match origin** - Use `"http://localhost:" + location.port` for app data. **Must be served via HTTP** (not `file://` URLs) - `location.port` is empty for `file://` URLs, causing origin mismatch errors.
-10. **Requirements for code to work:**
-    - ✅ Wallet running with XSWD enabled
-    - ✅ Page served via HTTP (not `file://`)
-    - ✅ User approves connection in wallet popup
+9. **URL must match origin** - Use `"http://localhost:" + location.port` for app data
 
 ---
 
