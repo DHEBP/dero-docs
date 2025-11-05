@@ -165,6 +165,52 @@ Real senders typically include encrypted metadata (destination address, comment,
 
 ---
 
+## Why Payload Proofs Can Be Faked
+
+### Payload Proofs Are Wallet-Level Tools
+
+**Key Distinction:**
+
+| Proof Type | Scope | Validation | Can Be Faked? |
+|-----------|-------|-----------|---------------|
+| **Transaction Proof** | Blockchain consensus | Cryptographic verification by all nodes | ❌ No |
+| **Payload Proof** | Explorer display | Math consistency check only | ⚠️ Yes |
+
+**Why Payload Proofs Can Be Faked:**
+
+1. **User-Provided Data**
+   - Payload proofs contain user-submitted metadata
+   - Not cryptographically bound to transaction
+   - Anyone can create matching proof for any ring member
+
+2. **Math Consistency Only**
+   - Explorer verifies: `commitment = amount × G + address`
+   - Does NOT verify: This address was the actual sender
+   - Any ring member can generate matching proof
+
+3. **No Cryptographic Binding**
+   - Payload proofs are separate from transaction proofs
+   - They don't affect blockchain consensus
+   - Fake proofs don't invalidate transactions
+
+**From Source Code:**
+
+The payload proof system is designed for **convenience and display**, not cryptographic verification. The explorer checks if the proof's commitment matches any ring member's commitment, but this doesn't prove the sender identity.
+
+**Why This Design is Correct:**
+
+- ✅ **Privacy Protection:** If explorers could prove exact senders, ring signatures would be useless
+- ✅ **User Convenience:** Allows users to verify their own transactions
+- ✅ **Flexibility:** Users can generate proofs for any ring member (privacy feature)
+- ✅ **Standard Practice:** All ring-signature privacy coins work this way
+
+**For Real Verification:**
+- Use your wallet with private keys (only you can prove you sent)
+- Transaction proofs are cryptographically secure (network consensus)
+- Payload proofs are convenience tools (explorer display)
+
+---
+
 ## Best Practices
 
 **For Users:**
