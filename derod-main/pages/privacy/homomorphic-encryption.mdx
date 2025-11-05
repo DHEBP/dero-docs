@@ -3,7 +3,7 @@ title: "Homomorphic Encryption: DERO's Account Privacy Innovation | DERO Blockch
 description: "Technical deep dive into DERO's homomorphic encryption system using ElGamal, enabling encrypted account balances and operations on encrypted data for blockchain applications."
 keywords: ["homomorphic encryption", "ElGamal encryption", "DERO encryption", "encrypted balances", "additive homomorphism", "partially homomorphic encryption", "blockchain encryption", "encrypted operations", "DERO accounts", "cryptographic commitments"]
 date: "2025-10-18"
-lastUpdated: "2025-10-18"
+lastUpdated: "2025-11-01"
 authors: ["DHEBP"]
 image: "/assets/homomorphic-encryption.jpeg"
 slug: "homomorphic-encryption"
@@ -14,19 +14,40 @@ tags: ["privacy", "encryption", "homomorphic", "technical", "cryptography"]
 import { Callout } from 'nextra/components'
 import { Tabs } from 'nextra/components'
 
-# Homomorphic Encryption on DERO
+# Homomorphic Encryption: Math on Locked Boxes
 
-<Callout type="info">
-  **The Innovation:** Do math on encrypted balances without ever decrypting them. Your balance stays private. Forever.
+<Callout type="success" emoji="🔒">
+**The Innovation:** Do math on encrypted balances without ever decrypting them. Your balance stays private. Forever. Even the blockchain never sees it.
 </Callout>
+
+## What Problem Does It Solve?
+
+**The Challenge:**
+```
+Blockchain needs to:
+  ✓ Verify transactions (amounts valid)
+  ✓ Update balances (addition/subtraction)
+  ✓ Ensure no double-spending
+  
+But WITHOUT revealing:
+  ✗ Account balances
+  ✗ Transaction amounts
+  ✗ Any private information
+```
+
+**The Solution: Homomorphic Encryption**
+- ✅ Math happens on encrypted data
+- ✅ No decryption ever required
+- ✅ Privacy never broken
+- ✅ Blockchain can verify without seeing amounts
 
 ---
 
-## What Is Homomorphic Encryption?
+## The Simple Analogy
 
-### The Simple Explanation
-
-**Regular encryption = like a locked safe**
+<Tabs items={['Regular Encryption', 'Homomorphic Encryption']}>
+  <Tabs.Tab>
+    **Locked Safe (Regular Encryption)**
 
 ```
 You have $500 in a locked safe
@@ -38,9 +59,12 @@ Normal way:
   3. Lock safe again (encrypt)
   
 Problem: When safe is open, anyone can see $500
+    Privacy: ❌ Broken
 ```
+  </Tabs.Tab>
 
-**Homomorphic encryption = magic safe**
+  <Tabs.Tab>
+    **Magic Safe (Homomorphic Encryption)**
 
 ```
 You have $500 in a magic safe
@@ -52,24 +76,32 @@ Magic way:
   3. Safe NEVER opened
   
 Result: Nobody ever sees $500, not even for a second
+    Privacy: ✅ Perfect
 ```
+  </Tabs.Tab>
+</Tabs>
 
-**How DERO does it:**
-
-- Your balance is **always** encrypted (safe always locked)
-- When you send/receive, math happens on the encrypted number
-- The safe never opens
-- Even the blockchain never sees your actual balance
-
-**Bottom line:** Your account balance is permanently encrypted. Math happens on encrypted data. Privacy is never broken.
-
-**DERO uses ElGamal** - supports addition/subtraction (all blockchain needs). Simple, fast, proven.
+**For DERO:**
+- Balance is **always** encrypted (safe always locked)
+- Math happens on the encrypted number
+- Safe never opens
+- Blockchain never sees actual balance
 
 ---
 
 ## How It Works
 
-### ElGamal Encryption Mechanics
+### The Encryption Flow
+
+```mermaid
+flowchart TD
+    A["Amount: 100 DERO"] --> B["Pick Random 'r'"]
+    B --> C["Calculate:<br/>L = 100×G + r×P<br/>R = r×G"]
+    C --> D["Encrypted: E(100) = (L, R)"]
+    D --> E["Looks like random<br/>elliptic curve points"]
+    E --> F["Network sees: E(100)"]
+    F --> G["Network learns: NOTHING"]
+```
 
 **The Setup:**
 ```
@@ -78,27 +110,43 @@ Public key:  P = x × G (everyone can see this)
 Generator:   G (elliptic curve point - public constant)
 ```
 
-**Encrypting an amount:**
-```
-To encrypt 100 DERO:
-  1. Pick random number 'r'
-  2. Calculate Left:  L = 100×G + r×P
-  3. Calculate Right: R = r×G
-  4. Ciphertext: E(100) = (L, R)
+### Encrypting an Amount
 
-Result: Looks like random elliptic curve points
-```
+**From Source Code** (`cryptography/crypto/algebra_elgamal.go`):
 
-**Decrypting (only you can do this):**
-```
-With your private key x:
-  amount = (L - x×R) / G
-  
-Without private key x:
-  Impossible - that's the discrete log problem
+```go
+// Encrypt 100 DERO:
+// 1. Pick random number 'r'
+// 2. Calculate Left:  L = 100×G + r×P
+// 3. Calculate Right: R = r×G
+// 4. Ciphertext: E(100) = (L, R)
+
+// Result: Looks like random elliptic curve points
+// Network cannot determine the amount
 ```
 
-**The Magic: Homomorphic Addition**
+| Step | What Happens | What Network Sees |
+|------|-------------|-------------------|
+| **1. Pick random 'r'** | Generate random number | Nothing |
+| **2. Calculate L** | `L = 100×G + r×P` | Random elliptic curve point |
+| **3. Calculate R** | `R = r×G` | Random elliptic curve point |
+| **4. Result** | `E(100) = (L, R)` | Random points (no amount visible) |
+
+### The Magic: Homomorphic Operations
+
+**Addition & Subtraction on Encrypted Data:**
+
+```mermaid
+graph LR
+    A["E(500)<br/>Encrypted"] --> C["Homomorphic<br/>Operations"]
+    B["E(100)<br/>Encrypted"] --> C
+    C --> D["E(500) + E(100)<br/>= E(600)"]
+    C --> E["E(500) - E(100)<br/>= E(400)"]
+    D --> F["Result: STILL ENCRYPTED"]
+    E --> F
+```
+
+**The Math:**
 ```
 E(a) = (L₁, R₁)
 E(b) = (L₂, R₂)
@@ -113,32 +161,39 @@ The encrypted result is STILL encrypted!
 No decryption needed at any step!
 ```
 
-<Callout type="info">
+<Callout type="info" emoji="🔐">
   **Mathematical Guarantee:** Based on elliptic curve discrete logarithm problem - same security assumption as Bitcoin. 256-bit security level.
 </Callout>
 
 ---
 
-## How DERO Stores Balances
-
-| What | Traditional Blockchain | DERO Blockchain |
-|------|----------------------|-----------------|
-| **Account** | `alice.eth` | `dero1qy...` |
-| **Balance shown** | `500 ETH` 👁️ Public | `E(???)` 🔒 Encrypted |
-| **Everyone sees** | Exact amount | Random bytes |
-| **Only owner sees** | Same as everyone | Actual balance (with private key) |
-| **Privacy** | ❌ Zero | ✅ Complete |
-
-**The difference:**
-- Bitcoin/Ethereum: Your balance is like your bank statement posted on a billboard
-- DERO: Your balance is permanently locked in a safe only you can open
-
-### Transaction Example
+## Transaction Flow: Alice → Bob
 
 **Alice sends 100 DERO to Bob:**
 
-<Tabs items={['Before', 'Transaction', 'Math', 'After']}>
+```mermaid
+sequenceDiagram
+    participant A as Alice
+    participant BC as Blockchain
+    participant B as Bob
+    
+    A->>A: Encrypt: E(100)
+    A->>BC: Send E(100) commitment
+    BC->>BC: Verify: E(500) - E(100) = E(400)
+    BC->>BC: Verify: E(200) + E(100) = E(300)
+    BC->>BC: Check: E(500) + E(200) = E(400) + E(300)
+    BC->>B: Update: E(300)
+    B->>B: Decrypt: 300 DERO received
+    
+    Note over BC: Network never learned:<br/>Amounts, balances, or any values
+```
+
+### What Happens at Each Step
+
+<Tabs items={['Before', 'Transaction', 'Homomorphic Math', 'After']}>
   <Tabs.Tab>
+    **Initial State**
+    
     ```
     Alice's balance: E(500) = (L_a, R_a)
     Bob's balance:   E(200) = (L_b, R_b)
@@ -147,6 +202,8 @@ No decryption needed at any step!
   </Tabs.Tab>
   
   <Tabs.Tab>
+    **Create Transfer**
+    
     ```
     Create transfer commitment:
       E(100) = (L_t, R_t)
@@ -158,12 +215,14 @@ No decryption needed at any step!
   </Tabs.Tab>
   
   <Tabs.Tab>
+    **Homomorphic Operations**
+    
     ```
-    Alice's new balance (homomorphic subtraction):
+    Alice's new balance:
       E(500) - E(100) = E(400)
       (L_a, R_a) - (L_t, R_t) = (L_a - L_t, R_a - R_t)
       
-    Bob's new balance (homomorphic addition):
+    Bob's new balance:
       E(200) + E(100) = E(300)
       (L_b, R_b) + (L_t, R_t) = (L_b + L_t, R_b + R_t)
       
@@ -172,28 +231,48 @@ No decryption needed at any step!
   </Tabs.Tab>
   
   <Tabs.Tab>
+    **Final State**
+    
     ```
     Alice's balance: E(400)
     Bob's balance:   E(300)
     
     Network verified:
-      ✓ Balance conservation: E(500) + E(200) = E(400) + E(300)
-      ✓ No negative amounts (range proofs)
+      ✓ Balance conservation
+      ✓ No negative amounts
       ✓ Alice had sufficient balance
       
     Network never learned:
-      ✗ Alice's old balance (500)
-      ✗ Transfer amount (100)
-      ✗ Bob's new balance (300)
-      ✗ Any actual amounts
+      ✗ Actual amounts
+      ✗ Balances
+      ✗ Any values
     ```
   </Tabs.Tab>
 </Tabs>
 
-## Why This Matters
+---
 
-| Feature | Bitcoin/UTXO Coins | Ethereum (Account) | DERO (Account + Encrypted) |
-|---------|----------------------|-------------------|---------------------------|
+## Comparison: Traditional vs DERO
+
+### Balance Storage
+
+| Aspect | Traditional Blockchain | DERO Blockchain |
+|--------|----------------------|-----------------|
+| **Account** | `alice.eth` | `dero1qy...` |
+| **Balance shown** | `500 ETH` 👁️ Public | `E(???)` 🔒 Encrypted |
+| **Everyone sees** | Exact amount | Random bytes (66 bytes) |
+| **Only owner sees** | Same as everyone | Actual balance (with private key) |
+| **Privacy** | ❌ Zero | ✅ Complete |
+| **Balance lookup** | Instant (public) | Instant (encrypted) |
+
+**The Difference:**
+- **Bitcoin/Ethereum:** Your balance is like your bank statement posted on a billboard
+- **DERO:** Your balance is permanently locked in a safe only you can open
+
+### Blockchain Architecture Comparison
+
+| Feature | Bitcoin/UTXO | Ethereum (Account) | DERO (Account + Encrypted) |
+|---------|-------------|-------------------|---------------------------|
 | **Model** | Outputs | Accounts | Accounts |
 | **Privacy** | Ring sigs | ❌ None | ✅ Encrypted |
 | **Smart Contracts** | ❌ Limited | ✅ Yes, public | ✅ Yes, **private** |
@@ -204,11 +283,52 @@ No decryption needed at any step!
 
 ---
 
-## DERO Token Privacy
+## Real-World Applications
 
-**Homomorphic encryption enables encrypted token balances:**
+### 1. Instant Balance Queries
 
-Tokens issued by smart contracts become **encrypted in user wallets** - just like native DERO.
+**Traditional Privacy Coin:**
+```
+1. Download entire blockchain
+2. Scan all transactions
+3. Calculate balance from history
+4. Wait minutes to hours
+
+Result: Slow, requires full sync
+```
+
+**DERO:**
+```
+1. Query encrypted balance from node (66 bytes)
+2. Decrypt with your private key
+3. See balance instantly
+
+Result: Instant, no chain scanning needed
+```
+
+### 2. Private Token Systems
+
+**How It Works:**
+
+```mermaid
+graph TB
+    SC["Smart Contract"] --> A["Alice: E(1000 tokens)"]
+    SC --> B["Bob: E(500 tokens)"]
+    
+    TX["Transfer 100 tokens<br/>Alice → Bob"] --> H["Homomorphic Operations"]
+    A --> H
+    B --> H
+    
+    H --> A2["Alice: E(900 tokens)"]
+    H --> B2["Bob: E(600 tokens)"]
+    
+    SC --> V["Contract verifies<br/>correctness"]
+    V --> OK["Valid<br/>Amounts hidden"]
+```
+
+**Key Points:**
+
+**From Source Code** (`dvm/dvm_functions.go:80`):
 
 ```basic
 // Issue tokens to user
@@ -225,46 +345,12 @@ User's DERO balance:  E(500)   ← Also encrypted
 **Traditional tokens (ERC-20):** Balances public in contract  
 **DERO tokens:** Balances encrypted in user wallets, transferable peer-to-peer
 
-Once tokens leave the contract, they're encrypted and can be transferred wallet-to-wallet without the contract knowing.
+### 3. Private DeFi Operations
 
-*Learn more: [Private Smart Contracts](/privacy/private-smart-contracts)*
-
-## What It Enables
-
-### Real-World Applications
-
-**1. Instant Balance Queries**
-```
-Traditional privacy coin:
-  1. Download blockchain
-  2. Scan all transactions
-  3. Calculate balance from history
-  
-DERO:
-  1. Query encrypted balance from node (66 bytes)
-  2. Decrypt with your private key
-  3. See balance instantly
-  
-No chain scanning needed!
-```
-
-**2. Private Token Systems**
-```
-Token contract stores:
-  alice: E(1000 tokens)
-  bob:   E(500 tokens)
-  
-Transfer 100 tokens alice → bob:
-  alice: E(1000) - E(100) = E(900)  ← Homomorphic
-  bob:   E(500) + E(100) = E(600)   ← Homomorphic
-  
-Contract verifies correctness without knowing amounts!
-Public cannot see who owns how much
-```
-
-**3. Private DeFi**
+**Swap Example:**
 ```
 Swap 100 DERO for 500 tokens:
+
   Your DERO:  E(balance_dero) - E(100)
   Your tokens: E(balance_tokens) + E(500)
   
@@ -277,14 +363,15 @@ Public sees:
 
 ---
 
-## The C and D Commitments
+## Technical Implementation
 
-### DERO's Transaction Structure
+### The C and D Commitments
 
 Every DERO transaction contains encrypted commitments:
 
 **C Commitment (Pedersen Commitment):**
-```
+
+```go
 C = amount×G + blinding×H
 
 Where:
@@ -299,7 +386,8 @@ Properties:
 ```
 
 **D Commitment (Randomness):**
-```
+
+```go
 D = r×G
 
 Purpose:
@@ -313,31 +401,45 @@ Purpose:
 - ✅ Verifiable without revealing amounts
 - ✅ Homomorphic balance updates
 
----
+**Source:** `cryptography/crypto/algebra_elgamal.go` - ElGamal encryption implementation
 
-## Technical Specifications
+### Technical Specifications
 
 | Aspect | Details |
 |--------|---------|
-| **Encryption** | ElGamal (additive homomorphism) |
+| **Encryption Scheme** | ElGamal (additive homomorphism) |
 | **Curve** | bn256 (Barreto-Naehrig) 256-bit |
 | **Security** | Discrete logarithm problem |
-| **Commitment size** | 66 bytes (33 left + 33 right) |
+| **Commitment Size** | 66 bytes (33 left + 33 right) |
 | **Performance** | ~10ms per operation |
-| **Trusted setup** | ❌ None required |
-
-## Bottom Line
-
-**Homomorphic encryption = Math on locked boxes.** Your balance never decrypts. Even the blockchain never sees it. This enables private smart contracts - impossible on any other chain.
+| **Trusted Setup** | ❌ None required |
 
 ---
 
-## Further Reading
+## Key Takeaways
 
-- [Private Smart Contracts](/privacy/private-smart-contracts)
-- [Transaction Privacy](/privacy/transaction-privacy)
-- [Bulletproofs](/privacy/bulletproofs)
+### What Homomorphic Encryption Provides
 
+| Feature | Benefit | Impact |
+|---------|---------|--------|
+| **🔒 Encrypted Balances** | Always encrypted | Perfect privacy |
+| **➕ Math on Encrypted** | Operations without decryption | Privacy never broken |
+| **⚡ Instant Queries** | No chain scanning | Fast balance checks |
+| **🔐 Private Tokens** | Encrypted token balances | Complete privacy |
+| **✅ Verifiable** | Network can verify | Security maintained |
+| **🚫 No Trusted Setup** | Pure cryptography | Decentralized |
+
+### What It Enables
+
+- ✅ **Private Smart Contracts** - Impossible on other chains
+- ✅ **Instant Balance Lookup** - No blockchain scanning
+- ✅ **Encrypted Token Systems** - Private token transfers
+- ✅ **Private DeFi** - Encrypted swap operations
+- ✅ **Account-Based Privacy** - First blockchain to achieve this
+
+<Callout type="info" emoji="🎯">
+**Architectural Breakthrough:** Account-based blockchains were thought incompatible with strong privacy. DERO proved this assumption wrong through homomorphic encryption, enabling private smart contracts with encrypted balances.
+</Callout>
 
 ---
 

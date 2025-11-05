@@ -20,8 +20,11 @@ import { Tabs } from 'nextra/components'
   **Multi-Layer Defense:** DERO combines ring signatures, homomorphic encryption, bulletproofs, and TLS encryption. Even if one layer weakens, others protect your privacy.
 </Callout>
 
-## The 4 Privacy Layers
+## How Privacy Layers Work Together
 
+DERO's privacy isn't a single feature—it's four independent layers that work together. Each layer protects different aspects of your transaction, and they're designed so that even if one layer weakens, others maintain your privacy.
+
+**The Flow:**
 ```mermaid
 flowchart TD
     TX[Create Transaction]
@@ -45,63 +48,29 @@ flowchart TD
    
 ```
 
-| Layer | What It Protects | How | Verification |
-|-------|-----------------|-----|--------------|
-| **Network** | IP linking, eavesdropping | TLS/UDP encryption | `blockchain/transaction_execute.go` |
-| **Sender** | Identity, linkability | Ring signatures (2-128) | `cryptography/crypto/proof_verify.go` |
-| **Amount** | Balances, transfers | Homomorphic (ElGamal) | `cryptography/crypto/algebra_elgamal.go` |
-| **Proofs** | Validity revelation | Bulletproofs (ZK) | `cryptography/crypto/bulletproof.go` |
+**How They Interact:**
 
----
+When you send a transaction, each layer adds privacy at a different stage. Network encryption protects your traffic from ISPs. Ring signatures hide which address sent the transaction. Homomorphic encryption keeps all amounts secret. Bulletproofs prove validity without revealing anything. Together, they create defense in depth—multiple barriers that protect your privacy even if one layer is compromised.
 
-## Transaction Flow
-
-**Alice sends 100 DERO to Bob:**
-
-```mermaid
-sequenceDiagram
-    participant A as Alice's Wallet
-    participant N as DERO Network
-    participant BC as Blockchain
-    participant B as Bob's Wallet
-    
-    A->>A: Create: 100 DERO to Bob
-    A->>N: Request 15 random addresses
-    N-->>A: Returns decoys
-    A->>A: Build ring (Alice + 15 decoys)
-    A->>A: Encrypt amount: E(100)
-    A->>A: Generate proofs (ring sig + bulletproofs)
-    A->>N: Broadcast TX (TLS encrypted)
-    N->>BC: Verify proofs (no amounts revealed)
-    BC-->>BC: Confirm: ✓ Valid
-    BC-->>B: Notify: Incoming (encrypted)
-    B->>B: Decrypt: 100 DERO received
-    
-    Note over A,B: Network never learned: Who sent, How much, Balances
-```
+**Source Code References:**
+- Network: `p2p/connection.go` (TLS encryption)
+- Sender: `cryptography/crypto/proof_verify.go` (ring signatures)
+- Amount: `cryptography/crypto/algebra_elgamal.go` (homomorphic encryption)
+- Proofs: `cryptography/crypto/bulletproof.go` (zero-knowledge proofs)
 
 ---
 
 ## What Each Observer Sees
 
-| Observer | Can See | Cannot See |
-|----------|---------|------------|
-| **ISP** | Encrypted traffic to DERO | Transaction details, amounts, addresses |
-| **Blockchain** | Ring (2-128 members), encrypted commitments | Real sender, actual amounts, balances |
-| **Chainalysis** | Transaction patterns, metadata | Definitive sender, amounts, proof of sending |
-| **Bob (receiver)** | Amount, comment, sender position | Alice's balance, other transactions |
-| **Alice (sender)** | Everything | - |
+Understanding what different parties can and cannot see helps illustrate how DERO's privacy layers work together in practice.
 
----
-
-## Privacy Comparison
-
-| Blockchain | Sender | Amount | Balance | Network |
-|------------|--------|--------|---------|---------|
-| **Bitcoin** | 👁️ Public | 👁️ Public | 👁️ Public | 🔓 Cleartext |
-| **Ethereum** | 👁️ Public | 👁️ Public | 👁️ Public | 🔓 Cleartext |
-| **Privacy Coins** | 🔒 Hidden | 🔒 Hidden | 🔒 Hidden | 🔓 Cleartext |
-| **DERO** | 🔒 Hidden | 🔒 Encrypted | 🔒 Encrypted | 🔐 TLS |
+| Observer | Can See | Cannot See | Why Privacy Maintained |
+|----------|---------|-----------|----------------------|
+| **ISP/Network** | Encrypted traffic to DERO | Transaction details, amounts, addresses | TLS encryption hides all content |
+| **Blockchain** | Ring (2-128 members), encrypted commitments | Real sender, actual amounts, balances | Ring signatures + homomorphic encryption |
+| **Chainalysis** | Transaction patterns, metadata | Definitive sender, amounts, proof of sending | Cannot prove specific sender identity |
+| **Bob (receiver)** | Amount, comment, sender position | Alice's balance, other transactions | Only sees his own transaction details |
+| **Alice (sender)** | Everything (has private keys) | - | Controls own privacy through wallet |
 
 ---
 
@@ -186,31 +155,20 @@ graph LR
 
 ---
 
-## Privacy Threats & Mitigations
-
-| Threat | How It Works | Mitigation | Effectiveness |
-|--------|--------------|------------|---------------|
-| **Timing Attack** | Correlate online time with TX | Random delays, Tor | Low risk |
-| **Amount Fingerprint** | Link unique amounts | Vary amounts | Medium risk |
-| **Network Analysis** | ISP monitoring | TLS + Tor/VPN | Low risk |
-| **Ring Decoy** | Fake proofs claiming you sent | Plausible deniability, empty payload check | Medium risk |
-
----
-
 ## Key Takeaways
 
-**What's Hidden:**
-- ✅ Sender identity (1 in 2-128 ring members)
-- ✅ All amounts (ElGamal encrypted)
-- ✅ All balances (never decrypted)
-- ✅ Transaction linkage (unlinkable)
+**What's Protected:**
+- Sender identity (hidden among 2-128 ring members, default: 6.25% chance)
+- All amounts (encrypted with homomorphic encryption, never decrypted)
+- All balances (encrypted at all times)
+- Transaction linkage (unlinkable, independent rings per transaction)
 
-**What's Visible:**
-- ⚠️ Transaction occurred
-- ⚠️ Ring member list (necessary for privacy)
-- ⚠️ Timing metadata
+**What's Visible (Necessary for Function):**
+- Transaction occurred (required for processing)
+- Ring member list (creates ambiguity, actually protects privacy)
+- Timing metadata (doesn't reveal transaction details)
 
-**DERO's Choice:** Prioritize privacy over third-party verification
+**DERO's Design:** Privacy over third-party verification. Only you (with private keys) can prove you sent a transaction. Third parties cannot definitively prove sender identity—this is by design. Plausible deniability is a feature, not a bug.
 
 <Callout type="warning">
   **Remember:** Privacy requires ambiguity. If you could prove to others you sent a transaction, your privacy would be broken. Plausible deniability is a feature, not a bug.

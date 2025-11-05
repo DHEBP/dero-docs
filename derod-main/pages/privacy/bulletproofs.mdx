@@ -3,7 +3,7 @@ title: "Bulletproofs: DERO's Zero-Knowledge Range Proofs | DERO Blockchain"
 description: "How DERO's bulletproofs prove amounts are valid without revealing them - 10× faster verification, compact proofs, and cryptographic protection against negative transfers."
 keywords: ["bulletproofs", "zero-knowledge proofs", "range proofs", "DERO bulletproofs", "compact proofs", "ZK proofs", "cryptographic proofs", "proof verification", "logarithmic proofs", "negative transfer protection"]
 date: "2025-10-18"
-lastUpdated: "2025-10-19"
+lastUpdated: "2025-11-01"
 authors: ["DHEBP"]
 image: "/assets/bulletproofs.jpeg"
 slug: "bulletproofs"
@@ -293,7 +293,7 @@ graph TB
 
 **Total:** log₂(128) = 7 iterations  
 **Proof Size:** 7 rounds × ~300 bytes ≈ 2.1KB
-
+  
 **Source:** `cryptography/crypto/proof_innerproduct.go` - Recursive halving algorithm
 
 ---
@@ -315,13 +315,13 @@ graph TB
 
 ```
 Block with 100 transactions:
-
+  
 Standard bulletproofs:
   100 tx × 100ms = 10 seconds
-
+  
 DERO bulletproofs:
   100 tx × 10ms = 1 second
-
+  
 Speedup: 10× faster block validation
 Benefit: Better scalability, lower hardware requirements
 ```

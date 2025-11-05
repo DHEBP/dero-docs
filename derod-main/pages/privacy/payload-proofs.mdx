@@ -193,16 +193,34 @@ Real senders typically include encrypted metadata (destination address, comment,
    - They don't affect blockchain consensus
    - Fake proofs don't invalidate transactions
 
-**From Source Code:**
+**From Source Code** (`proof/proof.go:34-149`, `cmd/explorer/explorerlib/explorerlib.go:689`):
 
 The payload proof system is designed for **convenience and display**, not cryptographic verification. The explorer checks if the proof's commitment matches any ring member's commitment, but this doesn't prove the sender identity.
 
+**Code Evidence:**
+```go
+// proof/proof.go:98-104
+// Calculate commitment: x = amount × G + address
+x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
+x.Add(new(bn256.G1).Set(&x), addr.PublicKey.G1())
+
+// Check if commitment matches ANY ring member
+if x.String() == tx.Payloads[t].Statement.C[k].String() {
+    // Proof "verified" - but this only proves math consistency, not sender identity
+}
+```
+
+**Explorer Call** (`cmd/explorer/explorerlib/explorerlib.go:689`):
+```go
+addresses, amounts, raw, decoded, err := proof.Prove(tx_proof, info.Hex, info.Ring, mainnet)
+```
+
 **Why This Design is Correct:**
 
-- ✅ **Privacy Protection:** If explorers could prove exact senders, ring signatures would be useless
-- ✅ **User Convenience:** Allows users to verify their own transactions
-- ✅ **Flexibility:** Users can generate proofs for any ring member (privacy feature)
-- ✅ **Standard Practice:** All ring-signature privacy coins work this way
+- ✅ If explorers could prove exact senders, ring signatures would be useless
+- ✅ Allows users to verify their own transactions
+- ✅ Users can generate proofs for any ring member (privacy feature)
+- ✅ All ring-signature privacy coins work this way
 
 **For Real Verification:**
 - Use your wallet with private keys (only you can prove you sent)
