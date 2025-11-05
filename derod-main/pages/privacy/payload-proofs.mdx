@@ -131,6 +131,10 @@ C[k] = (amount × G) + address[k]  ← Same amount for ALL
 
 **Result:** Plausible deniability for all ring members. **This is how privacy works** - ambiguity protects identity in all ring-signature-based privacy systems.
 
+**Technical Note:** When an address is included as a ring member (decoy), its encrypted balance changes due to homomorphic operations, even though the address performed no actions. This is cryptographically required behavior - all ring members' encrypted balances participate in the transaction. Observing encrypted balance changes alone cannot identify the real sender, as this happens for all ring members by design.
+
+*Learn more: [Ring Signatures - Encrypted Balance Changes](/privacy/ring-signatures#encrypted-balance-changes-for-ring-members)*
+
 ---
 
 ## Recognizing Authentic Transaction Metadata

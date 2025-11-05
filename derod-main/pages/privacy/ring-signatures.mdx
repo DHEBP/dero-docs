@@ -127,6 +127,43 @@ for i := 0; i < 100; i++ {
 
 ---
 
+## Encrypted Balance Changes for Ring Members
+
+When an address is included as a ring member (decoy) in a transaction, its encrypted balance changes even though the address performed no actions. This is **normal behavior** and part of how ring signatures provide privacy.
+
+**From source code** (`walletapi/daemon_communication.go`):
+
+```go
+// When address is a ring member:
+if bytes.Compare(compressed_address, tx.Payloads[t].Statement.Publickeylist_compressed[j][:]) == 0 {
+    // Encrypted balance changes for ALL ring members
+    changes := crypto.ConstructElGamal(tx.Payloads[t].Statement.C[j], tx.Payloads[t].Statement.D)
+    changed_balance_e := previous_balance_e_tx.Add(changes)
+    
+    // This happens even if address did nothing!
+    switch {
+    case previous_balance == changed_balance:
+        ring_member = true  // Address identified as ring decoy
+    }
+}
+```
+
+**What this means:**
+1. Address with zero balance (never used) is selected as ring decoy
+2. Encrypted balance changes due to homomorphic operations
+3. This is **by design** - all ring members' encrypted balances participate in the transaction
+4. The address didn't send anything; it was just included in the ring
+
+**Why this is important:**
+- Encrypted balance changes don't indicate the address was the sender
+- Ring members are passive participants in the privacy mechanism
+- This behavior is cryptographically required for ring signatures to work
+- Observing encrypted balance changes alone cannot identify the real sender
+
+**This is normal ring signature behavior, not a protocol flaw.**
+
+---
+
 ## What Ring Signatures Protect
 
 | Threat | Protected? | How |
@@ -195,6 +232,7 @@ transfer({ ringsize: 128 }) // Maximum
 | "Bigger always better" | Trade-off: Privacy vs TX size |
 | "Ring members know they're in ring" | No - passive selection, no notification |
 | "Decoys must be online" | No - only their public keys used |
+| "Encrypted balance change = sender" | No - ring members' balances change by design even as decoys |
 
 ---
 
