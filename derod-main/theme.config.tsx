@@ -92,7 +92,7 @@ const logo = (
 
 
 const config: DocsThemeConfig = {
-  primaryHue: { dark: 193, light: 193 }, // Adjust the hue value to get the desired shade of purple
+  primaryHue: { dark: 193, light: 193 }, // Teal/cyan hue for DERO branding
   primarySaturation: { dark: 63, light: 63 }, // Adjust the saturation value for the desired intensity
   project: {
     link: 'https://github.com/deroproject/derohe'

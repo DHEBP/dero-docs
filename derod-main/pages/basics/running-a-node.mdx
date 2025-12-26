@@ -125,6 +125,15 @@ cd dero-darwin-*
 
 ### Linux (systemd)
 
+First, create a dedicated user and directory for the daemon:
+
+```bash
+sudo useradd -r -s /bin/false dero
+sudo mkdir -p /opt/dero
+sudo chown dero:dero /opt/dero
+# Copy derod binary to /opt/dero/
+```
+
 Create service file `/etc/systemd/system/derod.service`:
 
 ```ini
