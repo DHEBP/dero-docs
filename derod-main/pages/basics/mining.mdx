@@ -62,8 +62,8 @@ graph LR
 | Metric | Value | Notes |
 |--------|-------|-------|
 | **Miniblock time** | ~1-2 seconds | Σ-block (miniblock) emission |
-| **Main block** | 16 seconds | Settles 10 miniblocks |
-| **Settlement** | Every block | ~16 seconds |
+| **Main block** | 18 seconds | Settles 10 miniblocks |
+| **Settlement** | Every block | ~18 seconds |
 | **Daily miniblocks** | ~54,000 | 5,400 blocks × 10 miniblocks |
 | **Blocks per day** | ~5,400 | 86,400 seconds ÷ 16 |
 
@@ -103,7 +103,7 @@ Example:
 ```
 Memory requirement: ~256MB per thread
 Difficulty: Adjusts every block
-Target block time: 16 seconds
+Target block time: 18 seconds
 ```
 
 **Why CPU-only?**
@@ -259,7 +259,7 @@ Machine 3: ./dero-miner --daemon-rpc-address=192.168.1.100:10100
 
 **Daily emission:**
 ```
-Blocks per day: ~5,400 (86,400 seconds / 16 seconds)
+Blocks per day: ~4,800 (86,400 seconds / 18 seconds)
 Daily emission: ~3,320 DERO
 ```
 
@@ -286,7 +286,7 @@ A: No - AstroBWT is memory-hard, CPU-optimized. GPUs/ASICs have no advantage.
 A: No - Σ-blocks make solo mining practical for everyone.
 
 **Q: How often do I get paid?**  
-A: Miniblocks settle every 16 seconds (each main block). You receive rewards proportional to your contributed shares in each block.
+A: Miniblocks settle every 18 seconds (each main block). You receive rewards proportional to your contributed shares in each block.
 
 **Q: What if my hashrate is tiny?**  
 A: You'll still get rewards proportional to your hashrate share! Even 100 H/s contributes to miniblocks and earns rewards, just less frequently than higher hashrates.

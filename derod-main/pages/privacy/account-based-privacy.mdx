@@ -138,11 +138,11 @@ graph TB
 
 ### 1. Instant Transaction Confirmation
 
-**DERO's Flow:** Submit to Sigma-block (~1 sec) to Account update to Main block (~16 sec) = **~16 seconds total**
+**DERO's Flow:** Submit to Sigma-block (~1 sec) → Account update → Main block (~18 sec) = **~18 seconds total**
 
 | Aspect | DERO Account Model |
 |--------|-------------------|
-| **Confirmation** | ~16 seconds |
+| **Confirmation** | ~18 seconds |
 | **Validation** | Simple account update |
 | **Block Structure** | Sigma-blocks + main blocks |
 | **Finality** | Same-block finality |
@@ -225,7 +225,7 @@ sequenceDiagram
     S->>S: Include in Sigma-block (~1 sec)
     S->>S: Homomorphic Balance Update
     S->>M: Aggregate to Main Block
-    M->>BC: Confirm (~16 seconds)
+    M->>BC: Confirm (~18 seconds)
     BC->>U: Final - Privacy Maintained!
 ```
 
@@ -236,8 +236,8 @@ sequenceDiagram
 | **1. Submit** | 0s | User submits transaction |
 | **2. Sigma-Block** | ~1s | Included in micro-block |
 | **3. Update** | ~1s | Homomorphic balance update |
-| **4. Main Block** | ~16s | Aggregated and confirmed |
-| **5. Final** | ~16s | Transaction final |
+| **4. Main Block** | ~18s | Aggregated and confirmed |
+| **5. Final** | ~18s | Transaction final |
 
 **Why This Works:**
 - Single account validation (simple)
@@ -301,7 +301,7 @@ graph TB
 | Feature | DERO Has |
 |---------|----------|
 | **Privacy** | ✅ Built-in (homomorphic encryption) |
-| **Speed** | ✅ Fast (~16s confirmation) |
+| **Speed** | ✅ Fast (~18s confirmation) |
 | **Smart Contracts** | ✅ Natural support with privacy |
 | **Balance Check** | ✅ Instant (no sync needed) |
 | **Complexity** | ✅ Low (simple account model) |
@@ -326,7 +326,7 @@ graph TB
 
 | Feature | Benefit | Impact |
 |---------|---------|--------|
-| **⚡ Instant Transactions** | ~16 second confirmation | Fast finality |
+| **⚡ Instant Transactions** | ~18 second confirmation | Fast finality |
 | **🔍 Instant Balance** | Query encrypted balance | No sync needed |
 | **🔐 Smart Contract Privacy** | Encrypted state | Unique to DERO |
 | **📦 Simple Wallets** | Lightweight clients | Easy adoption |
@@ -338,7 +338,7 @@ graph TB
 - ✅ **Private Smart Contracts** - Unique to DERO
 - ✅ **Instant Balance Queries** - No blockchain scanning
 - ✅ **Lightweight Wallets** - Seconds, not hours
-- ✅ **Fast Confirmations** - ~16 seconds
+- ✅ **Fast Confirmations** - ~18 seconds
 - ✅ **Account Simplicity** - Lower complexity
 - ✅ **Proven in Production** - Working system, not theoretical
 
