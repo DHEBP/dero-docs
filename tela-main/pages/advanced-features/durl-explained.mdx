@@ -1,0 +1,284 @@
+---
+title: "Understanding dURLs | Decentralized URL Identity & Resolution"
+description: "Deep dive into TELA dURLs - why they're not unique, how resolution works, SCID vs dURL identity, and recovery strategies when things go wrong."
+keywords: "dURL, decentralized URL, TELA identity, SCID, smart contract identity, DERO blockchain, dURL resolution, immutable deployment"
+date: "2025-12-30"
+lastUpdated: "2025-12-30"
+authors: ["DHEBP"]
+image: "/assets/advanced/durl-explained.png"
+slug: "advanced-features/durl-explained"
+canonicalUrl: "https://tela.derod.org/advanced-features/durl-explained"
+tags: ["dURL", "advanced", "identity", "resolution", "TELA"]
+---
+
+import { Callout } from 'nextra/components'
+
+# Understanding dURLs
+
+A deep dive into how decentralized URLs work in TELA, common misconceptions, and what to do when things don't go as planned.
+
+<Callout type="warning" emoji="💡">
+**Key Insight:** A dURL is a human-friendly label, NOT a unique identifier. The SCID (Smart Contract ID) is the true identity of your application.
+</Callout>
+
+## What is a dURL?
+
+A **dURL** (Dero URL) is a human-readable name stored in your TELA contract, like `myapp.tela` or `explorer.tela`. It makes sharing and discovering applications easier than passing around 64-character SCIDs.
+
+```go
+// Stored in your INDEX or DOC contract
+33 STORE("dURL", "myapp.tela")
+```
+
+## The Common Misconception
+
+Many developers assume dURLs work like traditional domain names:
+
+| Traditional DNS | TELA dURLs |
+|-----------------|------------|
+| ✅ Unique - only one owner per domain | ❌ NOT unique - anyone can use any dURL |
+| ✅ Central registry (ICANN) | ❌ No registry - fully decentralized |
+| ✅ Enforced ownership | ❌ No enforcement - just a label |
+| ✅ Transfers between owners | ❌ Each contract has its own dURL store |
+
+**Reality:** Multiple INDEX contracts can have the exact same dURL. There's nothing preventing two developers from both deploying contracts with `calculator.tela`.
+
+---
+
+## Why dURLs Are Not Unique
+
+### Decentralization Philosophy
+
+On a decentralized blockchain, there's **no central authority** to enforce uniqueness. Implementing unique dURLs would require:
+
+- **A central registry** - Someone to approve/reject dURL claims (anti-decentralization)
+- **First-come-first-served on-chain** - Adds complexity, gas costs, and enables squatting
+- **Governance voting** - Slow and impractical for app naming
+
+TELA chose **simplicity and freedom** over enforced uniqueness. Anyone can deploy anything with any dURL.
+
+### Legitimate Use Cases
+
+There are valid reasons multiple contracts might share a dURL:
+
+| Scenario | Why Same dURL Makes Sense |
+|----------|---------------------------|
+| **Forking an app** | Developer forks `calculator.tela` to improve it |
+| **Testnet vs Mainnet** | Same app deployed to both networks |
+| **Competing implementations** | Two devs independently build a "calculator" |
+| **Version transitions** | v1 and v2 coexist temporarily |
+
+---
+
+## SCID vs dURL: The True Identity
+
+Understanding this distinction is critical:
+
+| Property | SCID | dURL |
+|----------|------|------|
+| **Uniqueness** | ✅ Cryptographically unique | ❌ Not enforced |
+| **Format** | 64-character hex hash | Human-readable (e.g., `myapp.tela`) |
+| **Changes** | Never (permanent) | Can be updated (if INDEX is RS2) |
+| **Purpose** | True contract identity | Human convenience |
+| **Analogy** | Git commit hash | Branch name or tag |
+
+<Callout type="info" emoji="🔑">
+**Think of it like Git:**
+- **SCID** = Commit SHA (permanent, unique, cryptographic)
+- **dURL** = Branch name (human-friendly label, can point to different commits)
+</Callout>
+
+### Example
+
+```
+Contract A (SCID: abc123...)
+├── dURL: "explorer.tela"
+└── Deployed by: Alice
+
+Contract B (SCID: def456...)
+├── dURL: "explorer.tela"  ← Same dURL!
+└── Deployed by: Bob
+
+Both exist. Both are valid. Both have the same dURL.
+```
+
+---
+
+## How dURL Resolution Works
+
+When a browser or host app resolves a dURL, here's what happens:
+
+```
+User navigates to: "explorer.tela"
+         ↓
+Gnomon searches all indexed TELA contracts
+         ↓
+Finds ALL contracts where dURL = "explorer.tela"
+         ↓
+Returns FIRST match found
+         ↓
+Browser serves that contract's content
+```
+
+### The Problem with Duplicates
+
+With multiple contracts sharing a dURL:
+
+- **No deterministic resolution** - Which one you get depends on indexer state
+- **No "latest wins"** - Newer deployments don't automatically override older ones
+- **No rating-based priority** - A 0-rated app might be served over a 99-rated one
+- **No owner priority** - The original deployer has no special claim
+
+<Callout type="error" emoji="⚠️">
+**Critical:** If you deploy a new INDEX with the same dURL as an existing one, users may still get the old version. Resolution is unpredictable with duplicates.
+</Callout>
+
+---
+
+## Best Practices
+
+### 1. Use Unique dURLs
+
+Before deploying, search for existing dURLs:
+
+```bash
+» search durl myapp
+```
+
+If it exists, choose a different name or add a suffix:
+- `myapp-v2.tela`
+- `myapp-2024.tela`
+- `myapp-yourname.tela`
+
+### 2. Share SCIDs for Critical Apps
+
+For important applications, share the SCID directly rather than relying on dURL resolution:
+
+```
+✅ "Install from SCID: abc123def456..."
+❌ "Navigate to myapp.tela"
+```
+
+### 3. Version Your dURLs
+
+If you anticipate multiple versions:
+
+```
+myapp.tela        # Version 1
+myapp-v2.tela     # Version 2
+myapp-v3.tela     # Version 3
+```
+
+### 4. Check Before Deploying
+
+Always verify your chosen dURL isn't already in use:
+
+```bash
+» search durl your-chosen-name
+```
+
+---
+
+## Recovery Scenarios
+
+### "I deployed my INDEX with ringsize > 2 and can't update it"
+
+If your INDEX is immutable (anonymous deployment), you **cannot**:
+- Update which DOCs it references
+- Fix bugs in the code
+- Change the dURL or metadata
+
+**Your only option:**
+
+1. **Deploy new DOC contracts** with your updated code
+2. **Deploy a NEW INDEX** (new SCID) with ringsize 2 this time
+3. **Use a different dURL** to avoid resolution conflicts
+4. **Share the new SCID** with your users
+5. **Rate the old INDEX down** (optional) to reduce its visibility
+
+```bash
+# Deploy new INDEX with ringsize 2
+» install-index
+Enter INDEX name » My App v2
+Enter INDEX dURL » myapp-v2.tela  # Different from original!
+Enter INDEX install ringsize » 2  # Updateable this time!
+```
+
+### "Someone else is using my dURL"
+
+Unfortunately, there's no recourse. dURLs are not owned or reserved. Options:
+
+1. **Choose a different dURL** - Add your name, version, or unique suffix
+2. **Compete on quality** - If your app is better rated, users may find it
+3. **Share your SCID directly** - Bypass dURL resolution entirely
+
+### "I want to 'transfer' my dURL to a new INDEX"
+
+You can't transfer a dURL because it's not an owned resource. Instead:
+
+1. Deploy new INDEX with the **same dURL** (both will exist)
+2. Rate the old one down to 0 (if you own it)
+3. Hope resolution favors your new one (not guaranteed)
+
+**Better approach:** Use a new dURL and communicate the change to users.
+
+---
+
+## How Browsers Handle dURLs
+
+### Browser Behavior
+
+TELA browsers use Gnomon to resolve dURLs:
+
+```go
+// Simplified resolution logic
+func ResolveDURL(durl string) (scid string, found bool) {
+    apps := gnomon.GetTELAApps()
+    for _, app := range apps {
+        if app["durl"] == durl {
+            return app["scid"], true  // Returns FIRST match
+        }
+    }
+    return "", false
+}
+```
+
+**Key points:**
+- Resolution is case-insensitive
+- First match wins (order not guaranteed)
+- No fallback or priority system
+
+### Direct SCID Access
+
+Browsers also support direct SCID navigation, bypassing dURL resolution entirely:
+
+```
+dero://abc123def456...  # Direct SCID access
+```
+
+This is the most reliable way to access a specific contract.
+
+---
+
+## Summary
+
+| Concept | Reality |
+|---------|---------|
+| **dURL uniqueness** | NOT enforced - multiple contracts can share a dURL |
+| **True identity** | SCID is the unique identifier, not dURL |
+| **Resolution** | First-match, unpredictable with duplicates |
+| **Ownership** | No one "owns" a dURL |
+| **Best practice** | Use unique dURLs, share SCIDs for critical apps |
+| **Recovery** | Deploy new INDEX with different dURL |
+
+<Callout type="success" emoji="✅">
+**Remember:** The SCID is your contract's permanent, unique identity. The dURL is just a convenient label. Plan accordingly!
+</Callout>
+
+## Related Documentation
+
+- [TELA-INDEX-1 Specification](/tela/tela-index-specification) - INDEX contract details
+- [TELA-DOC-1 Specification](/tela/tela-doc-specification) - DOC contract details  
+- [Version Control](/tutorials/version-upgrades) - Managing updates and versions
+- [Security Model](/tela/tela-security-model) - Understanding immutability guarantees
+
