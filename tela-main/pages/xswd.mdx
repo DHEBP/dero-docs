@@ -63,7 +63,7 @@ The first message sent to the XSWD server must be your application's identificat
 
 ```javascript
 const applicationData = {
-    "id": string,          // REQUIRED: 64-character hex string (SHA-256 hash)
+    "id": string,          // REQUIRED: 64-character hex string (any valid hex)
     "name": string,        // REQUIRED: 1-255 characters, ASCII only
     "description": string, // REQUIRED: 1-255 characters, ASCII only
     "url": string,         // REQUIRED: Must match Origin header, start with http:// or https://
@@ -76,17 +76,41 @@ const applicationData = {
 
 | Field | Requirement | Validation |
 |-------|-------------|------------|
-| `id` | **64 hex characters** | Must be valid hexadecimal. Use SHA-256 hash of your app name. |
+| `id` | **64 hex characters** | Must be valid hexadecimal. Any 64-char hex string works. |
 | `name` | **1-255 chars, ASCII only** | No Unicode characters allowed. Will fail silently with Unicode. |
 | `description` | **1-255 chars, ASCII only** | Clearly describe what permissions your app needs. |
 | `url` | **Must match Origin** | Must start with `http://` or `https://`. Max 255 chars. |
 
 ### Generating a Valid App ID
 
-The `id` field must be a 64-character hexadecimal string. The recommended approach is to use a SHA-256 hash of your application name:
+The `id` field must be a 64-character hexadecimal string. The ID is essentially **arbitrary** — the XSWD server only validates length and hex format.
 
+**From Source Code** (`walletapi/xswd/xswd.go`):
+
+```go
+// App ID validation (lines 420-431):
+id := strings.TrimSpace(app.Id)
+if len(id) != 64 {
+    response = "Invalid ID size"
+}
+if _, err := hex.DecodeString(id); err != nil {
+    response = "Invalid hexadecimal ID"
+}
+
+// Result: Any 64-char hex string is valid
+// No derivation from app name, no uniqueness check
+```
+
+**Option 1: Random generation (store for reuse)**
 ```javascript
-// Generate a valid App ID using SHA-256
+const appId = Array.from({length: 64}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+).join('');
+localStorage.setItem('xswd_app_id', appId);
+```
+
+**Option 2: SHA-256 of app name (deterministic)**
+```javascript
 async function generateAppId(appName) {
     const encoder = new TextEncoder();
     const data = encoder.encode(appName);
@@ -95,10 +119,17 @@ async function generateAppId(appName) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Usage
 const appId = await generateAppId('My TELA Application v1.0');
-// Returns: "a1b2c3d4..." (64 hex characters)
 ```
+
+**Option 3: Static/hardcoded**
+```javascript
+const appId = "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b";
+```
+
+<Callout type="info" emoji="ℹ️">
+**Can App IDs be duplicated?** Yes. Nothing prevents someone from using the same App ID as another app. The wallet only checks length, hex validity, and that the ID isn't already connected in the current session. For TELA applications, the **SCID is the true identity**, not the applicationData.
+</Callout>
 
 <Callout type="error" emoji="🚨">
   **ASCII Only**: The `name` and `description` fields must contain only ASCII characters (0-127). Unicode characters like emojis, smart quotes, or non-English characters will cause the connection to be rejected. This is validated server-side using Go's `unicode.MaxASCII` check.
@@ -109,22 +140,22 @@ const appId = await generateAppId('My TELA Application v1.0');
 ### Connection Setup
 
 ```javascript
-// Generate App ID from name (SHA-256 hash)
-async function generateAppId(appName) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(appName);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// Get or create App ID (stored for permission continuity)
+function getOrCreateAppId() {
+    let appId = localStorage.getItem('xswd_app_id');
+    if (!appId) {
+        appId = Array.from({length: 64}, () => 
+            Math.floor(Math.random() * 16).toString(16)
+        ).join('');
+        localStorage.setItem('xswd_app_id', appId);
+    }
+    return appId;
 }
 
 // Basic XSWD connection
-async function connectToXSWD() {
-    // Generate valid App ID
-    const appId = await generateAppId('My TELA Application v1.0');
-    
+function connectToXSWD() {
     const applicationData = {
-        "id": appId,  // 64-char hex string
+        "id": getOrCreateAppId(),  // 64-char hex string
         "name": "My TELA Application",  // ASCII only, max 255 chars
         "description": "Read-only blockchain explorer - no wallet access required",  // ASCII only
         "url": window.location.origin  // Must match Origin header
@@ -411,7 +442,7 @@ const appId = await generateAppId('DERO Block Explorer v1.0');
 
 // GOOD: Clear, honest description - ASCII only!
 const applicationData = {
-    "id": appId,  // 64-char hex from SHA-256
+    "id": appId,  // Any valid 64-char hex string
     "name": "DERO Block Explorer",
     "description": "Read-only blockchain explorer - no wallet access required",
     "url": "https://explorer.example.com"

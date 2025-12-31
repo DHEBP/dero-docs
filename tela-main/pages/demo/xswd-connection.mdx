@@ -89,6 +89,10 @@ function connect() {
 
 ## Critical Points
 
+<Callout type="error" emoji="🚨">
+**ASCII Only Requirement:** The `name` and `description` fields in application data must contain only ASCII characters (bytes 0-127). Unicode characters like smart quotes, emojis, or non-English characters will cause the wallet to reject the connection with "Invalid name" or "Invalid description". This is enforced by the DERO wallet's XSWD server.
+</Callout>
+
 ### 1. ✅ Use `localhost` (Not `127.0.0.1`)
 
 ```javascript
@@ -144,6 +148,7 @@ socket.onclose   // Clean up and reconnect if needed
 | Mistake | Why It Fails | Correct Pattern |
 |---------|--------------|-----------------|
 | Invalid ID size/format | "Invalid ID size" error - wallet requires exactly 64 hex chars | Use static 64-character hex string |
+| Unicode in name/description | "Invalid name" or "Invalid description" error | Use ASCII only (no emojis, smart quotes, etc.) |
 | Generating new ID each connection | Breaks permission continuity - user must approve repeatedly | Generate once and store in localStorage |
 | Using `127.0.0.1` | May work but doesn't match verified demo | Use `localhost` |
 | Delaying `send()` | Connection closes before handshake | Send immediately in `onopen` |

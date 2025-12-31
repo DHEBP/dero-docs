@@ -41,6 +41,14 @@ import { Callout } from 'nextra/components'
 | **API Methods** | Raw RPC calls | High-level helpers |
 | **Request Management** | None | Queuing with timeouts |
 
+<Callout type="error" emoji="🚨">
+**ASCII Only Requirement:** When customizing `name` and `description` in applicationData, use only ASCII characters (bytes 0-127). Unicode characters like smart quotes, emojis, or non-English characters will cause the wallet to reject the connection with "Invalid name" or "Invalid description". This is enforced by the DERO wallet's XSWD server.
+</Callout>
+
+<Callout type="info" emoji="ℹ️">
+**App ID:** The ID is arbitrary — any 64-char hex string works. The library uses `generateHexId(64)` for random generation. You can also use SHA-256 of your app name via `generateAppIdSHA256()` if you prefer deterministic IDs.
+</Callout>
+
 ---
 
 ## What Can You Do With XSWD Advanced?
@@ -303,6 +311,15 @@ Study XSWD Advanced to learn production-grade XSWD patterns, error handling, and
   function generateHexId(length) {
     return Array.from({ length }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
+  
+  // Generate App ID using SHA-256 (recommended - deterministic)
+  async function generateAppIdSHA256(appName) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(appName);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
 
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -321,12 +338,13 @@ Study XSWD Advanced to learn production-grade XSWD patterns, error handling, and
     maxReconnectAttempts: 10,
 
     // Identity and handshake
+    // IMPORTANT: name and description must be ASCII only (no Unicode characters)
     applicationId: null,
     applicationStorageKey: 'telaExplorerAppId',
     applicationData: {
       id: null,
-      name: 'TELA Explorer',
-      description: 'DERO Blockchain Explorer on TELA',
+      name: 'TELA Explorer',  // ASCII only, max 255 chars
+      description: 'DERO Blockchain Explorer on TELA',  // ASCII only, max 255 chars
       url: typeof window !== 'undefined' ? ('http://localhost:' + location.port) : ''
     },
 

@@ -32,6 +32,14 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
 - ✅ **Development mode** - Test without wallet  
 - ✅ **Uses connection patterns from app1 demo** - Based on proven working code  
 
+<Callout type="error" emoji="🚨">
+**ASCII Only Requirement:** When customizing `name` and `description` in the applicationData, use only ASCII characters (bytes 0-127). Unicode characters like smart quotes, emojis, or non-English characters will cause the wallet to reject the connection. This is enforced by the DERO wallet's XSWD server.
+</Callout>
+
+<Callout type="info" emoji="ℹ️">
+**App ID:** The ID is arbitrary — any 64-char hex string works. The library provides both `getOrCreateAppId()` (random, stored) and `generateAppIdSHA256()` (deterministic). Choose based on preference.
+</Callout>
+
 ## xswd-basic.js (15KB)
 
 ```javascript
@@ -58,10 +66,11 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
     ],
     
     // Application identity (matches app1 demo pattern)
+    // IMPORTANT: name and description must be ASCII only (no Unicode)
     applicationData: {
       id: null,
-      name: 'TELA Application',
-      description: 'TELA application with DERO connectivity',
+      name: 'TELA Application',  // ASCII only, max 255 chars
+      description: 'TELA application with DERO connectivity',  // ASCII only, max 255 chars
       url: typeof window !== 'undefined' ? ('http://localhost:' + location.port) : ''
     },
     
@@ -372,6 +381,16 @@ A **lightweight XSWD implementation** under 18KB for basic TELA applications tha
     },
     
     // Utility functions
+    
+    // Generate App ID using SHA-256 (recommended - deterministic)
+    async generateAppIdSHA256(appName) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(appName);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+    
     getOrCreateAppId() {
       // Get or create stored application ID (maintains permission continuity)
       const storageKey = 'xswd_app_id';

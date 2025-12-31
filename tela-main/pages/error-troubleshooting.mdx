@@ -24,6 +24,7 @@ Comprehensive guide to diagnosing and fixing common errors in TELA development a
 ## Table of Contents
 
 - [XSWD Connection Errors](#xswd-connection-errors)
+  - [XSWD Error Codes Reference](#xswd-error-codes-reference)
 - [Deployment Errors](#deployment-errors)
 - [File Size Errors](#file-size-errors)
 - [Runtime Errors](#runtime-errors)
@@ -126,23 +127,29 @@ const applicationData = {
 }
 ```
 
-**Cause:** The `id` field must be exactly 64 hexadecimal characters (representing a 32-byte hash).
+**Cause:** The `id` field must be exactly 64 hexadecimal characters.
 
 **Solution:**
 ```javascript
-// Generate a valid App ID using SHA-256
+// Option 1: Random generation (store for reuse)
+const appId = Array.from({length: 64}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+).join('');
+localStorage.setItem('xswd_app_id', appId);
+
+// Option 2: SHA-256 of app name (deterministic)
 async function generateAppId(appName) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(appName);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const data = new TextEncoder().encode(appName);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Usage
-const appId = await generateAppId('My TELA Application v1.0');
-console.log(appId);  // "a1b2c3d4e5f6..." (64 hex chars)
-console.log(appId.length);  // 64
+// Option 3: Static/hardcoded
+const appId = "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b";
+
+// Verify length
+console.log(appId.length);  // Must be 64
 ```
 
 ### Error: "Invalid URL compared to origin"
@@ -367,6 +374,21 @@ class XSWDConnection {
     }
 }
 ```
+
+### XSWD Error Codes Reference
+
+The XSWD server returns standard JSON-RPC error codes. Understanding these helps diagnose issues quickly:
+
+| Code | Meaning | Common Cause |
+|------|---------|--------------|
+| `-32700` | Parse error | Invalid JSON in request |
+| `-32600` | Invalid request | Missing required fields |
+| `-32601` | Method not found | Typo in method name, or method not available |
+| `-32602` | Invalid params | Wrong parameter types or values |
+| `-32603` | Internal error | Server-side error |
+| `-32000` to `-32099` | Server error | Application-specific errors |
+
+**Rate Limiting:** The XSWD server enforces a rate limit of **10 requests per second** with a burst allowance of **20 requests**. Exceeding this will result in requests being dropped or delayed.
 
 ### Error: "Method not found"
 

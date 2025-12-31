@@ -254,6 +254,47 @@ window.addEventListener('beforeunload', function() {
 7. **Handle all events**: `open`, `message`, `error`, `close`
 8. **Check socket state** before sending: `socket.readyState === WebSocket.OPEN`
 9. **URL must match origin** - Use `"http://localhost:" + location.port` for app data
+10. **ASCII only for `name` and `description`** - Unicode characters will cause rejection
+
+<Callout type="error" emoji="🚨">
+**ASCII Only Requirement:** The `name` and `description` fields must contain only ASCII characters (bytes 0-127). Unicode characters like smart quotes (`"` `"`), emojis, or non-English characters will cause the wallet to reject the connection with "Invalid name" or "Invalid description". This is enforced in the DERO wallet's XSWD server code.
+</Callout>
+
+### **App ID Generation Options**
+
+The App ID is essentially arbitrary — any valid 64-character hexadecimal string works. The XSWD server only validates length and hex format, nothing more.
+
+**Option 1: Random generation (simple)**
+```javascript
+const appId = Array.from({length: 64}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+).join('');
+localStorage.setItem('xswd_app_id', appId); // Store for reuse
+```
+
+**Option 2: SHA-256 of app name (deterministic)**
+```javascript
+async function generateAppId(appName) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(appName);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const appId = await generateAppId('My TELA Application v1.0');
+```
+
+**Option 3: Static ID (hardcoded)**
+```javascript
+const appId = "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b";
+```
+
+All approaches are valid — choose based on your preference. The key is to **reuse the same ID** across sessions to maintain permission continuity.
+
+<Callout type="info" emoji="ℹ️">
+**Can App IDs be duplicated?** Yes. Nothing prevents someone from using the same App ID as another app. The wallet only checks: is it 64 hex chars, is it valid hex, and is this ID already connected in the current session. For TELA applications, the **SCID (Smart Contract ID) is the true identity**, not the applicationData.
+</Callout>
 
 ---
 

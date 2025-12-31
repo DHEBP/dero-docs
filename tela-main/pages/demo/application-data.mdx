@@ -42,17 +42,46 @@ const applicationData = {
 - **Format:** Exactly 64 hexadecimal characters (0-9, a-f)
 - **Example:** `"71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b"` (from app1)
 - **Purpose:** Application identifier for connection and permission management
-- **Important:** Use a static ID (generate once and store in localStorage). The wallet tracks permissions by ID, so reusing the same ID maintains permission continuity across sessions. This matches the app1 demo pattern.
+- **Important:** The ID is essentially arbitrary — any valid 64-char hex string works. The wallet only validates length and hex format.
+- **Tip:** Reuse the same ID across sessions to maintain permission continuity (store in localStorage or use a static value).
+
+**Generation options:**
+```javascript
+// Option 1: Random (store for reuse)
+const appId = Array.from({length: 64}, () => 
+    Math.floor(Math.random() * 16).toString(16)).join('');
+
+// Option 2: SHA-256 of app name (deterministic)
+async function generateAppId(appName) {
+    const data = new TextEncoder().encode(appName);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Option 3: Static/hardcoded
+const appId = "71605a32e3b0c44298fc1c549afbf4c8496fb92427ae41e4649b934ca495991b";
+```
+
+<Callout type="info" emoji="ℹ️">
+**Note:** App IDs can be duplicated — nothing prevents reuse across different apps. For TELA applications, the **SCID is the true identity**, not the applicationData.
+</Callout>
 
 ### `name` (Required)
 - **Type:** String
+- **Format:** 1-255 characters, **ASCII only**
 - **Purpose:** Display name shown in wallet approval dialog
 - **Example:** `"My TELA Application"`
 
 ### `description` (Required)
 - **Type:** String
+- **Format:** 1-255 characters, **ASCII only**
 - **Purpose:** Explanation of what your app does
 - **Example:** `"Connecting to wallet for DERO operations"`
+
+<Callout type="error" emoji="🚨">
+**ASCII Only Requirement:** The `name` and `description` fields must contain only ASCII characters (bytes 0-127). Unicode characters like smart quotes (`"` `"`), emojis, or non-English characters will cause the wallet to reject the connection with "Invalid name" or "Invalid description". This is enforced by the DERO wallet's XSWD server.
+</Callout>
 
 ### `url` (Required)
 - **Type:** String
@@ -130,6 +159,7 @@ socket.onmessage = function(event) {
 | Mistake | Issue | Fix |
 |---------|-------|-----|
 | Variable-length or wrong-size ID | "Invalid ID size" error | Use exactly 64 hexadecimal characters |
+| Unicode in name/description | "Invalid name" or "Invalid description" | Use ASCII only (no emojis, smart quotes, etc.) |
 | Missing `url` field | Wallet rejects connection | Always include `url: "http://localhost:" + location.port` |
 | `url` without port | Connection may fail | Use `location.port` not just `origin` |
 | Delaying `send()` | Connection closes | Send immediately in `onopen` |
