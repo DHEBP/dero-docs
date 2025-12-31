@@ -51,33 +51,108 @@ TELA Application ←→ XSWD Protocol ←→ DERO Wallet ←→ DERO Network
 4. **Secure Channel**: Encrypted communication established
 5. **API Access**: Full DERO RPC methods available
 
+## Handshake Requirements
+
+The first message sent to the XSWD server must be your application's identification data. The wallet validates this data strictly.
+
+<Callout type="warning" emoji="⚠️">
+  **Critical Requirements**: The handshake data has strict validation rules. Failure to meet these requirements will result in connection rejection.
+</Callout>
+
+### ApplicationData Structure
+
+```javascript
+const applicationData = {
+    "id": string,          // REQUIRED: 64-character hex string (SHA-256 hash)
+    "name": string,        // REQUIRED: 1-255 characters, ASCII only
+    "description": string, // REQUIRED: 1-255 characters, ASCII only
+    "url": string,         // REQUIRED: Must match Origin header, start with http:// or https://
+    "permissions": object, // OPTIONAL: Pre-set permissions (requires signature)
+    "signature": string    // OPTIONAL: DERO signed message (required for pre-set permissions)
+};
+```
+
+### Field Requirements
+
+| Field | Requirement | Validation |
+|-------|-------------|------------|
+| `id` | **64 hex characters** | Must be valid hexadecimal. Use SHA-256 hash of your app name. |
+| `name` | **1-255 chars, ASCII only** | No Unicode characters allowed. Will fail silently with Unicode. |
+| `description` | **1-255 chars, ASCII only** | Clearly describe what permissions your app needs. |
+| `url` | **Must match Origin** | Must start with `http://` or `https://`. Max 255 chars. |
+
+### Generating a Valid App ID
+
+The `id` field must be a 64-character hexadecimal string. The recommended approach is to use a SHA-256 hash of your application name:
+
+```javascript
+// Generate a valid App ID using SHA-256
+async function generateAppId(appName) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(appName);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Usage
+const appId = await generateAppId('My TELA Application v1.0');
+// Returns: "a1b2c3d4..." (64 hex characters)
+```
+
+<Callout type="error" emoji="🚨">
+  **ASCII Only**: The `name` and `description` fields must contain only ASCII characters (0-127). Unicode characters like emojis, smart quotes, or non-English characters will cause the connection to be rejected. This is validated server-side using Go's `unicode.MaxASCII` check.
+</Callout>
+
 ## Basic Implementation
 
 ### Connection Setup
 
 ```javascript
+// Generate App ID from name (SHA-256 hash)
+async function generateAppId(appName) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(appName);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Basic XSWD connection
-function connectToXSWD() {
+async function connectToXSWD() {
+    // Generate valid App ID
+    const appId = await generateAppId('My TELA Application v1.0');
+    
     const applicationData = {
-        "id": "your-unique-app-id",
-        "name": "Your TELA Application",
-        "description": "Description of your app functionality", 
-        "url": "http://localhost:" + location.port
+        "id": appId,  // 64-char hex string
+        "name": "My TELA Application",  // ASCII only, max 255 chars
+        "description": "Read-only blockchain explorer - no wallet access required",  // ASCII only
+        "url": window.location.origin  // Must match Origin header
     };
     
     const socket = new WebSocket("ws://localhost:44326/xswd");
     
     socket.addEventListener("open", function(event) {
-        console.log("🔗 XSWD connection opened");
+        console.log("XSWD connection opened");
         socket.send(JSON.stringify(applicationData));
     });
     
     socket.addEventListener("message", function(event) {
         const response = JSON.parse(event.data);
         
-        if (response.accepted) {
-            console.log("✅ XSWD connection accepted");
-            // Connection established - can now make API calls
+        if (response.accepted !== undefined) {
+            if (response.accepted) {
+                console.log("XSWD connection accepted:", response.message);
+                // Connection established - can now make API calls
+            } else {
+                console.error("XSWD connection rejected:", response.message);
+                // Common rejection reasons:
+                // - "Invalid ID size" (not 64 chars)
+                // - "Invalid hexadecimal ID"
+                // - "Invalid name" (empty, >255 chars, or non-ASCII)
+                // - "Invalid description" (empty, >255 chars, or non-ASCII)
+                // - "Invalid URL compared to origin"
+            }
         } else if (response.jsonrpc) {
             // Handle API response
             handleAPIResponse(response);
@@ -85,11 +160,11 @@ function connectToXSWD() {
     });
     
     socket.addEventListener("close", function(event) {
-        console.log("🔌 XSWD connection closed");
+        console.log("XSWD connection closed");
     });
     
     socket.addEventListener("error", function(event) {
-        console.error("🚨 XSWD connection error:", event);
+        console.error("XSWD connection error:", event);
     });
     
     return socket;
@@ -131,31 +206,189 @@ const balance = await makeXSWDCall(socket, 'GetBalance');
 const block = await makeXSWDCall(socket, 'DERO.GetBlock', { height: 12345 });
 ```
 
-## 📚 Available Methods
+## Permission System
 
-### DERO Core Methods
+<Callout type="info" emoji="🔑">
+  **How Permissions Work**: XSWD uses a per-method permission system. Understanding this is crucial for building user-friendly applications.
+</Callout>
+
+### Permission Types
+
+The XSWD server defines 5 permission levels:
+
+| Permission | Value | Behavior |
+|------------|-------|----------|
+| `Ask` | 0 | Prompt user for each request (default) |
+| `Allow` | 1 | Allow this specific request |
+| `Deny` | 2 | Deny this specific request |
+| `AlwaysAllow` | 3 | Remember: always allow this method |
+| `AlwaysDeny` | 4 | Remember: always deny this method |
+
+### Default Behavior: forceAsk Mode
+
+**Important**: The default XSWD server runs in `forceAsk` mode, meaning:
+
+- **ALL wallet method requests will prompt the user** regardless of any pre-set permissions
+- Pre-set permissions in the handshake are ignored unless the wallet disables `forceAsk`
+- This is a security feature to prevent apps from silently accessing wallet functions
+
+### Daemon Methods: Always Allowed
+
+Methods prefixed with `DERO.` are **automatically allowed without prompting**:
+
+```javascript
+// These NEVER require user permission - wallet proxies to daemon
+await xswd.call('DERO.GetInfo');      // Always works
+await xswd.call('DERO.GetBlock', { height: 100 });  // Always works
+await xswd.call('DERO.GetSC', { scid: '...' });     // Always works
+
+// These ALWAYS prompt the user (in forceAsk mode)
+await xswd.call('GetAddress');   // User must approve
+await xswd.call('GetBalance');   // User must approve
+await xswd.call('Transfer', {}); // User must approve
+```
+
+This is why **read-only explorers work seamlessly** - they only use `DERO.*` methods which don't require permissions.
+
+### Pre-Set Permissions (Advanced)
+
+To request pre-set permissions, you must provide a **DERO signature** where the signed message is your App ID:
+
+```javascript
+const applicationData = {
+    "id": "a1b2c3d4...",  // 64-char hex
+    "name": "My App",
+    "description": "Needs balance access",
+    "url": "https://myapp.com",
+    "permissions": {
+        "GetBalance": 3,   // AlwaysAllow (3)
+        "GetAddress": 3,   // AlwaysAllow (3)
+        "Transfer": 4      // AlwaysDeny (4) - explicitly deny
+    },
+    "signature": "-----BEGIN DERO SIGNED MESSAGE-----\n..."  // Required!
+};
+```
+
+<Callout type="warning" emoji="⚠️">
+  **Signature Required**: If you include `permissions` without a valid `signature`, the connection will be rejected with: "Application is requesting permissions without signature"
+</Callout>
+
+### Methods That Cannot Store AlwaysAllow
+
+These sensitive methods will **always prompt the user**, even with a valid signature:
+
+- `Subscribe` - Event subscriptions
+- `SignData` - Signing arbitrary data
+- `CheckSignature` - Signature verification
+- `GetDaemon` - Get daemon endpoint
+- `QueryKey` / `query_key` - Query wallet keys
+
+### Error Codes
+
+| Code | Constant | Meaning |
+|------|----------|---------|
+| -32043 | `PermissionDenied` | User denied this request |
+| -32044 | `PermissionAlwaysDenied` | User set "Always Deny" for this method |
+| -32070 | `RateLimitExceeded` | Too many requests (>10/sec) |
+
+## Rate Limiting
+
+XSWD enforces rate limiting to prevent abuse:
+
+- **Rate**: 10 requests per second
+- **Burst**: Up to 20 requests in a burst
+- **Penalty**: Exceeding the limit **disconnects the application**
+
+```javascript
+// Built-in rate limiter
+class RateLimiter {
+    constructor(rps = 10) {
+        this.tokens = rps;
+        this.maxTokens = rps * 2;  // Burst capacity
+        this.lastRefill = Date.now();
+        this.refillRate = 1000 / rps;  // ms per token
+    }
+    
+    async acquire() {
+        const now = Date.now();
+        const elapsed = now - this.lastRefill;
+        this.tokens = Math.min(this.maxTokens, this.tokens + elapsed / this.refillRate);
+        this.lastRefill = now;
+        
+        if (this.tokens < 1) {
+            const waitTime = (1 - this.tokens) * this.refillRate;
+            await new Promise(r => setTimeout(r, waitTime));
+            this.tokens = 0;
+        } else {
+            this.tokens -= 1;
+        }
+    }
+}
+
+const limiter = new RateLimiter(10);
+
+async function rateLimitedCall(method, params) {
+    await limiter.acquire();
+    return xswd.call(method, params);
+}
+```
+
+## Available Methods
+
+### Daemon Methods (No Permission Required)
+
+These methods are proxied to the daemon and **never require user approval**:
+
 - `DERO.GetInfo` - Network status and statistics
 - `DERO.GetBlock` - Block data by height or hash
+- `DERO.GetBlockHeaderByTopoHeight` - Block header by topo height
+- `DERO.GetBlockHeaderByHash` - Block header by hash
 - `DERO.GetTransaction` - Transaction details
-- `DERO.GetTxPool` - Pending transactions
+- `DERO.GetTxPool` - Pending transactions (mempool)
 - `DERO.GetLastBlockHeader` - Latest block header
-- `DERO.GetSC` - Smart contract data
+- `DERO.GetHeight` - Current block height
+- `DERO.GetBlockCount` - Total block count
+- `DERO.GetSC` - Smart contract data and variables
+- `DERO.GetEncryptedBalance` - Encrypted balance for address
+- `DERO.GetRandomAddress` - Random registered address
+- `DERO.NameToAddress` - Resolve name service
+- `DERO.GetGasEstimate` - Estimate transaction gas
+- `DERO.SendRawTransaction` - Broadcast raw transaction
 
-### Wallet Methods
+### Wallet Methods (Permission Required)
+
+These methods **always prompt the user** in default `forceAsk` mode:
+
 - `GetAddress` - Wallet address
 - `GetBalance` - Account balance
 - `GetHeight` - Wallet sync height
+- `GetTransferbyTXID` - Transaction by TXID
+- `GetTransfers` - Transaction history
+- `GetTrackedAssets` - Tracked token balances
 - `Transfer` - Send transactions
+- `scinvoke` - Invoke smart contract
 - `MakeIntegratedAddress` - Create payment addresses
 - `SplitIntegratedAddress` - Parse payment addresses
+- `QueryKey` - Query wallet keys (mnemonic)
 
-### Gnomon Indexer Methods
+### XSWD-Specific Methods
+
+- `HasMethod` - Check if method is available
+- `Subscribe` - Subscribe to events (new_balance, new_topoheight, new_entry)
+- `Unsubscribe` - Unsubscribe from events
+- `SignData` - Sign arbitrary data with wallet
+- `CheckSignature` - Verify a DERO signature
+- `GetDaemon` - Get connected daemon endpoint
+
+### Gnomon Indexer Methods (If Available)
+
 - `Gnomon.GetLastIndexHeight` - Indexer status
 - `Gnomon.GetAllOwnersAndSCIDs` - All smart contracts
 - `Gnomon.GetSCIDVariableDetails` - Contract variables
 - `Gnomon.GetAllSCIDInvokeDetails` - Contract interactions
 
-### EPOCH Mining Methods
+### EPOCH Mining Methods (If Available)
+
 - `AttemptEPOCH` - Submit mining hashes
 - `GetMaxHashesEPOCH` - Mining limits
 - `GetSessionEPOCH` - Mining session stats
@@ -168,22 +401,62 @@ const block = await makeXSWDCall(socket, 'DERO.GetBlock', { height: 12345 });
   **Privacy by Design**: XSWD ensures that private keys and sensitive wallet data never leave the user's local environment.
 </Callout>
 
+### Best Practices for App Descriptions
+
+Your `description` field is shown to users when they approve the connection. Be clear about what your app does:
+
 ```javascript
-// ✅ SECURE: Request only necessary permissions
+// Generate proper App ID
+const appId = await generateAppId('DERO Block Explorer v1.0');
+
+// GOOD: Clear, honest description - ASCII only!
 const applicationData = {
-    "id": "block-explorer-v1",
+    "id": appId,  // 64-char hex from SHA-256
     "name": "DERO Block Explorer",
-    "description": "Read-only blockchain explorer", // Clear about permissions
-    "url": "http://localhost:8080"
+    "description": "Read-only blockchain explorer - no wallet access required",
+    "url": "https://explorer.example.com"
 };
 
-// ❌ AVOID: Vague or misleading descriptions
-const badApplicationData = {
-    "id": "app123",
-    "name": "App", 
-    "description": "Does stuff", // Unclear - users won't trust this
-    "url": "http://localhost:8080"
+// BAD: Invalid ID format
+const badApp1 = {
+    "id": "block-explorer-v1",  // ERROR: Not 64 hex chars!
+    "name": "Explorer",
+    "description": "Explores blocks",
+    "url": "https://example.com"
 };
+
+// BAD: Unicode characters (will be rejected!)
+const badApp2 = {
+    "id": appId,
+    "name": "DERO Explorer",  // OK
+    "description": "View blocks and transactions",  // ERROR: Smart quote!
+    "url": "https://example.com"
+};
+
+// BAD: Vague description
+const badApp3 = {
+    "id": appId,
+    "name": "App",
+    "description": "Does stuff",  // Users won't trust this
+    "url": "https://example.com"
+};
+```
+
+### URL Origin Validation
+
+The XSWD server validates that your `url` matches the HTTP `Origin` header for security:
+
+```javascript
+// The URL must match where your app is actually hosted
+const applicationData = {
+    "id": appId,
+    "name": "My App",
+    "description": "My application",
+    "url": window.location.origin  // Use actual origin, not hardcoded
+};
+
+// If URL doesn't match Origin header, connection is rejected with:
+// "Invalid URL compared to origin"
 ```
 
 ## Performance Optimization

@@ -35,6 +35,176 @@ Comprehensive guide to diagnosing and fixing common errors in TELA development a
 
 ## XSWD Connection Errors
 
+### Error: "Invalid name" or "Invalid description"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Invalid name"
+}
+```
+or
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Invalid description"
+}
+```
+
+**Common Causes:**
+1. **Unicode characters in name or description** (most common!)
+2. Empty name or description
+3. Name or description exceeds 255 characters
+
+<Callout type="error" emoji="🚨">
+  **ASCII Only**: The XSWD server strictly validates that `name` and `description` contain only ASCII characters (bytes 0-127). Unicode characters like smart quotes, emojis, or non-English characters will cause silent rejection.
+</Callout>
+
+**Diagnosis:**
+```javascript
+// Check for non-ASCII characters
+function hasNonASCII(str) {
+    for (let i = 0; i < str.length; i++) {
+        if (str.charCodeAt(i) > 127) {
+            console.error(`Non-ASCII at position ${i}: "${str[i]}" (code: ${str.charCodeAt(i)})`);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Test your app data
+const appData = {
+    name: "My App",
+    description: "View transactions"  // Smart quote - INVALID!
+};
+
+hasNonASCII(appData.name);        // Check name
+hasNonASCII(appData.description); // Check description
+```
+
+**Common Unicode Culprits:**
+| Character | Code | Replacement |
+|-----------|------|-------------|
+| `"` `"` (smart quotes) | 8220, 8221 | `"` (straight quote) |
+| `'` `'` (smart apostrophes) | 8216, 8217 | `'` (straight apostrophe) |
+| `—` (em dash) | 8212 | `--` or `-` |
+| `–` (en dash) | 8211 | `-` |
+| `…` (ellipsis) | 8230 | `...` |
+| `•` (bullet) | 8226 | `*` or `-` |
+| Emojis | Various | Remove or use text |
+
+**Solution:**
+```javascript
+// Sanitize strings to ASCII only
+function toASCII(str) {
+    return str
+        .replace(/[\u2018\u2019]/g, "'")   // Smart quotes to straight
+        .replace(/[\u201C\u201D]/g, '"')   // Smart double quotes
+        .replace(/\u2014/g, '--')          // Em dash
+        .replace(/\u2013/g, '-')           // En dash
+        .replace(/\u2026/g, '...')         // Ellipsis
+        .replace(/[^\x00-\x7F]/g, '');     // Remove remaining non-ASCII
+}
+
+const applicationData = {
+    "id": await generateAppId("My App"),
+    "name": toASCII("My App"),
+    "description": toASCII("View blockchain data - read only"),
+    "url": window.location.origin
+};
+```
+
+### Error: "Invalid ID size" or "Invalid hexadecimal ID"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Invalid ID size"
+}
+```
+
+**Cause:** The `id` field must be exactly 64 hexadecimal characters (representing a 32-byte hash).
+
+**Solution:**
+```javascript
+// Generate a valid App ID using SHA-256
+async function generateAppId(appName) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(appName);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Usage
+const appId = await generateAppId('My TELA Application v1.0');
+console.log(appId);  // "a1b2c3d4e5f6..." (64 hex chars)
+console.log(appId.length);  // 64
+```
+
+### Error: "Invalid URL compared to origin"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Invalid URL compared to origin"
+}
+```
+
+**Cause:** The `url` field doesn't match the HTTP `Origin` header sent by the browser.
+
+**Solution:**
+```javascript
+// Always use the actual origin
+const applicationData = {
+    "id": appId,
+    "name": "My App",
+    "description": "My application",
+    "url": window.location.origin  // Correct: uses actual origin
+    // NOT: "http://localhost:8080"  // Wrong if running on different port
+};
+```
+
+### Error: "Application is requesting permissions without signature"
+
+**Symptoms:**
+```json
+{
+  "accepted": false,
+  "message": "Could not connect the application: Application is requesting permissions without signature"
+}
+```
+
+**Cause:** You included a `permissions` object but didn't provide a valid DERO signature.
+
+**Solution:** Either remove the `permissions` field, or provide a valid signature:
+```javascript
+// Option 1: No pre-set permissions (recommended for most apps)
+const applicationData = {
+    "id": appId,
+    "name": "My App",
+    "description": "My application",
+    "url": window.location.origin
+    // No permissions field - user will be prompted for each method
+};
+
+// Option 2: With signature (advanced - requires wallet signing)
+const applicationData = {
+    "id": appId,
+    "name": "My App",
+    "description": "My application",
+    "url": window.location.origin,
+    "permissions": {
+        "GetBalance": 3  // AlwaysAllow
+    },
+    "signature": "-----BEGIN DERO SIGNED MESSAGE-----\n..."  // Must sign the appId
+};
+```
+
 ### Error: "WebSocket connection failed"
 
 **Symptoms:**
@@ -256,6 +426,93 @@ async function safeCall(method, params = {}) {
 ---
 
 ## Deployment Errors
+
+### Error: "Simulator daemon crashed" or Daemon Crash During Deployment
+
+**Symptoms:**
+```
+Simulator daemon crashed. Please restart simulator mode.
+[OK] Transaction sent: d14b0a7b4c09bb4c98ab3b1d7fa1e19b61c9e79b0afa0002e529426edf17afb5
+[WAIT] Waiting for block confirmation (HTTP polling)...
+[ERR] DERO.GetInfo failed: HTTP request failed: dial tcp 127.0.0.1:20000: connect: connection refused
+```
+
+The daemon crashes immediately after sending a transaction, and subsequent RPC calls fail with "connection refused".
+
+<Callout type="error" emoji="💥">
+  **Critical Issue**: This is often caused by Unicode characters in your deployment files. The DERO daemon or Graviton database cannot process certain UTF-8 multi-byte characters, causing a crash.
+</Callout>
+
+**Common Causes:**
+1. **Unicode characters in JavaScript, HTML, or CSS files**
+2. Smart quotes copied from word processors
+3. Emojis in comments or strings
+4. Non-ASCII characters in any file content
+
+**Diagnosis:**
+```bash
+# Check if files contain non-ASCII characters
+file your-file.js your-file.css your-file.html
+
+# Output should show "ASCII text" for all files
+# If you see "UTF-8 Unicode text", you have Unicode characters
+
+# Find non-ASCII characters
+grep -P "[^\x00-\x7F]" your-file.js
+
+# Or use this to show line numbers
+grep -n -P "[^\x00-\x7F]" *.js *.css *.html
+```
+
+**Common Unicode Culprits in Code:**
+| Character | Unicode | ASCII Replacement |
+|-----------|---------|-------------------|
+| `"` `"` (smart quotes) | U+201C, U+201D | `"` |
+| `'` `'` (smart apostrophes) | U+2018, U+2019 | `'` |
+| `—` (em dash) | U+2014 | `--` |
+| `–` (en dash) | U+2013 | `-` |
+| `…` (ellipsis) | U+2026 | `...` |
+| `→` (arrow) | U+2192 | `->` or `=>` |
+| `×` (multiply) | U+00D7 | `*` or `x` |
+| `≥` `≤` | U+2265, U+2264 | `>=` `<=` |
+| `•` (bullet) | U+2022 | `*` or `-` |
+
+**Solution:**
+
+1. **Replace Unicode with ASCII equivalents:**
+```javascript
+// Before (has Unicode)
+const message = "Hello — world";  // Em dash
+const quote = 'It's working';     // Smart apostrophe
+
+// After (ASCII only)
+const message = "Hello -- world"; // Double hyphen
+const quote = "It's working";     // Straight apostrophe
+```
+
+2. **Use sed to fix common issues:**
+```bash
+# Replace smart quotes
+sed -i '' "s/'/'/g; s/'/'/g; s/"/\"/g; s/"/\"/g" *.js *.html
+
+# Replace em/en dashes
+sed -i '' 's/—/--/g; s/–/-/g' *.js *.html
+
+# Replace ellipsis
+sed -i '' 's/…/.../g' *.js *.html
+```
+
+3. **Verify files are ASCII:**
+```bash
+# After fixing, verify all files are ASCII
+file *.js *.css *.html | grep -v "ASCII"
+# Should return nothing (all files are ASCII)
+```
+
+4. **Prevent future issues:**
+   - Configure your editor to use straight quotes
+   - Disable "smart quotes" in your OS settings
+   - Use a linter that warns about non-ASCII characters
 
 ### Error: "File too large"
 
