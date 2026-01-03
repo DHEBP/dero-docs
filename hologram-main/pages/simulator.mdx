@@ -1,0 +1,353 @@
+---
+title: "Simulator Mode"
+description: "One-click integrated development environment for testing TELA applications and smart contracts."
+---
+
+import { Callout } from 'nextra/components'
+
+# Simulator Mode
+
+The **Simulator Mode** provides a one-click integrated development environment for testing TELA applications and smart contracts—without real DERO or network connectivity.
+
+## Overview
+
+Simulator Mode is perfect for:
+
+- Developing and testing smart contracts
+- Building TELA applications before deployment (see [Studio](/studio) for deployment tools)
+- Learning DERO development without risking real funds
+- Rapid iteration with instant block mining
+
+<Callout type="success">
+  **One-Click Setup**: Hologram automatically downloads the daemon, creates a wallet, mines test coins, and configures Gnomon—all with a single click.
+</Callout>
+
+## One-Click Activation
+
+```go
+// Start everything with one call
+StartSimulatorMode() -> {
+    success: true,
+    walletAddress: "deto1...",
+    rpcEndpoint: "http://127.0.0.1:20000",
+    getworkPort: 20100
+}
+```
+
+**What `StartSimulatorMode` does automatically:**
+
+1. Downloads derod binary if missing
+2. Starts daemon in simulator mode
+3. Creates/opens simulator wallet (fixed password: "simulator")
+4. Mines initial blocks for test DERO
+5. Configures Gnomon for simulator network
+
+<Callout type="info">
+  Simulator wallets use the fixed password "simulator" because security isn't needed for test coins.
+</Callout>
+
+## Simulator Manager API
+
+| Function | Description |
+|----------|-------------|
+| `StartSimulatorMode()` | One-click activation |
+| `StopSimulatorMode()` | Stop all simulator services |
+| `GetSimulatorStatus()` | Current state (daemon, wallet, balance, height) |
+| `IsSimulatorReady()` | Check if fully initialized |
+| `ResetSimulator()` | Clear all data and restart fresh |
+
+## Simulator Wallet
+
+Auto-managed wallet for test coins:
+
+```go
+// Automatic wallet handling
+CreateSimulatorWallet()        // Creates if not exists
+OpenSimulatorWallet()          // Opens with fixed password
+CloseSimulatorWallet()         // Closes wallet
+GetSimulatorWalletStatus()     // Balance, address, state
+```
+
+## Instant Block Mining
+
+Unlike mainnet, simulator blocks are mined instantly:
+
+```go
+// Mine N blocks instantly (no real PoW in simulator)
+MineSimulatorBlocks(count) -> {
+    blocksGenerated: 10,
+    requested: 10,
+    message: "Generated 10 of 10 requested blocks"
+}
+
+// Generate test DERO to target balance
+GenerateTestDERO(targetBalance) -> {
+    previousBalance: 0,
+    newBalance: 100000000000000,  // 100 DERO
+    targetBalance: 100000000000000
+}
+
+// Get mining stats
+GetSimulatorMiningStats() -> {
+    blocksMined: 50,
+    lastMineTime: "2025-12-10T..."
+}
+```
+
+## Developer Deployment Tools
+
+### Deploy Smart Contract with Auto-Mine
+
+```go
+DeployToSimulator(code) -> {
+    success: true,
+    txid: "abc123...",
+    scid: "abc123...",  // TXID = SCID for deployments
+    gasCost: "FREE (Simulator)"
+}
+```
+
+### Deploy Complete TELA App
+
+```go
+PreviewTELAApp(appJSON) -> {
+    indexSCID: "def456...",
+    url: "dero://def456...",
+    deployedFiles: [...],
+    gasCost: "FREE (Simulator)"
+}
+```
+
+### Quick Helpers
+
+```go
+QuickDeployFile(name, content, docType)   // Single file deployment
+BatchDeployToSimulator(codesJSON)          // Multiple SCs at once
+EstimateSimulatorGas(docJSON)              // Gas estimate (shows "FREE")
+IsInSimulatorMode()                        // Check current mode
+GetSimulatorDeploymentInfo()               // Deployment context
+```
+
+## Workflow Example
+
+### Developing a Smart Contract
+
+1. **Start Simulator Mode**
+   ```
+   Settings > Developer > Start Simulator Mode
+   ```
+
+2. **Write Your Smart Contract**
+   ```dvm
+   Function init() Uint64
+   10 STORE("owner", SIGNER())
+   20 STORE("counter", 0)
+   30 RETURN 0
+   End Function
+
+   Function increment() Uint64
+   10 DIM count as Uint64
+   20 LET count = LOAD("counter")
+   30 STORE("counter", count + 1)
+   40 RETURN 0
+   End Function
+   ```
+
+3. **Deploy to Simulator**
+   ```
+   Studio > Deploy > Paste Code > Deploy
+   ```
+
+4. **Test Interaction**
+   - Go to Explorer
+   - Find your SCID
+   - Invoke `increment` function
+   - Watch state change
+
+5. **Iterate**
+   - Modify code
+   - Redeploy (new SCID)
+   - Test again
+
+### Developing a TELA App
+
+1. **Start Simulator + Local Dev Server**
+   ```
+   Settings > Developer > Start Simulator Mode
+   Studio > Serve > Select Directory
+   ```
+
+2. **Develop with Hot Reload**
+   - Edit files in your project directory
+   - Changes appear instantly in Hologram
+
+3. **Test telaHost Integration**
+   - Use `telaHost.getNetworkInfo()` to verify connection
+   - Test wallet interactions with simulator wallet
+
+4. **Deploy for Testing**
+   ```
+   Studio > Deploy > Select Directory > Deploy
+   ```
+
+5. **Browse Your App**
+   - Use the generated SCID or dURL
+   - Test full functionality
+
+### Batch Deployment Workflow
+
+For deploying complete TELA applications with multiple files:
+
+1. **Prepare Your App Directory**
+   ```
+   my-tela-app/
+   ├── index.html      # Required: Entry point
+   ├── styles.css      # Optional: Stylesheets
+   ├── app.js          # Optional: JavaScript
+   └── assets/         # Optional: Additional files
+   ```
+
+2. **Open Studio > Deploy**
+   - Click "Choose Directory"
+   - Select your app folder
+
+3. **Configure Deployment**
+   - **Application Name**: Display name for your app
+   - **Description**: Brief description
+   - **dURL**: Optional memorable URL (e.g., `myapp.tela`)
+   - **Content Type**: Updateable (Ring 2) or Immutable (Ring > 2)
+
+4. **Review Files**
+   - Hologram shows all files to be deployed
+   - Each file becomes a separate DOC contract
+   - Large files are automatically compressed (gzip)
+
+5. **Deploy**
+   - Click "Deploy to Simulator"
+   - Watch progress as each file is deployed
+   - INDEX contract is created last, linking all DOCs
+
+6. **Result**
+   ```
+   Deployment Complete!
+   INDEX SCID: abc123...
+   dURL: myapp.tela
+   Files Deployed: 5
+   Gas Cost: FREE (Simulator)
+   ```
+
+<Callout type="info">
+  **File Size Limit**: Each file must be under 18KB for TELA compliance. Use compression or DocShards for larger files.
+</Callout>
+
+### Important: The `*/` Issue
+
+If your JavaScript or CSS contains the literal characters `*/`, deployment will fail with a cryptic error. This is because TELA wraps file content in DVM-BASIC comments (`/* ... */`), and `*/` prematurely closes the comment.
+
+**Solution**: Use string concatenation to avoid the literal `*/`:
+
+```javascript
+// BAD - Will break deployment
+if (line.startsWith('*/')) { ... }
+
+// GOOD - Works correctly
+if (line.startsWith('*' + '/')) { ... }
+```
+
+## Simulator Limitations
+
+<Callout type="warning">
+  Simulator mode is for development only. Key differences from mainnet:
+</Callout>
+
+| Aspect | Simulator | Mainnet |
+|--------|-----------|---------|
+| Block time | Instant | ~16 seconds |
+| Network | Local only | Global P2P |
+| Coins | Unlimited test DERO | Real value |
+| Persistence | Can be reset | Permanent |
+| Gnomon | Limited indexing | Full indexing |
+
+## Status Response
+
+```go
+GetSimulatorStatus() -> {
+    running: true,
+    daemonRunning: true,
+    daemonPort: 20000,
+    walletOpen: true,
+    walletAddress: "deto1...",
+    walletBalance: 100000000000000,
+    blockHeight: 150,
+    gnomonRunning: true,
+    gnomonHeight: 150
+}
+```
+
+## Pre-seeded Test Wallets
+
+Hologram includes **22 pre-seeded test wallets** matching the original DERO simulator, giving you instant access to funded wallets for testing.
+
+### Accessing Test Wallets
+
+1. Start Simulator Mode
+2. Navigate to **Wallet** page
+3. Look for the **Test Wallets** section in the sidebar
+
+### Available Wallets
+
+| Wallet | Address Prefix | Initial Balance |
+|--------|----------------|-----------------|
+| Wallet 1 | `deto1qy...` | Pre-funded |
+| Wallet 2 | `deto1qy...` | Pre-funded |
+| ... | ... | ... |
+| Wallet 22 | `deto1qy...` | Pre-funded |
+
+<Callout type="info">
+  All test wallets use the fixed password "simulator". Click any wallet to instantly open it.
+</Callout>
+
+### Test Wallet Features
+
+- **One-click open**: No password entry required
+- **Pre-funded balances**: Ready for immediate testing
+- **Full wallet details**: Address, balance, RPC port, seed phrase
+- **Expandable list**: Shows first 10 by default, expand to see all 22
+
+### API Reference
+
+```go
+// Get all test wallets
+GetSimulatorTestWallets() -> {
+    wallets: [
+        { id: 1, address: "deto1...", balance: 1000000000000 },
+        ...
+    ]
+}
+
+// Sync balances from daemon
+SyncSimulatorTestWallets() -> { success: true }
+
+// Open a specific test wallet
+OpenSimulatorTestWallet(walletId int) -> {
+    success: true,
+    address: "deto1...",
+    balance: 1000000000000
+}
+```
+
+### Use Cases
+
+- **Multi-wallet testing**: Test transfers between wallets
+- **Smart contract testing**: Deploy from one wallet, interact from another
+- **dApp development**: Simulate multiple users interacting with your app
+- **Edge case testing**: Test with various balance amounts
+
+## Best Practices
+
+1. **Reset regularly**: Clear state between test sessions to avoid confusion
+2. **Test edge cases**: Use `GenerateTestDERO` to create specific balance scenarios
+3. **Validate before mainnet**: Always test thoroughly in simulator before real deployment
+4. **Use realistic amounts**: Test with mainnet-like amounts to catch overflow issues
+5. **Use multiple test wallets**: Simulate real-world multi-user scenarios
+

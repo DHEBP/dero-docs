@@ -1,0 +1,271 @@
+---
+title: "Studio"
+description: "Create, deploy, and manage TELA applications with Hologram's integrated development studio."
+---
+
+import { Callout } from 'nextra/components'
+
+# Studio
+
+The **Studio** is Hologram's integrated development environment for creating, deploying, and managing TELA applications. It provides tools for local development, batch deployment, and version control. For testing with real blockchain state, use [Simulator Mode](/simulator).
+
+<Callout type="success">
+  **Complete Development Workflow**: Develop locally with hot reload, deploy to blockchain, and manage versions—all from one integrated environment.
+</Callout>
+
+## Overview
+
+Studio consists of three main sections:
+
+| Section | Purpose |
+|---------|---------|
+| **Serve** | Local development server with hot reload |
+| **Deploy** | Batch deployment of TELA applications |
+| **Actions** | Version control and content management |
+
+## Serve (Local Dev Server)
+
+The Serve tab provides a local development server for testing TELA apps before deployment.
+
+### Starting the Server
+
+1. Navigate to **Studio > Serve**
+2. Click **"Choose Directory"**
+3. Select a folder containing your TELA app (must have `index.html`)
+4. Server starts automatically on an available port (default: 8080)
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Hot Reload** | Automatic browser refresh on file changes |
+| **telaHost API** | Full [telaHost API](/telahost-api) available during development |
+| **CORS Support** | Proper headers for local development |
+| **MIME Types** | Correct content types for all web files |
+| **Cache Busting** | Fresh content on every reload |
+
+### Supported File Types
+
+- **Web files**: `.html`, `.htm`, `.css`, `.js`, `.mjs`, `.json`
+- **Images**: `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.ico`
+- **Fonts**: `.woff`, `.woff2`, `.ttf`
+
+### Hot Reload Behavior
+
+- File changes detected automatically (300ms debounce)
+- Only reloads when Browser tab is viewing local content
+- Recent changes displayed in Studio tab
+- XSWD connection maintained during reload
+
+### API Reference
+
+```go
+StartLocalDevServer(directory string) -> {
+    success: true,
+    url: "http://127.0.0.1:8080",
+    port: 8080
+}
+
+StopLocalDevServer() -> { success: true }
+
+GetLocalDevServerStatus() -> {
+    running: true,
+    url: "http://127.0.0.1:8080",
+    port: 8080,
+    directory: "/path/to/app",
+    watcherActive: true
+}
+```
+
+## Deploy
+
+The Deploy tab enables batch deployment of complete TELA applications to the blockchain.
+
+### Deployment Process
+
+1. **Choose Directory** — Select your app folder
+2. **Configure** — Set name, description, dURL, and content type
+3. **Review** — See all files to be deployed
+4. **Deploy** — Watch progress as files are uploaded
+
+### Configuration Options
+
+| Option | Description |
+|--------|-------------|
+| **Application Name** | Display name for your app |
+| **Description** | Brief description (shown in Discover) |
+| **dURL** | Optional memorable URL (e.g., `myapp.tela`) |
+| **Content Type** | Updateable (Ring 2) or Immutable (Ring > 2) |
+
+### Content Types
+
+| Type | Ring Size | Description |
+|------|-----------|-------------|
+| **Updateable** | 2 | Owner can update the INDEX contract |
+| **Immutable** | > 2 | Content is permanently fixed |
+
+<Callout type="info">
+  Updateable content allows you to push updates to your app. Immutable content provides stronger guarantees that the app won't change.
+</Callout>
+
+### File Processing
+
+During deployment, Hologram:
+
+1. **Scans directory** — Finds all web files
+2. **Compresses large files** — Gzip for files over threshold
+3. **Deploys DOCs** — Each file becomes a TELA-DOC-1 contract
+4. **Creates INDEX** — Links all DOCs together
+5. **Registers dURL** — If specified
+
+### File Size Limits
+
+| Limit | Value |
+|-------|-------|
+| Max file size | 18KB (TELA specification) |
+| Compression | Automatic gzip for large files |
+| DocShards | Available for files exceeding limit |
+
+### Deployment Result
+
+```go
+DeployTELABatch(config) -> {
+    success: true,
+    indexSCID: "abc123...",
+    durl: "myapp.tela",
+    files: [
+        { name: "index.html", scid: "...", size: 4096 },
+        { name: "styles.css", scid: "...", size: 2048 },
+        ...
+    ],
+    gasCost: 150000  // or "FREE" in simulator
+}
+```
+
+## Actions (Version Control)
+
+The Actions tab provides version control features for TELA applications.
+
+### Commit History
+
+View the complete history of changes to any TELA INDEX:
+
+- **Commit list** — All updates with timestamps
+- **TXID links** — Transaction IDs for each commit
+- **Diff view** — See what changed between versions
+
+### Cloning
+
+Clone TELA content to your local filesystem:
+
+```
+scid              → Clone latest version
+scid@txid         → Clone specific commit
+```
+
+### Version Pinning
+
+Access specific versions of content:
+
+1. Open version history for an INDEX
+2. Find the commit you want
+3. Use `scid@txid` format to access that version
+
+### API Reference
+
+```go
+// Get commit history
+GetIndexCommitHistory(scid string) -> {
+    commits: [
+        { txid: "...", height: 12345, timestamp: "..." },
+        ...
+    ]
+}
+
+// Clone to filesystem
+CloneTELAContent(scid string, targetDir string) -> {
+    success: true,
+    files: [...],
+    version: "abc123..."
+}
+
+// Clone specific version
+CloneTELAContentAtVersion(scid string, txid string, targetDir string) -> {
+    success: true,
+    files: [...],
+    version: "abc123..."
+}
+```
+
+## Workflow Examples
+
+### New App Development
+
+1. **Create project directory**
+   ```
+   mkdir my-tela-app
+   cd my-tela-app
+   ```
+
+2. **Create files**
+   ```html
+   <!-- index.html -->
+   <!DOCTYPE html>
+   <html>
+   <head>
+     <link rel="stylesheet" href="styles.css">
+   </head>
+   <body>
+     <h1>My TELA App</h1>
+     <script src="app.js"></script>
+   </body>
+   </html>
+   ```
+
+3. **Start local dev server**
+   - Studio > Serve > Choose Directory
+
+4. **Develop with hot reload**
+   - Edit files, see changes instantly
+
+5. **Deploy when ready**
+   - Studio > Deploy > Choose Directory > Deploy
+
+### Updating Existing App
+
+1. **Clone current version**
+   - Actions > Clone > Enter SCID
+
+2. **Make changes locally**
+   - Edit files in cloned directory
+
+3. **Test with local dev server**
+   - Serve > Choose cloned directory
+
+4. **Deploy update**
+   - Deploy > Choose directory
+   - Use same dURL as before
+
+<Callout type="warning">
+  Updates only work for Updateable content (Ring 2). Immutable content cannot be changed.
+</Callout>
+
+## Best Practices
+
+1. **Test locally first** — Use Serve before deploying
+2. **Use meaningful names** — Help users find your app
+3. **Write good descriptions** — Shown in Discover tab
+4. **Choose dURL carefully** — Can't be changed after deployment
+5. **Consider immutability** — For apps that should never change
+6. **Check file sizes** — Keep under 18KB per file
+7. **Avoid `*/` in code** — Breaks TELA's comment wrapper
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Hot reload not working | File type not watched | Check supported file types |
+| Deployment fails | File too large | Enable compression or use shards |
+| "Expecting declaration" error | Code contains `*/` | Use `'*' + '/'` instead |
+| dURL not resolving | Gnomon not synced | Wait for indexing to complete |
+

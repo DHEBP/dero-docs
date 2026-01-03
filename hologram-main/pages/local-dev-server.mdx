@@ -1,0 +1,231 @@
+---
+title: "Local Dev Server"
+description: "Hot-reload development of TELA applications directly within Hologram."
+---
+
+import { Callout } from 'nextra/components'
+
+# Local Dev Server
+
+The **Local Dev Server** enables hot-reload development of TELA applications directly within Hologram—before deploying to the blockchain.
+<Callout type="tip">
+  Combine [Simulator Mode](/simulator) with Studio's Local Dev Server  for the ultimate development workflow: hot-reload your app locally, then deploy to Simulator for blockchain testing.
+</Callout>
+## Features
+
+- **HTTP File Server**: Serves local directory on `127.0.0.1:8080+`
+- **Hot Reload**: Automatic browser refresh on file changes
+- **File Watcher**: Uses `fsnotify` to detect changes
+- **CORS Support**: Proper headers for local development
+- **MIME Types**: Correct content types for web files
+- **telaHost Bridge**: Full native API available during development
+
+## Quick Start
+
+1. Navigate to **Studio** tab
+2. Click **Start Local Dev Server**
+3. Select your project directory
+4. Start developing with instant reload!
+
+## Local Dev Server API
+
+| Function | Description |
+|----------|-------------|
+| `StartLocalDevServer(directory)` | Start serving a local directory |
+| `StopLocalDevServer()` | Stop the dev server |
+| `GetLocalDevServerStatus()` | Running state, URL, port, directory |
+| `RefreshLocalDevServer()` | Manual refresh trigger |
+
+## Start Server Response
+
+```go
+StartLocalDevServer("/path/to/tela-app") -> {
+    success: true,
+    url: "http://127.0.0.1:8080",
+    port: 8080,
+    directory: "/path/to/tela-app",
+    message: "Local dev server started"
+}
+```
+
+## Status Response
+
+```go
+GetLocalDevServerStatus() -> {
+    running: true,
+    url: "http://127.0.0.1:8080",
+    port: 8080,
+    directory: "/path/to/tela-app",
+    watcherActive: true
+}
+```
+
+## File Watcher Details
+
+### Watched Extensions
+
+- `.html`, `.htm`, `.css`, `.js`, `.mjs`, `.json`
+- `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.ico`
+- `.woff`, `.woff2`, `.ttf`
+
+### Ignored Directories
+
+- `node_modules`, `vendor`, `__pycache__`
+- Hidden directories (starting with `.`)
+
+### Debounce
+
+300ms delay to prevent rapid-fire reloads during save operations.
+
+## Event Emission
+
+On file change, emits `localdev:reload` event to frontend:
+
+```javascript
+// Frontend listens for reload events
+runtime.EventsOn("localdev:reload", (data) => {
+    console.log(`File changed: ${data.file}`);
+    // Refresh iframe content
+});
+```
+
+## Development Workflow
+
+### Basic HTML/CSS/JS Development
+
+1. Create your project structure:
+   ```
+   my-tela-app/
+   |-- index.html
+   |-- styles.css
+   +-- app.js
+   ```
+
+2. Start the local dev server pointing to this directory
+
+3. Edit files—changes appear instantly
+
+4. When ready, use Studio to deploy to simulator or mainnet
+
+### Using telaHost During Development
+
+Even in local dev mode, `telaHost` is available:
+
+```javascript
+// Check connection
+if (typeof telaHost !== 'undefined') {
+  // Works in local dev mode too!
+  const info = await telaHost.getNetworkInfo();
+  console.log('Height:', info.topoheight);
+}
+```
+
+<Callout type="info">
+  For wallet operations during development, start Simulator Mode alongside the Local Dev Server.
+</Callout>
+
+### Combined with Simulator Mode
+
+For full development experience:
+
+1. **Start Simulator Mode** (Settings > Developer)
+2. **Start Local Dev Server** (Studio tab)
+3. Develop with:
+   - Instant file reload
+   - Working `telaHost` API
+   - Test DERO for transactions
+   - Smart contract deployment
+
+## Project Structure Recommendations
+
+### Minimal TELA App
+
+```
+my-app/
+|-- index.html      # Entry point
+|-- style.css       # Styles
++-- app.js          # Logic
+```
+
+### Larger Application
+
+```
+my-app/
+|-- index.html
+|-- css/
+|   |-- main.css
+|   +-- components.css
+|-- js/
+|   |-- app.js
+|   |-- telahost-utils.js
+|   +-- components/
++-- assets/
+    |-- logo.svg
+    +-- images/
+```
+
+## Tips for TELA Development
+
+### 1. Use Relative Paths
+
+```html
+<!-- Good -->
+<link rel="stylesheet" href="styles.css">
+<script src="app.js"></script>
+
+<!-- Avoid -->
+<link rel="stylesheet" href="/absolute/path/styles.css">
+```
+
+### 2. Handle telaHost Gracefully
+
+```javascript
+// Wrapper for telaHost availability
+const deroApi = {
+  async getInfo() {
+    if (typeof telaHost === 'undefined') {
+      console.warn('Not in Hologram, using mock data');
+      return { topoheight: 0, testnet: true };
+    }
+    return await telaHost.getNetworkInfo();
+  }
+};
+```
+
+### 3. Size Optimization
+
+TELA has size limits. During development:
+
+- Watch your file sizes
+- Compress images (use SVG where possible)
+- Minify before deployment
+- Consider gzip compression
+
+### 4. Test Offline Behavior
+
+Since TELA apps can be cached offline:
+
+- Test with daemon disconnected
+- Handle failed API calls gracefully
+- Cache important data locally
+
+## Troubleshooting
+
+### Server Won't Start
+
+- Check if port 8080 is available
+- Try a different directory
+- Restart Hologram
+
+### Changes Not Reflecting
+
+- Check file extension is in watched list
+- Manually trigger refresh
+- Check file is saved
+
+### telaHost Not Available
+
+- Ensure you're viewing through Hologram (not external browser)
+- Check browser console for errors
+- Verify daemon connection
+

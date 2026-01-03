@@ -1,0 +1,368 @@
+---
+title: "Wallet Management"
+description: "Complete DERO wallet management in Hologram - create, restore, send, receive, and track transactions."
+---
+
+import { Callout } from 'nextra/components'
+
+# Wallet Management
+
+Hologram includes a full DERO wallet implementation with all features you need to manage your funds.
+
+## Wallet Operations
+
+| Operation | Description | API Method |
+|-----------|-------------|------------|
+| **Create Wallet** | Generate new wallet with seed phrase | `CreateWallet(path, password)` |
+| **Open Wallet** | Open existing wallet file | `OpenWallet(path, password)` |
+| **Close Wallet** | Securely close and lock | `CloseWallet()` |
+| **Switch Wallet** | Hot-swap between wallets | `SwitchWallet(path, password)` |
+| **Restore Wallet** | Recover from 25-word seed | `RestoreWallet(path, password, seed)` |
+
+## Creating a New Wallet
+
+1. Navigate to **Wallet** tab
+2. Click **Create New Wallet**
+3. Choose a secure password (minimum 8 characters)
+4. **IMPORTANT**: Write down your 25-word seed phrase
+
+<Callout type="warning">
+  Your seed phrase is the ONLY way to recover your wallet. Store it securely offline. Never share it with anyone. For maximum security, consider using [Privacy Mode](/security#privacy-mode) to block all non-DERO network connections.
+</Callout>
+
+## Restoring from Seed
+
+1. Navigate to **Wallet** tab
+2. Click **Restore Wallet**
+3. Enter your 25-word seed phrase (space-separated)
+4. Choose a new password
+5. Wait for wallet to sync
+
+## Balance & Transactions
+
+### Viewing Balance
+
+Your wallet displays:
+
+- **Available Balance**: Immediately spendable
+- **Locked Balance**: Pending confirmations
+- **Total Balance**: Available + Locked
+
+```go
+// Get balance (mature + locked)
+mature, locked := wallet.Get_Balance()
+```
+
+### Transaction History
+
+View all transactions with filters:
+
+- **Incoming/Outgoing**: Direction filter
+- **Coinbase**: Mining rewards only
+- **By SCID**: Specific token transactions
+- **Height Range**: Block range filter
+- **Port Filters**: By source/destination port
+
+```go
+entries := wallet.Show_Transfers(scid, coinbase, in, out, min, max, sender, receiver, dstport, srcport)
+```
+
+## Sending DERO
+
+1. Click **Send** in the Wallet tab
+2. Enter recipient address (dero1...)
+3. Enter amount
+4. Optionally add a comment (payload)
+5. Enter wallet password
+6. Confirm transaction
+
+<Callout type="info">
+  Transactions require approximately 4-5 seconds to propagate and will show as "pending" until confirmed in a block.
+</Callout>
+
+## Receiving DERO
+
+Your wallet address is always visible in the Wallet tab. You can:
+
+- Click to copy the full address
+- Generate a payment request with amount
+- Create an integrated address with payment ID
+
+### Payment Requests
+
+```go
+CreatePaymentRequest(amount uint64, comment string) -> {
+    integratedAddress: "deri1...",
+    paymentId: "abc123...",
+    qrCode: "base64..."
+}
+```
+
+## Coinbase Transactions
+
+View mining rewards received (from external miners or [Developer Support (EPOCH)](/mining)):
+
+```go
+// Filter coinbase transactions only
+GetTransactionHistory(limit int) // Filter for coinbase: true
+```
+
+Coinbase transactions are marked with a pickaxe icon in the transaction history and represent mining rewards received to this wallet address. Learn more about supporting TELA developers through [EPOCH Mining](/mining).
+
+## Villager Avatar Integration
+
+Hologram integrates with the Villager avatar system to display unique visual identities for connected wallets.
+
+### How It Works
+
+When a wallet connects, Hologram displays:
+
+1. **Address-Derived Frame**: A unique 24×24 pixel frame generated deterministically from your wallet address
+2. **Custom Avatar Pixels**: If you've stored custom pixels in the Villager smart contract, they're overlaid on the frame
+3. **Fallback**: If no custom avatar exists, the address-derived identicon frame is displayed
+
+### Sidebar Display
+
+The wallet avatar appears in the sidebar:
+
+- **Collapsed Rail**: 24px circular avatar
+- **Expanded Sidebar**: 40px circular avatar with address suffix (last 8 characters)
+- **Pending State**: Yellow pulsing border during approval
+
+### Technical Details
+
+```javascript
+// Avatar fetching (avatarService.js)
+getAvatarUrl(address, size) -> dataURL
+
+// Identicon generation (villager-identicon.js)
+VillagerIdenticon.render(address, size) -> canvas
+```
+
+The avatar system uses:
+- 64-color palette with transparency support
+- Deterministic frame generation from SHA-256 address hash
+- Canvas-based rendering with frame + pixel overlay
+- Local caching to avoid redundant blockchain calls
+
+<Callout type="info">
+  You don't need a Villager avatar to use Hologram. Without one, your unique address-derived identicon frame is displayed instead.
+</Callout>
+
+## Recent Wallets
+
+Hologram remembers your recently used wallets:
+
+- Up to 10 recent wallets stored
+- Shows address prefix for identification
+- Tracks last used timestamp
+- Quick-access from wallet selector
+
+Data stored in `datashards/settings/recent_wallets_info.json`
+
+## Token Portfolio
+
+View and manage all tokens in your wallet:
+
+```go
+GetTokenPortfolio() -> {
+    tokens: [
+        { scid: "...", name: "TokenName", balance: 1000 },
+        ...
+    ]
+}
+```
+
+### Token Management
+
+- **View balances**: See all tokens held by your wallet
+- **Add tokens**: Track new token SCIDs
+- **Remove tokens**: Hide tokens from your portfolio
+- **Send tokens**: Transfer tokens to other addresses
+
+## Address Book
+
+Save frequently used addresses for quick access:
+
+### Adding Contacts
+
+1. Go to **Wallet > Address Book**
+2. Click **Add Contact**
+3. Enter name and DERO address
+4. Optionally add notes
+
+### Using Contacts
+
+- **Quick Send**: Click the send icon next to any contact
+- **Copy Address**: Click to copy the full address
+- **Edit/Delete**: Manage your contacts list
+
+### API Reference
+
+```go
+// Get all contacts
+GetAddressBook() -> {
+    contacts: [
+        { name: "Alice", address: "dero1qy...", notes: "Friend" },
+        ...
+    ]
+}
+
+// Add a contact
+AddContact(name, address, notes string) -> { success: true }
+
+// Delete a contact
+DeleteContact(address string) -> { success: true }
+```
+
+<Callout type="info">
+  Address Book is stored locally and never transmitted. Your contacts are private to your device.
+</Callout>
+
+## Sign & Verify Messages
+
+Cryptographically sign messages to prove wallet ownership, or verify signatures from others.
+
+### Signing Messages
+
+1. Go to **Wallet > Sign Message**
+2. Enter the message to sign
+3. Enter wallet password
+4. Click **Sign**
+5. Copy the PEM-formatted signature
+
+```go
+SignMessage(message, password string) -> {
+    signature: "-----BEGIN DERO SIGNED MESSAGE-----\n...",
+    address: "dero1qy...",
+    message: "Hello, world!"
+}
+```
+
+### Verifying Signatures
+
+1. Go to **Wallet > Sign Message**
+2. Switch to **Verify** tab
+3. Paste the PEM signature
+4. Click **Verify**
+5. See verification result with signer address
+
+```go
+VerifySignature(signedMessage string) -> {
+    valid: true,
+    address: "dero1qy...",
+    message: "Hello, world!"
+}
+```
+
+### Use Cases
+
+- **Prove ownership**: Sign a message to prove you control an address
+- **Verify identity**: Confirm a message came from a specific wallet
+- **Off-chain agreements**: Create signed statements without blockchain transactions
+- **Authentication**: Use signatures for login systems
+
+<Callout type="warning">
+  Never sign messages you don't understand. Malicious actors may try to trick you into signing harmful content.
+</Callout>
+
+## Export Transaction History
+
+Export your transaction history to CSV for record-keeping or tax purposes.
+
+### How to Export
+
+1. Go to **Wallet > History**
+2. Apply any desired filters
+3. Click **Export CSV**
+4. Save the file to your computer
+
+### CSV Format
+
+The exported file includes:
+
+| Column | Description |
+|--------|-------------|
+| `txid` | Transaction hash |
+| `type` | IN, OUT, COINBASE, SC |
+| `amount` | Amount in DERO |
+| `fee` | Transaction fee |
+| `height` | Block height |
+| `timestamp` | Date and time |
+| `destination` | Recipient address (if OUT) |
+| `payload` | Comment/memo (if any) |
+
+## Backup & Security
+
+Access wallet backup and security options:
+
+### View Seed Phrase
+
+1. Go to **Wallet > Backup & Security**
+2. Enter wallet password
+3. View your 25-word seed phrase
+
+<Callout type="warning">
+  Only view your seed phrase in a private, secure location. Anyone with your seed can access your funds.
+</Callout>
+
+### View Wallet Keys
+
+For advanced users, view raw wallet keys:
+
+```go
+GetWalletKeys(password string) -> {
+    spendKey: "...",
+    viewKey: "..."
+}
+```
+
+## Security Features
+
+### Encryption
+
+- All wallet files encrypted with user password
+- Uses DERO's native encryption (not just wrapped)
+- Password never stored, only used in memory
+
+### Network Isolation
+
+- Mainnet and Testnet wallets are separate
+- Simulator wallets are isolated
+- No cross-network contamination possible
+
+### Seed Phrase Security
+
+- Seed shown only at creation time
+- Never logged or transmitted
+- Not recoverable from wallet file without password
+
+## External Wallet Connection
+
+Connect to external wallets via XSWD:
+
+```go
+// Connect to Engram or other XSWD-compatible wallet
+ConnectXSWD() -> { success: bool, address: string }
+DisconnectXSWD()
+```
+
+This enables using Hologram's browser with wallets that have additional features like hardware wallet support.
+
+## API Reference
+
+### Wallet Methods
+
+```go
+OpenWallet(filePath, password string) map[string]interface{}
+CloseWallet() map[string]interface{}
+CreateWallet(filePath, password string) map[string]interface{}
+RestoreWallet(filePath, password, seed string) map[string]interface{}
+SwitchWallet(filePath, password string) map[string]interface{}
+GetWalletStatus() map[string]interface{}
+GetBalance() map[string]interface{}
+GetAddress() map[string]interface{}
+GetTransactionHistory(limit int) map[string]interface{}
+GetWalletMiningEarnings(limit int) map[string]interface{}
+```
+
