@@ -86,9 +86,17 @@ tela-cli --version
 
 Let's create a simple "Hello TELA" application that displays DERO network information.
 
+<Callout type="error" emoji="🚨">
+**CRITICAL: Name Your Entry File `index.html`**
+
+Your main HTML file **MUST** be named `index.html` for TELA browsers to render it correctly. If you name it anything else (like `myapp.html` or `hello-tela.html`), users will see a file listing instead of your application.
+
+For this tutorial, we'll create `index.html` (not `hello-tela.html`) so it works properly when deployed.
+</Callout>
+
 ### Step 1: Create HTML File
 
-Create `hello-tela.html`:
+Create `index.html`:
 
 ```html
 <!DOCTYPE html>
@@ -671,7 +679,7 @@ function loadData() {
 
 **Complete Working Examples:**
 - [Official Demo (app1)](/demo) - Complete source code from verified working application
-- [XSWD Connection Pattern](/demo/xswd-connection) - Exact connection pattern used in this guide
+- [XSWD Protocol](/xswd) - Complete connection and protocol reference
 - [Application Data Handshake](/demo/application-data) - Application data format details
 
 ---

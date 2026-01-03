@@ -23,6 +23,7 @@ Comprehensive guide to diagnosing and fixing common errors in TELA development a
 
 ## Table of Contents
 
+- [App Not Rendering (Shows File Listing)](#app-not-rendering-shows-file-listing)
 - [XSWD Connection Errors](#xswd-connection-errors)
   - [XSWD Error Codes Reference](#xswd-error-codes-reference)
 - [Deployment Errors](#deployment-errors)
@@ -31,6 +32,93 @@ Comprehensive guide to diagnosing and fixing common errors in TELA development a
 - [Network & Blockchain Errors](#network--blockchain-errors)
 - [Performance Issues](#performance-issues)
 - [Development Environment Issues](#development-environment-issues)
+
+---
+
+## App Not Rendering (Shows File Listing)
+
+<Callout type="error" emoji="🚨">
+**Most Common Deployment Mistake**: Your main HTML file is not named `index.html`
+</Callout>
+
+### Symptoms
+
+When you navigate to your deployed TELA app in Hologram or any TELA browser, instead of seeing your application, you see:
+
+```
+Snake_Deluxe.html
+```
+or
+```
+myapp.html
+gaza.html
+main.html
+```
+
+The browser shows a **file listing** with a clickable link instead of rendering your app.
+
+### Cause
+
+TELA browsers look for `index.html` as the **default entry point**. If your DOC1 file has any other name, the browser doesn't know which file to render automatically, so it displays a file listing instead.
+
+**This is NOT a bug** - it's how web servers work. Just like Apache or Nginx serve `index.html` by default, TELA browsers do the same.
+
+### Solution
+
+**Before deploying**, rename your main HTML file to `index.html`:
+
+```bash
+# ❌ Wrong - will show file listing
+my-app/
+├── Snake_Deluxe.html  ← Named incorrectly
+├── style.css
+└── app.js
+
+# ✅ Correct - will render properly
+my-app/
+├── index.html  ← Renamed correctly
+├── style.css
+└── app.js
+```
+
+### If Already Deployed
+
+If you've already deployed with the wrong filename, you have two options:
+
+**Option 1: Redeploy with correct filename** (Recommended)
+1. Rename your file to `index.html`
+2. Deploy as a new DOC: `tela-cli install-doc`
+3. Update your INDEX to point to the new DOC SCID
+
+**Option 2: Create a redirect `index.html`** (Workaround)
+Create a new `index.html` that redirects to your existing file:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="refresh" content="0; url=Snake_Deluxe.html">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="Snake_Deluxe.html">Snake_Deluxe.html</a>...</p>
+</body>
+</html>
+```
+
+Deploy this `index.html` as DOC1, and keep your original file as DOC2.
+
+### Prevention Checklist
+
+Before every TELA deployment:
+
+- [ ] Main HTML file is named `index.html`
+- [ ] `index.html` is deployed as DOC1 (first document)
+- [ ] All other files (CSS, JS, images) are referenced correctly from `index.html`
+
+<Callout type="info" emoji="💡">
+**Pro Tip**: Create a deployment checklist and always verify your entry point filename before running `tela-cli install-index`.
+</Callout>
 
 ---
 
@@ -596,6 +684,134 @@ cat your-file.html | tr -d ' \n\t' | wc -c
    // ✅ Include only what you need
    function debounce(fn, wait) { /* ... */ }  // 200 bytes
    ```
+
+### Error: "Expecting declaration of function but found ':'" or "File contains '*/' which breaks TELA deployment"
+
+**Symptoms:**
+```
+Error: [-32098] Expecting declaration of function but found ":"
+```
+or
+```
+Error: File contains '*/' which breaks TELA deployment
+```
+
+<Callout type="error" emoji="💥">
+  **Critical Issue**: TELA wraps your code in a DVM-BASIC comment block. If your file contains `*/` (even in a string or CSS comment), it prematurely closes the wrapper comment and the parser tries to read your code as DVM-BASIC syntax, causing deployment to fail.
+</Callout>
+
+**Why This Happens:**
+
+TELA stores your file content inside a DVM-BASIC comment block like this:
+```basic
+' Your code is wrapped like this:
+' /* Your entire file content here */
+' */
+```
+
+If your file contains `*/`, it closes the wrapper comment early:
+```basic
+' /* Your file starts here...
+'   /* Some CSS comment */
+'   */  ← This closes the wrapper comment!
+'   .my-class { color: red; }  ← Now parser thinks this is DVM-BASIC → ERROR!
+```
+
+**Common Causes:**
+1. **CSS comment blocks** - `/* DERO Explorer v2.0 */`
+2. **JavaScript multi-line comments** - `/* This is a comment */`
+3. **String literals containing `*/`** - `const pattern = "*/";`
+4. **Regular expressions** - `const regex = /\*/;`
+
+**Diagnosis:**
+```bash
+# Find all occurrences of '*/' in your files
+grep -n '\*/' *.css *.js *.html
+
+# Check for CSS comments specifically
+grep -n '/\*' *.css
+
+# Check for JavaScript multi-line comments
+grep -n '/\*' *.js
+```
+
+**Solution:**
+
+1. **Remove CSS comment blocks:**
+   ```css
+   /* ❌ Before - breaks TELA */
+   /* DERO Explorer v2.0 - Base Styles */
+   :root { --color: #000; }
+   
+   /* ✅ After - safe */
+   :root { --color: #000; }
+   ```
+
+2. **Replace JavaScript multi-line comments with single-line:**
+   ```javascript
+   /* ❌ Before - breaks TELA */
+   /* This is a long comment
+      explaining something */
+   function myFunc() { }
+   
+   /* ✅ After - safe */
+   // This is a long comment
+   // explaining something
+   function myFunc() { }
+   ```
+
+3. **Fix string literals containing `*/`:**
+   ```javascript
+   // ❌ Before - breaks TELA
+   if (line.startsWith('*/')) { }
+   
+   // ✅ After - safe (string concatenation)
+   if (line.startsWith('*' + '/')) { }
+   ```
+
+4. **Fix regular expressions:**
+   ```javascript
+   // ❌ Before - breaks TELA
+   const regex = /\*/;
+   
+   // ✅ After - safe (escape or use string)
+   const regex = /\*\//;  // Escaped
+   // OR
+   const regex = new RegExp('\\*/');  // String constructor
+   ```
+
+5. **Automated fix for CSS files:**
+   ```bash
+   # Remove all CSS comment blocks
+   sed -i '' 's|/\*[^*]*\*/||g' *.css
+   
+   # Or more comprehensive (handles nested comments)
+   sed -i '' 's|/\*[^*]*\*\([^/*][^*]*\*\)*/||g' *.css
+   ```
+
+6. **Automated fix for JavaScript files:**
+   ```bash
+   # Remove multi-line comments (be careful with strings!)
+   # Better to do this manually or use a proper minifier
+   npx terser input.js -o output.js --comments false
+   ```
+
+**Best Practice:**
+- **CSS**: Remove all `/* */` comment blocks before deployment
+- **JavaScript**: Use `//` single-line comments instead of `/* */`
+- **Always**: Test deployment in simulator mode first to catch these issues early
+
+**Prevention:**
+- Configure your build process to strip comments automatically
+- Use TELA-CLI's compression feature which handles this automatically
+- Add a pre-deployment check:
+  ```bash
+  # Check for problematic patterns
+  if grep -q '\*/' *.css *.js; then
+      echo "ERROR: Files contain '*/' which breaks TELA deployment"
+      exit 1
+  fi
+  ```
 
 ### Error: "Invalid SCID format"
 
@@ -1238,7 +1454,7 @@ When reporting issues, include:
   <Card title="Best Practices" href="/best-practices">
     Production deployment and development best practices
   </Card>
-  <Card title="XSWD Protocol" href="/xswd/overview">
+  <Card title="XSWD Protocol" href="/xswd">
     XSWD connection details
   </Card>
   <Card title="TELA CLI Workflows" href="/tela-cli/workflows">
@@ -1255,5 +1471,5 @@ When reporting issues, include:
 
 **Working Examples for Reference:**
 - [Official Demo (app1)](/demo) - Complete verified source code with working error handling
-- [XSWD Connection Pattern](/demo/xswd-connection) - Verified connection code that avoids common errors
 - [API Call Patterns](/demo/api-patterns) - Error handling patterns from working code
+- [XSWD Protocol](/xswd) - Complete XSWD protocol reference

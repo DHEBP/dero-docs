@@ -550,12 +550,40 @@ async function robustXSWDCall(socket, method, params, retries = 3) {
 }
 ```
 
+## Quick Reference
+
+### Connection States
+
+| State | Value | Description | Action |
+|-------|-------|-------------|--------|
+| `CONNECTING` | 0 | Establishing connection | Wait |
+| `OPEN` | 1 | Connected, ready | Can send data |
+| `CLOSING` | 2 | Closing | Cannot send |
+| `CLOSED` | 3 | Closed | Reconnect needed |
+
+### WebSocket Close Codes
+
+| Code | Meaning | Solution |
+|------|---------|----------|
+| `1000` | Normal closure | User closed wallet |
+| `1006` | Abnormal closure | Wallet not running or XSWD disabled |
+| `1001` | Going away | Wallet closed |
+| `1002` | Protocol error | Check application data format |
+
+### Common Rejection Messages
+
+| Message | Cause | Fix |
+|---------|-------|-----|
+| `Invalid ID size` | ID not exactly 64 chars | Use 64-character hex string |
+| `Invalid hexadecimal ID` | ID contains non-hex chars | Use only 0-9, a-f |
+| `Invalid name` | Empty, >255 chars, or Unicode | Use ASCII only, 1-255 chars |
+| `Invalid description` | Empty, >255 chars, or Unicode | Use ASCII only, 1-255 chars |
+| `Invalid URL compared to origin` | URL doesn't match page origin | Use `window.location.origin` |
+
 ## Related Documentation
 
 **Getting Started:**
-- **[XSWD Wallet Connect Tutorial](/tutorials/xswd-wallet-connect)** - Step-by-step guide to fix "connection closed" errors
 - **[Official Demo (app1)](/demo)** - Complete working XSWD implementation
-- **[XSWD Connection Pattern](/demo/xswd-connection)** - Detailed connection code analysis
 
 **Ready-to-Use Solutions:**
 - **[XSWD Templates](/templates/overview)** - Copy-paste XSWD implementations
@@ -573,5 +601,5 @@ async function robustXSWDCall(socket, method, params, retries = 3) {
 
 ---
 
-*XSWD is the foundation of TELA application development, providing secure and efficient access to the DERO blockchain through the user's own wallet and node. This overview matches the proven patterns from the official `app1` demo.*
+*XSWD is the foundation of TELA application development, providing secure and efficient access to the DERO blockchain through the user's own wallet and node.*
 

@@ -48,6 +48,26 @@ TELA has strict size limitations that are **absolute requirements**. Never excee
 
 ## 🎯 Core Principles
 
+### Entry Point: index.html (CRITICAL)
+
+<Callout type="error" emoji="🚨">
+**Your main HTML file MUST be named `index.html`**
+
+TELA browsers (including Hologram) look for `index.html` as the default entry point. If your DOC1 file has any other name (like `myapp.html`, `main.html`, or `Snake_Deluxe.html`), **your app will NOT render** - users will see a file listing instead.
+
+```bash
+# ❌ WRONG - Shows file listing, app doesn't load
+DOC1: Snake_Deluxe.html
+DOC1: myapp.html
+DOC1: main.html
+
+# ✅ CORRECT - App loads properly
+DOC1: index.html
+```
+
+**Always rename your main HTML file to `index.html` before deployment.**
+</Callout>
+
 ### HTML-First Development
 
 <Callout type="info">

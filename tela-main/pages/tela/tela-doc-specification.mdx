@@ -267,9 +267,10 @@ Before deploying a TELA-DOC-1:
    - Compression handles encoding automatically
 
 3. **Comments:**
-   - `/* */` multiline comments may cause issues
+   - `/* */` multiline comments **will break deployment** - TELA wraps your code in a DVM-BASIC comment block, so `*/` prematurely closes it
    - Use `//` single-line comments for JavaScript
-   - Or use compression (recommended)
+   - Remove all `/* */` comment blocks from CSS files
+   - Or use compression (recommended) which handles this automatically
 
 4. **Test Locally:**
    ```bash
@@ -739,12 +740,28 @@ var text = "Bonjour TELA!";   // Accented chars
 
 ### Multi-line Comments
 
+<Callout type="error" emoji="💥">
+  **Critical**: `/* */` comment blocks **will break TELA deployment**. TELA wraps your code in a DVM-BASIC comment block, so any `*/` in your file (even in CSS comments or strings) prematurely closes the wrapper and causes parser errors.
+</Callout>
+
+**Why This Breaks:**
+TELA stores your file content inside a DVM-BASIC comment:
+```basic
+' /* Your entire file content here */
+' */
+```
+If your file contains `*/`, it closes the wrapper early and the parser tries to read your code as DVM-BASIC syntax → deployment fails.
+
 **Problematic:**
 ```javascript
 /* 
 This multi-line comment
-might cause deployment issues
+will break deployment
 */
+```
+```css
+/* ❌ This CSS comment breaks TELA */
+.my-class { color: red; }
 ```
 
 **Safe:**
@@ -753,8 +770,12 @@ might cause deployment issues
 // They don't cause parsing issues
 // And work reliably
 ```
+```css
+/* ✅ CSS: Remove all comment blocks before deployment */
+.my-class { color: red; }
+```
 
-**Best Solution:** Use compression which handles all comment types
+**Best Solution:** Use compression which handles all comment types automatically, or manually remove all `/* */` comment blocks before deployment.
 
 ### File References
 

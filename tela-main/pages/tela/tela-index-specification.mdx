@@ -532,6 +532,21 @@ STORE("hash", HEX(TXID()))
 - Must be 64-character hex SCID
 - Must reference valid TELA-DOC-1 contract
 
+<Callout type="error" emoji="🚨">
+**CRITICAL: Your entrypoint file MUST be named `index.html`**
+
+TELA browsers (including Hologram) look for `index.html` as the default entry point. If your DOC1 file is named something else (like `myapp.html`, `main.html`, or `Snake_Deluxe.html`), **your app will NOT render correctly** - users will see a file listing instead of your application.
+
+**Common Mistake:**
+```
+❌ DOC1: myapp.html      → Shows file listing, app doesn't load
+❌ DOC1: Snake_Deluxe.html → Shows file listing, app doesn't load
+✅ DOC1: index.html      → App loads correctly!
+```
+
+**Solution:** Always name your main HTML file `index.html` before deploying as DOC1.
+</Callout>
+
 ### Additional DOCs (DOC2, DOC3, etc.)
 
 **Format:**
