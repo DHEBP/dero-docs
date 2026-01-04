@@ -39,6 +39,9 @@ derod-main/build/
 tela-main/.next/
 tela-main/out/
 tela-main/build/
+hologram-main/.next/
+hologram-main/out/
+hologram-main/build/
 
 # Vercel
 .vercel

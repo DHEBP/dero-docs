@@ -149,6 +149,68 @@ The avatar system uses:
   You don't need a Villager avatar to use Hologram. Without one, your unique address-derived identicon frame is displayed instead.
 </Callout>
 
+## Avatar Editor
+
+<Callout type="success">
+  Create and edit custom Villager avatars directly in Hologram.
+</Callout>
+
+Access the Avatar Editor from **Wallet > My Identity** section. This pixel art editor lets you create and save custom avatars to the Villager smart contract on the blockchain.
+
+### Features
+
+- **24×24 Pixel Grid**: Click and drag to paint your avatar
+- **52-Color Palette**: Official Villager colors organized by hue groups
+- **Paint & Eraser Tools**: Switch between painting and erasing
+- **Live Preview**: See your avatar rendered in real-time using Villager identicon system
+- **Clear Canvas**: Start fresh with one click
+- **Reset Changes**: Revert to last saved version
+- **Export/Import**: Save and load avatar art strings
+
+### How to Use
+
+1. **Open Wallet** - Connect your wallet in the Wallet tab
+2. **Navigate to My Identity** - Click "My Identity" in the sidebar
+3. **Load Existing Avatar** - If you have a saved avatar, it loads automatically
+4. **Create or Edit** - Use the pixel grid to paint your avatar
+5. **Preview** - See live preview on the right side
+6. **Save** - Click "Save Avatar" to store on blockchain
+
+### Smart Contract Integration
+
+The Avatar Editor integrates with the Villager smart contract:
+
+- **SCID**: `f0b29081c1ed35fe942cb3402cd9d7bf0cf27639201bbc96223bdc99c4c6aa9f` (mainnet)
+- **Functions**:
+  - `RegisterAccount()` - Register your address (auto-called for new users)
+  - `StoreAvatar(avatar String)` - Save your 576-character art string
+  - `UnRegisterAccount()` - Remove your avatar
+
+### Developer Donation
+
+When saving an avatar, a small developer donation is included:
+
+- **Default Fee**: 10000 DERI (0.0001 DERO)
+- **Fetched from SC**: The contract's `devFee` is read before saving
+- **Burn Transfer**: Sent as `burn` transfer, SC forwards to developer address
+- **Displayed in UI**: Shows donation amount before saving
+
+### Click-to-Edit Navigation
+
+<Callout type="success">
+  Click the avatar in the sidebar to jump directly to the Avatar Editor.
+</Callout>
+
+For quick access:
+- **Sidebar Avatar**: Click the avatar image in the sidebar (collapsed or expanded)
+- **Wallet Menu**: "Edit Avatar" button in the wallet dropdown menu
+- **Direct Navigation**: Both methods navigate to Wallet > My Identity section
+
+The avatar has visual cues indicating it's clickable:
+- **Hover Effect**: Scale(1.1), cyan glow, border highlight
+- **Active State**: Scale(0.95) when pressed
+- **Tooltip**: "Click to customize your avatar"
+
 ## Recent Wallets
 
 Hologram remembers your recently used wallets:

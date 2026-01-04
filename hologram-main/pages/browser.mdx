@@ -86,8 +86,76 @@ The browser toolbar includes:
 - `TELA-CSS-1`: Stylesheets
 - `TELA-JS-1`: JavaScript files
 - `TELA-JSON-1`: JSON data
+- `TELA-STATIC`: Static files (images, SVG, fonts)
 - `*.tela.shards`: Shard index files
 - `*.tela.lib`: Library info views
+
+### TELA-STATIC Support
+
+<Callout type="success">
+  Static files (SVG, images, fonts) are now properly embedded in TELA content.
+</Callout>
+
+Static files are automatically inlined when referenced in HTML:
+
+- **SVG files**: Embedded directly as inline SVG
+- **Image files**: Converted to base64 data URIs
+- **Automatic detection**: `<img src="...">` references are automatically resolved
+
+### TELA V2 Contract Keys
+
+<Callout type="success">
+  Support for both TELA V1 and V2 contract formats.
+</Callout>
+
+TELA smart contracts store metadata (name, description, icon) in variable keys. The TELA specification evolved to support updatable headers, resulting in two header formats:
+
+| Version | Variable Keys | Mutability | Source |
+|---------|--------------|------------|--------|
+| **V1 (Original)** | `nameHdr`, `descrHdr`, `iconURLHdr` | Immutable | Set at deployment only |
+| **V2 (Enhanced)** | `var_header_name`, `var_header_description`, `var_header_icon` | Mutable | Can update with [TELA-MOD-1](/advanced-features/tela-mods) |
+
+**Why Two Formats?**
+
+According to the [official TELA specification](https://github.com/deroproject/tela-main), V2 headers were introduced to enable metadata updates:
+
+- **V1 headers** (`nameHdr`, etc.) are immutable—once set during deployment, they cannot be changed
+- **V2 headers** (`var_header_name`, etc.) are mutable—they can be updated later using TELA-MOD-1 Variable Store operations
+
+**Example from TELA Spec:**
+
+```go
+// V1 Headers (immutable)
+STORE("nameHdr", "My App")        // Cannot change after deployment
+
+// V2 Headers (mutable with TELA-MOD-1)
+STORE("var_header_name", "My App")  // Can update via SetVar later
+```
+
+**How Hologram Handles Both:**
+
+When fetching TELA content, Hologram automatically checks for both formats:
+
+```go
+// TELA V2 format (checked first)
+if fileNameHex, ok := stringKeys["var_header_name"].(string); ok {
+    fileName = decodeHexString(fileNameHex)
+}
+// TELA V1 format (fallback)
+else if fileNameHex, ok := stringKeys["nameHdr"].(string); ok {
+    fileName = decodeHexString(fileNameHex)
+}
+```
+
+This ensures:
+- **Backward compatibility** - Old V1 apps still work perfectly
+- **Forward compatibility** - New V2 apps work correctly
+- **No user action needed** - Hologram handles the format detection automatically
+- **Seamless experience** - All TELA apps render regardless of deployment date
+
+<Callout type="info">
+  You don't need to know which version an app uses—Hologram automatically detects and handles both formats. For developers: use V2 headers if you want the ability to update metadata later!
+</Callout>
 
 ## Features
 
@@ -143,7 +211,7 @@ Every TELA app automatically has access to the `telaHost` JavaScript API (simila
 - Smart contract interaction
 - Transaction signing (with user approval)
 
-See [telaHost API Reference](/telahost-api) for full documentation, including [Session 101 Permission Scoping](/telahost-api#smart-permission-detection-session-101).
+See [telaHost API Reference](/telahost-api) for full documentation, including [Smart Permission Detection](/telahost-api#smart-permission-detection).
 
 ## Full TELA dApp Compatibility
 
