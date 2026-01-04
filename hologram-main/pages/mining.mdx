@@ -43,68 +43,6 @@ EPOCH enables dApps to request hash computations from users as a non-intrusive f
   By default, EPOCH hashing rewards go to the developer's address. However, some TELA apps now support **hash splitting**, allowing you to direct a portion of rewards to your own wallet while still supporting the developer.
 </Callout>
 
-## Fair Developer Support Address Switching
-
-<Callout type="success">
-  When TELA dApps request developer support via `AttemptEPOCHWithAddr`, Hologram temporarily switches EPOCH rewards to the app developer's address, ensuring fair distribution of support.
-</Callout>
-
-### How It Works
-
-When a TELA dApp calls `AttemptEPOCHWithAddr` with a developer address:
-
-1. **Hologram pauses background worker** - Stops passive hashing for Hologram's default address
-2. **Switches EPOCH connection** - Temporarily connects to the app developer's address
-3. **Computes hashes** - Rewards go directly to the **app developer**
-4. **Auto-switch back** - After 30 seconds of inactivity, switches back to Hologram's default address
-5. **Background worker resumes** - Passive hashing continues for Hologram
-
-### Sticky Timeout
-
-The address switch persists for **30 seconds** after the last `AttemptEPOCHWithAddr` call:
-
-- **Active app usage**: Rewards continue going to app developer
-- **Idle period**: After 30s of no requests, switches back to default
-- **Multiple apps**: Each app can request support, switching happens automatically
-
-### API Reference
-
-```go
-// Get current EPOCH address switching state
-GetEpochAddressInfo() -> {
-    currentAddress: "dero1...",      // Currently active address
-    defaultAddress: "dero1...",      // Hologram's default
-    isOnAppAddress: true,             // True if switched to app dev
-    lastAppRequest: "2025-01-03T...", // Last time app requested
-    timeSinceLastRequest: "15s"       // Time since last request
-}
-
-// Manual control (advanced)
-SwitchEpochToAddress(address string) -> { success: true }
-SwitchEpochToDefault() -> { success: true }
-```
-
-### Background Worker Behavior
-
-The DevSupportWorker automatically pauses when EPOCH is switched to an app developer:
-
-- **Pause Reason**: "App developer support active"
-- **Resume**: Automatically resumes when switched back to default
-- **Manual Pause**: Still works independently of address switching
-
-### Use Cases
-
-This feature enables:
-
-- **Fair distribution**: Active dApp developers get support when their apps are used
-- **Idle support**: Hologram gets support during idle time
-- **Multiple developers**: Different apps can request support for different developers
-- **Transparent switching**: Users can see which address is currently receiving rewards
-
-<Callout type="tip">
-  Check **Settings > Developer Support** to see the current EPOCH address and switching status.
-</Callout>
-
 ## Configuration
 
 Access Developer Support settings in **Settings > Developer Support** (above About).

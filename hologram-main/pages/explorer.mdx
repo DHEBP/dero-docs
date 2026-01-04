@@ -496,99 +496,12 @@ GetSCChangeTimeline(scid) -> []SCStateDiff
 
 ### SC Watching
 
-Watch smart contracts for changes and automatically capture snapshots when state changes are detected.
-
 ```go
 // Watch SC for changes
 WatchSmartContract(scid, name)
 UnwatchSmartContract(scid)
 GetWatchedSmartContracts()
 RefreshWatchedSCs() -> changesDetected
-```
-
-#### Watch Button
-
-When viewing a smart contract in Explorer, a **Watch** button appears in the Time Machine panel header. Click it to start tracking changes:
-
-- **Watching**: Button shows "Unwatch" - snapshots are automatically captured on state changes
-- **Not Watching**: Button shows "Watch" - click to start tracking
-
-The watch status is automatically checked when the Time Machine section opens, so the button always reflects the current state.
-
-#### Automatic Snapshot Capture
-
-When a smart contract is being watched:
-
-1. **Initial Snapshot**: Captured immediately when you start watching
-2. **Change Detection**: New snapshots are automatically created when:
-   - Variables are added, modified, or removed
-   - Smart contract code is updated
-   - Balance changes occur
-
-#### Change Timeline
-
-<Callout type="success">
-  View a chronological timeline of all changes between captured snapshots.
-</Callout>
-
-The **Change Timeline** section shows a visual timeline of all state changes:
-
-```
-+----------------------------------------------------------+
-|  [History] CHANGE TIMELINE                                 |
-+----------------------------------------------------------+
-|  Height 1000 → 2500                                        |
-|  • Added: 3 variables                                      |
-|  • Modified: 1 variable                                    |
-|  • Removed: 0 variables                                    |
-|  • Code changed: No                                        |
-|                                                             |
-|  Height 2500 → 4000                                        |
-|  • Added: 0 variables                                      |
-|  • Modified: 2 variables                                  |
-|  • Removed: 1 variable                                     |
-|  • Code changed: Yes                                        |
-+----------------------------------------------------------+
-```
-
-Each timeline event displays:
-- **Block height range** (from → to)
-- **Count of changes**: Added, modified, removed variables
-- **Code changed indicator**: Shows if SC code was updated
-
-#### Watched SCs Management
-
-Manage all watched smart contracts from **Settings > Gnomon > Watched Smart Contracts**:
-
-- **List View**: Shows all watched SCs with:
-  - Name (or truncated SCID if no name)
-  - SCID preview
-  - Date added to watch list
-  - Number of detected changes
-- **Unwatch Button**: Remove a SC from watch list
-- **Refresh All**: Check all watched SCs for new changes
-- **Empty State**: Instructions when no SCs are being watched
-
-```go
-// Get all watched SCs
-GetWatchedSmartContracts() -> {
-    watched: [
-        {
-            scid: "abc123...",
-            name: "My Contract",
-            dateAdded: "2025-01-03T...",
-            changeCount: 5
-        },
-        ...
-    ]
-}
-
-// Refresh all watched SCs
-RefreshWatchedSCs() -> {
-    success: true,
-    changesDetected: 2,
-    message: "Checked 5 watched contracts, found 2 with changes"
-}
 ```
 
 ### State Diff Structure

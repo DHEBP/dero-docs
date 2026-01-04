@@ -369,71 +369,11 @@ async function safeCall(fn) {
 
 ### Smart Permission Detection
 
-<Callout type="success">
-  Hologram automatically detects what permissions your app actually needs based on the methods it calls. This provides a better user experience—apps that only read public blockchain data won't show scary wallet permission dialogs.
-</Callout>
-
-Hologram analyzes the XSWD methods your app uses and automatically determines the appropriate permission level:
-
-#### Read-Only Detection
-
-If your app only calls daemon methods (no wallet access needed):
-- **No wallet required** - Users can approve without opening a wallet
-- **"Read-Only Access" badge** - Clear indication of limited permissions
-- **Friendly description** - "This app only reads public blockchain data"
-- **No scary warnings** - No misleading wallet permission requests
-
-#### Wallet Permission Detection
-
-If your app uses wallet methods:
-- **Full permission dialog** - Shows what wallet access is requested
-- **Explicit approval** - User must approve wallet connection
-- **Clear indicators** - Shows what's allowed (✓) and denied (✗)
+Hologram automatically detects what permissions your app actually needs based on the methods it calls. This provides a better user experience—apps that only read public blockchain data won't show scary wallet permission dialogs.
 
 <Callout type="info">
   **Read-Only Apps**: If your app only calls `DERO.*` methods (GetInfo, GetBlock, GetSC, etc.), users will see a "Read-Only Access" badge instead of wallet permissions.
 </Callout>
-
-### Permission Scopes (HOLOGRAM Extension)
-
-<Callout type="warning">
-  **Note**: This is a HOLOGRAM-specific extension to the XSWD protocol. The official DERO XSWD uses per-method permissions with signatures. HOLOGRAM's scope-based system is simpler but only works in Hologram.
-</Callout>
-
-Hologram uses scope-based permissions for better UX:
-
-| Scope | Methods | Description | Wallet Required |
-|-------|---------|-------------|-----------------|
-| `read_public_data` | `DERO.GetInfo`, `DERO.GetBlock`, `DERO.GetTransaction`, `DERO.GetSC`, etc. | Read-only blockchain data | **No** |
-| `view_address` | `GetAddress` | See wallet address | Yes |
-| `view_balance` | `GetBalance` | See wallet balance | Yes |
-| `sign_transaction` | `Transfer` | Send DERO (always asks) | Yes |
-| `sc_invoke` | `SCInvoke` | Smart contract calls (always asks) | Yes |
-
-### Default Behavior
-
-By default, apps are treated as **read-only**:
-
-- **No permissions requested** - Apps start with `read_public_data` only
-- **Explicit requests** - Apps can include `permissions` array in handshake to request specific scopes
-- **Backward compatible** - Existing apps without permission requests work as read-only
-
-### Best Practice: Don't Request Permissions
-
-For maximum compatibility across XSWD wallets, **don't specify permissions** in your handshake. Let the wallet auto-detect what you need:
-
-```javascript
-// Recommended: No permissions field
-var handshake = {
-  id: appId,           // 64-char hex (SHA-256 of app name)
-  name: 'My App',
-  description: 'What my app does',
-  url: window.location.origin
-  // Don't include permissions - let the wallet figure it out
-};
-```
-
-This approach works in Hologram, Engram, and any other XSWD-compatible wallet.
 
 ### Permission Scopes
 

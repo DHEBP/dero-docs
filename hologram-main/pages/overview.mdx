@@ -1,0 +1,124 @@
+---
+title: "Overview"
+description: "Understanding Hologram's architecture, components, and core capabilities."
+---
+
+import { Callout } from 'nextra/components'
+
+# Overview
+
+Hologram is a comprehensive desktop application that provides complete access to the DERO blockchain ecosystem.
+
+<Callout type="success">
+  **220+ API Methods** across 24 functional areas, providing everything you need to browse, build, and interact with the DERO decentralized web.
+</Callout>
+
+## Architecture
+
+```
+┌───────────────────────────────────────────────────────────┐
+│  Frontend (Svelte)                                        │
+│  Explorer | Browser | Wallet | Studio | Settings          │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │  Backend (Go / Wails)                               │  │
+│  │  Daemon Client | Gnomon | Wallet Manager | XSWD     │  │
+│  │  ┌───────────────────────────────────────────────┐  │  │
+│  │  │  Storage (Graviton)                           │  │  │
+│  │  │  TELA Cache | NRS Cache | Offline | Prefs     │  │  │
+│  │  └───────────────────────────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
+```
+
+## Connection Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Direct Daemon** | Connect to local/remote derod | Full node access |
+| **Embedded Node** | Run derod inside Hologram | Self-sovereign operation |
+| **External Wallet** | Connect to Engram via XSWD | Extended wallet features |
+| **Integrated Wallet** | Built-in [DERO wallet](/wallet) | Complete independence |
+
+## Network Support
+
+- **Mainnet**: Full production network
+- **Testnet**: Development and testing
+- **[Simulator](/simulator)**: Local development environment with instant blocks
+
+## Key Components
+
+### TELA Browser Engine
+
+The [TELA Browser](/browser) enables accessing decentralized web applications stored entirely on the DERO blockchain. Features include:
+
+- Address bar navigation (SCID, dero:// URLs, name lookup)
+- Automatic content assembly from INDEX contracts
+- Gzip decompression for compressed content
+- Versioned caching with auto-invalidation ([Offline-First](/offline-first))
+- External reference inlining
+- Shard and library support
+- Full [security features](/security) including iframe sandboxing and CSP management
+
+### Gnomon Indexer
+
+Gnomon is a decentralized blockchain indexer that:
+
+- Discovers and catalogs TELA applications
+- Tracks smart contract state at any height
+- Provides full-text search capabilities
+- Manages ratings and name resolution
+
+### telaHost Bridge
+
+The [telaHost API](/telahost-api) is a native JavaScript API available to all TELA apps (like `window.ethereum` for Web3):
+
+- Clean async interface to blockchain
+- Wallet operations with approval modals
+- No XSWD WebSocket complexity
+- Zero configuration required
+
+### Version Control System
+
+Git-like version control for TELA applications:
+
+- View commit history for any INDEX
+- Compare versions side-by-side
+- Clone content at specific commits using `scid@txid`
+- Accessible from Studio, Explorer, and Browser
+
+### Villager Avatar System
+
+Visual identity integration for connected wallets:
+
+- Address-derived unique identicon frames
+- Custom avatar pixel overlay support
+- Displayed in sidebar wallet indicator
+- Cached locally for performance
+
+### Sync Manager (Offline-First)
+
+Batch sync and version control for cached TELA apps:
+
+- Clone all favorites with rating threshold filter
+- Check cached apps for on-chain updates
+- Visual diffing before updating local copies
+- True offline operation after initial sync
+
+### Developer Support (EPOCH)
+
+Passive hashing system to support TELA app developers:
+
+- EPOCH handler processes hash requests from dApps
+- DevSupportWorker runs passive background hashing
+- Rewards go to app developers (not users)
+- Configurable in Settings > Developer Support
+
+## Performance Targets
+
+| Metric | Target | Status |
+|--------|--------|--------|
+| INDEX Fetch | ~100ms | Achieved |
+| DOC Fetch (35 files) | ~1s | Achieved |
+| Total Load Time | ~2s | Achieved |
+| Memory Usage | ~30MB | Achieved |
+

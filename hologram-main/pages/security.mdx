@@ -74,7 +74,7 @@ User approval required for sensitive operations:
 | Invoke smart contract | **Every transaction** |
 
 <Callout type="info">
-  Hologram auto-detects read-only apps and shows a "Read-Only Access" badge instead of wallet permissions. Learn more in [Smart Permission Detection](/telahost-api#smart-permission-detection).
+  Hologram auto-detects read-only apps and shows a "Read-Only Access" badge instead of wallet permissions. Learn more in [Session 101 Permission Scoping](/telahost-api#smart-permission-detection-session-101).
 </Callout>
 
 ### Layer 4: Local Execution
@@ -246,7 +246,7 @@ When connecting to external wallet (e.g., Engram):
 ### For Developers
 
 1. **Request minimal permissions** — Only ask for what you need via [telaHost API](/telahost-api)
-2. **Don't specify permissions** — Let Hologram auto-detect what your app needs
+2. **Don't specify permissions** — Let Hologram auto-detect (Session 101)
 3. **Handle rejections gracefully** — Users may decline
 4. **Validate all input** — Never trust user data
 5. **Test in [Simulator](/simulator)** — Before deploying to mainnet using [Studio](/studio) tools

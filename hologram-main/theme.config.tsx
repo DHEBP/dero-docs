@@ -4,17 +4,17 @@ import type { DocsThemeConfig } from 'nextra-theme-docs'
 import { useConfig } from 'nextra-theme-docs'
 import seoConfig from './seo.config'
 
+// Hologram Logo - Official wordmark
 const logo = (
-  <svg
-    height="37"
-    viewBox="0 0 727.4 63.8"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-    style={{ filter: 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.6))' }}
-    aria-label="HOLOGRAM"
-    role="img"
-  >
-    <g fill="currentColor">
+  <div className="flex items-center">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 727.4 63.8"
+      fill="#00d4aa"
+      height="24"
+      style={{ display: 'block', maxWidth: '140px', width: 'auto' }}
+    >
+      {/* HOLOGRAM wordmark - Orbitron Bold */}
       {/* H */}
       <polygon points="50.9 26.5 13 26.5 13 3 2.4 3 2.4 60.8 13 60.8 13 37.3 50.9 37.3 50.9 60.8 61.5 60.8 61.5 3 50.9 3 50.9 26.5"/>
       {/* O */}
@@ -31,14 +31,14 @@ const logo = (
       <path d="M616.4,4.5c-1.7-1-3.6-1.5-5.6-1.5h-35.4c-2,0-3.9.5-5.6,1.5-1.7,1-3,2.4-4.1,4.1-1,1.7-1.5,3.5-1.5,5.6v46.6h10.6v-19.4h36.5v19.4h10.7V14.2c0-2-.5-3.9-1.5-5.6-1-1.7-2.4-3-4.1-4.1ZM611.3,30.8h-36.5V14.7c0-.3,0-.5.3-.7s.4-.3.7-.3h34.5c.3,0,.5,0,.7.3.2.2.3.4.3.7v16.1Z"/>
       {/* M */}
       <polygon points="713.3 3 692.4 28 671.5 3 659.9 3 659.9 60.8 670.5 60.8 670.5 18.5 692.4 44.5 714.4 18.4 714.4 60.8 725 60.8 725 3 713.3 3"/>
-    </g>
-  </svg>
+    </svg>
+  </div>
 )
 
-
 const config: DocsThemeConfig = {
-  primaryHue: { dark: 193, light: 193 }, // Teal/cyan hue for DERO branding
-  primarySaturation: { dark: 63, light: 63 }, // Adjust the saturation value for the desired intensity
+  // Teal/Cyan primary color matching Hologram design system
+  primaryHue: { dark: 174, light: 174 },
+  primarySaturation: { dark: 100, light: 72 },
   project: {
     link: 'https://github.com/DHEBP/HOLOGRAM-git'
   },
@@ -48,7 +48,7 @@ const config: DocsThemeConfig = {
     const { url, images } = seoConfig.openGraph
 
     if (route === '/') {
-      return { titleTemplate: '%s – HOLOGRAM' }
+      return { titleTemplate: '%s - Hologram' }
     }
 
     return {
@@ -60,12 +60,11 @@ const config: DocsThemeConfig = {
 
   head: () => {
     const { frontMatter: meta } = useConfig()
-    const { title } = meta || {}
+    const { title } = meta
     const router = useRouter()
     const pagePath = router.asPath
 
-    // Get image from frontmatter or fallback to default
-    const imageUrl = meta?.image 
+    const imageUrl = meta.image 
       ? (meta.image.startsWith('http') ? meta.image : `${seoConfig.openGraph.url}${meta.image}`)
       : `${seoConfig.openGraph.url}${seoConfig.openGraph.images}`
 
@@ -77,17 +76,17 @@ const config: DocsThemeConfig = {
         <meta httpEquiv="Content-Language" content="en" />
         <meta
           name="description"
-          content={meta?.description || seoConfig.description}
+          content={meta.description || seoConfig.description}
         />
         
         {/* OpenGraph tags */}
         <meta
           property="og:title"
-          content={title ? title + ' – HOLOGRAM' : seoConfig.title.default}
+          content={title ? title + ' - Hologram' : seoConfig.title.default}
         />
         <meta
           property="og:description"
-          content={meta?.description || seoConfig.description}
+          content={meta.description || seoConfig.description}
         />
         <meta property="og:image" content={imageUrl} />
         <meta property="og:url" content={`${seoConfig.openGraph.url}${pagePath}`} />
@@ -97,8 +96,8 @@ const config: DocsThemeConfig = {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content={seoConfig.twitter.site} />
         <meta name="twitter:creator" content={seoConfig.twitter.creator} />
-        <meta name="twitter:title" content={title ? title + ' – HOLOGRAM' : seoConfig.title.default} />
-        <meta name="twitter:description" content={meta?.description || seoConfig.description} />
+        <meta name="twitter:title" content={title ? title + ' - Hologram' : seoConfig.title.default} />
+        <meta name="twitter:description" content={meta.description || seoConfig.description} />
         <meta name="twitter:image" content={imageUrl} />
         
         {/* Canonical URL */}
@@ -107,27 +106,26 @@ const config: DocsThemeConfig = {
         {/* Structured Data */}
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'TechArticle',
               headline: title || seoConfig.title.default,
-              description: meta?.description || seoConfig.description,
+              description: meta.description || seoConfig.description,
               image: imageUrl,
-              author: meta?.authors || 'DHEBP',
-              datePublished: meta?.date || undefined,
-              dateModified: meta?.lastUpdated || undefined,
+              author: meta.authors || 'DHEBP',
+              datePublished: meta.date || undefined,
+              dateModified: meta.lastUpdated || undefined,
               mainEntityOfPage: `${seoConfig.openGraph.url}${pagePath}`,
             }),
           }}
         />
         
-        <meta name="apple-mobile-web-app-title" content="HOLOGRAM" />
+        <meta name="apple-mobile-web-app-title" content="Hologram" />
       </>
     )
   },
-    sidebar: {
+  sidebar: {
     titleComponent({ title, type }) {
       if (type === 'separator') {
         return <span className="cursor-default">{title}</span>
@@ -137,36 +135,36 @@ const config: DocsThemeConfig = {
     defaultMenuCollapseLevel: 1,
     toggleButton: false
   },
-     toc:{
-      float:true,
-     },
-     feedback: {
-      content: null, // Set to null or an empty value to disable the feedback link
-     },
-     editLink: {
-        text: null,
-       },
-       navigation: {
-          prev: false,
-          next: false
-        },
-        gitTimestamp: null,
-        darkMode:true,
-        themeSwitch: {
-          useOptions() {
-            return {
-              light: 'Light',
-              dark: 'Dark',
-              system: 'System'
-            }
-          }
-      },
-        footer: {
+  toc: {
+    float: true,
+  },
+  feedback: {
+    content: null,
+  },
+  editLink: {
+    text: null,
+  },
+  navigation: {
+    prev: true,
+    next: true
+  },
+  gitTimestamp: null,
+  darkMode: true,
+  themeSwitch: {
+    useOptions() {
+      return {
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System'
+      }
+    }
+  },
+  footer: {
     text: (
       <div className="flex w-full flex-col items-center sm:items-start">
         <p>Privacy Together</p>
         <p className="mt-2 text-xs">
-          © {new Date().getFullYear()} DHEBP
+          {new Date().getFullYear()} DHEBP - Hologram Documentation
         </p>
       </div>
     )

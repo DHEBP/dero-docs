@@ -1,0 +1,134 @@
+---
+title: "Installation"
+description: "Download and install Hologram on macOS, Linux, or Windows."
+---
+
+import { Callout } from 'nextra/components'
+import { Steps } from 'nextra/components'
+
+# Installation
+
+Hologram is available for macOS, Linux, and Windows.
+
+## System Requirements
+
+- **OS**: macOS 10.15+, Windows 10+, or Linux (glibc 2.17+)
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 500MB for application, additional space for blockchain data
+- **Network**: Internet connection for blockchain sync
+
+## Download
+
+Download the latest release from the [GitHub Releases](https://github.com/DHEBP/HOLOGRAM-git/releases) page.
+
+| Platform | Architecture | File |
+|----------|--------------|------|
+| macOS | Intel | `Hologram-darwin-amd64.dmg` |
+| macOS | Apple Silicon | `Hologram-darwin-arm64.dmg` |
+| Linux | x64 | `Hologram-linux-amd64.AppImage` |
+| Linux | ARM64 | `Hologram-linux-arm64.AppImage` |
+| Windows | x64 | `Hologram-windows-amd64.exe` |
+
+## Installation Steps
+
+### macOS
+
+<Steps>
+### Download the DMG
+
+Download the appropriate `.dmg` file for your Mac (Intel or Apple Silicon).
+
+### Open the DMG
+
+Double-click the downloaded file to mount the disk image.
+
+### Drag to Applications
+
+Drag the Hologram app to your Applications folder.
+
+### First Launch
+
+Right-click and select "Open" for the first launch (required for unsigned apps).
+</Steps>
+
+<Callout type="warning">
+  On macOS, you may need to allow the app in System Preferences > Security & Privacy if you see a security warning.
+</Callout>
+
+### Linux
+
+<Steps>
+### Download the AppImage
+
+Download the appropriate `.AppImage` file for your architecture.
+
+### Make Executable
+
+```bash
+chmod +x Hologram-linux-amd64.AppImage
+```
+
+### Run
+
+```bash
+./Hologram-linux-amd64.AppImage
+```
+</Steps>
+
+### Windows
+
+<Steps>
+### Download the Installer
+
+Download the `.exe` installer file.
+
+### Run Installer
+
+Double-click to run the installer and follow the prompts.
+
+### Launch
+
+Find Hologram in your Start menu or desktop.
+</Steps>
+
+## First Run
+
+On first launch, Hologram will:
+
+1. Create a data directory for settings and cache
+2. Prompt for daemon connection (local or remote)
+3. Offer to create or import a wallet
+
+## Building from Source
+
+For developers who want to build from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/DHEBP/HOLOGRAM-git.git
+cd HOLOGRAM-git
+
+# Install dependencies
+npm install
+go mod download
+
+# Build for development
+wails dev
+
+# Build for production
+wails build
+```
+
+### Build Requirements
+
+- Go 1.21+
+- Node.js 18+
+- Wails CLI v2
+- Platform-specific requirements (see Wails documentation)
+
+## Next Steps
+
+- [Quick Start](/quick-start) - Configure Hologram and browse your first dApp
+- [Wallet Setup](/wallet) - Create or import a DERO wallet
+- [Developer Support](/mining) - Support TELA developers through EPOCH
+

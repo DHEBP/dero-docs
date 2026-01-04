@@ -24,9 +24,7 @@ const withAnalyze = withBundleAnalyzer({
 const withPwaPlugin = withPWA({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
-  // Exclude files that don't exist or shouldn't be precached
   buildExcludes: [/middleware-manifest\.json$/, /dynamic-css-manifest\.json$/],
-  // Don't fail on missing files
   skipWaiting: true,
   runtimeCaching: [
     {
@@ -46,8 +44,8 @@ const withPwaPlugin = withPWA({
 export default withAnalyze(withPwaPlugin(withNextra({
   reactStrictMode: true,
   eslint: {
-    // Eslint behaves weirdly in this monorepo.
     ignoreDuringBuilds: true
-  }
+  },
+  redirects: () => []
 })))
 

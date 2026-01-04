@@ -95,9 +95,7 @@ The Deploy tab enables batch deployment of complete TELA applications to the blo
 | **Application Name** | Display name for your app |
 | **Description** | Brief description (shown in Discover) |
 | **dURL** | Optional memorable URL (e.g., `myapp.tela`) |
-| **Icon URL** | HTTPS URL, SCID, or IPFS hash for app icon |
 | **Content Type** | Updateable (Ring 2) or Immutable (Ring > 2) |
-| **MODs** | Variable Store and Transfer MODs (see below) |
 
 ### Content Types
 
@@ -119,120 +117,6 @@ During deployment, Hologram:
 3. **Deploys DOCs** — Each file becomes a TELA-DOC-1 contract
 4. **Creates INDEX** — Links all DOCs together
 5. **Registers dURL** — If specified
-
-### Icon URL Validation
-
-<Callout type="success">
-  Real-time validation for icon URLs with visual feedback.
-</Callout>
-
-Hologram validates icon URLs as you type, supporting multiple formats:
-
-| Format | Status | Example |
-|--------|--------|---------|
-| **HTTPS URL** | ✅ Valid | `https://example.com/icon.png` |
-| **HTTP URL** | ⚠️ Warning | `http://example.com/icon.png` (HTTPS recommended) |
-| **SCID** | ✅ Valid | `64-character hex SCID` |
-| **IPFS URL** | ✅ Valid | `ipfs://Qm...` |
-
-Visual indicators show validation status:
-- ✅ **Green checkmark**: Valid format
-- ⚠️ **Yellow warning**: Works but not recommended
-- ❌ **Red X**: Invalid format
-
-### dURL Tag Detection
-
-<Callout type="success">
-  Automatic detection of special dURL suffixes with contextual hints.
-</Callout>
-
-Hologram automatically detects and highlights special dURL tags:
-
-| Tag | Badge | Description |
-|-----|-------|-------------|
-| `.lib` | 📚 Violet | Library - Reusable code modules |
-| `.shard` | 🧩 Cyan | DocShard - Single shard file |
-| `.shards` | 📦 Cyan | DocShards INDEX - Multiple shard index |
-| `.bootstrap` | 🚀 Amber | Bootstrap INDEX - System initialization |
-
-When a tag is detected, a contextual description appears explaining what the tag means and how it's used.
-
-### MODs (Modification Operations)
-
-<Callout type="success">
-  Advanced MOD selection for Variable Store and Transfer operations.
-</Callout>
-
-MODs enable specific smart contract behaviors for INDEX contracts. Access the MOD picker via the **Advanced** button in the Install INDEX tab.
-
-#### Variable Store MODs (Single Selection)
-
-Choose one Variable Store MOD:
-
-| MOD | Description |
-|-----|-------------|
-| `vsoo` | Variable Store Owner Only |
-| `vsooim` | Variable Store Owner Only Immutable |
-| `vspubsu` | Variable Store Public Subscribe |
-| `vspubow` | Variable Store Public Overwrite |
-| `vspubim` | Variable Store Public Immutable |
-
-#### Transfer MODs (Multiple Selection)
-
-Select one or more Transfer MODs:
-
-| MOD | Description |
-|-----|-------------|
-| `txdwd` | Transfer Deposit Withdraw |
-| `txdwa` | Transfer Deposit Withdraw All |
-| `txto` | Transfer To Owner |
-
-#### MOD Selection UI
-
-The MOD Picker modal provides:
-- **Categorized view**: Variable Store (single-select) vs Transfers (multi-select)
-- **Visual selection feedback**: Checkmarks for selected MODs
-- **Summary display**: Shows selected MOD tags
-- **Clear all**: Reset selections
-
-<Callout type="info">
-  When MODs are enabled, ringsize is automatically set to 2 (required for updateable INDEX contracts).
-</Callout>
-
-### Library Installation Flow
-
-<Callout type="success">
-  Seamless library integration workflow.
-</Callout>
-
-When browsing libraries in Studio:
-
-1. **Find a library** - Browse available libraries
-2. **Click "Embed in INDEX"** - Automatically adds library SCID to DOC references
-3. **Switches to Install INDEX tab** - Ready to deploy with library included
-4. **Toast notification** - Confirms library was added
-
-This workflow prevents duplicate library additions and streamlines the deployment process.
-
-### Password Confirmation Modal
-
-<Callout type="success">
-  Enhanced deployment safety for mainnet deployments.
-</Callout>
-
-Before deploying to mainnet, a confirmation modal appears with:
-
-- **File count**: Number of files to be deployed
-- **Total size**: Combined size of all files
-- **Gas estimate**: Estimated DERO cost
-- **Network badge**: Shows "Mainnet" or "Testnet"
-- **Acknowledgement checkbox**: "I understand this deployment is permanent and will consume real DERO"
-
-The Deploy button is disabled until you check the acknowledgement checkbox, providing an extra safety check before spending real DERO.
-
-<Callout type="warning">
-  Simulator deployments skip the confirmation modal since gas is FREE. Mainnet deployments always require explicit confirmation.
-</Callout>
 
 ### File Size Limits
 
