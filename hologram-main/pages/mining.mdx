@@ -1,0 +1,227 @@
+---
+title: "Developer Support"
+description: "Support TELA app developers through the EPOCH passive hashing system - no ads, no data collection."
+---
+
+import { Callout } from 'nextra/components'
+
+# Developer Support
+
+Hologram includes the unique **EPOCH** developer support system, allowing you to support TELA app developers through minimal, passive CPU hashing—**without ads or data collection**.
+
+## What is EPOCH?
+
+**E**vent-driven **P**ropagation of **O**pportunistic **C**rowd **H**ashing
+
+EPOCH enables dApps to request hash computations from users as a non-intrusive form of developer support—**without ads or data collection**.
+
+### How It Works
+
+1. You browse a TELA app that supports EPOCH (in the [TELA Browser](/browser))
+2. On user interactions (clicks, scrolls), the app may request hashes
+3. Hologram computes a small number of hashes (imperceptible)
+4. Valid hashes are submitted to the developer's address
+5. You've supported the developer without seeing ads!
+6. Rewards appear in the developer's [Wallet](/wallet#coinbase-transactions) as coinbase transactions
+
+<Callout type="tip">
+  TELA developers: Test EPOCH in your apps using [Simulator Mode](/simulator) before deploying to mainnet.
+</Callout>
+
+### Key Characteristics
+
+| Aspect | Description |
+|--------|-------------|
+| **Purpose** | Developer support (rewards go to app developers) |
+| **Trigger** | User interaction events or passive background |
+| **Duration** | Millisecond bursts |
+| **Consent** | Opt-out (default ON) |
+| **CPU Impact** | Minimal (imperceptible) |
+| **Reward Recipient** | App developer's wallet |
+
+<Callout type="info">
+  By default, EPOCH hashing rewards go to the developer's address. However, some TELA apps now support **hash splitting**, allowing you to direct a portion of rewards to your own wallet while still supporting the developer.
+</Callout>
+
+## Configuration
+
+Access Developer Support settings in **Settings > Developer Support** (above About).
+
+### Default Limits
+
+```go
+const (
+    DEFAULT_EPOCH_MAX_HASHES  = 100   // Per-request limit
+    DEFAULT_EPOCH_MAX_THREADS = 2     // CPU threads
+    RATE_LIMIT_WINDOW        = 10s    // Per-app rate limiting
+    RATE_LIMIT_MAX_HASHES    = 500    // Max per window
+)
+```
+
+### Controls
+
+| Function | Description |
+|----------|-------------|
+| `SetDevSupportEnabled(bool)` | Toggle developer support on/off |
+| `IsDevSupportEnabled()` | Check current setting |
+| `GetDevSupportStatus()` | Get unified status |
+| `GetDevSupportStats()` | Get contribution statistics |
+| `GetEpochStats()` | Session statistics |
+| `SetEpochConfig(maxHashes, maxThreads)` | Update limits |
+
+## Fair Developer Support Address Switching
+
+When TELA dApps request developer support via `AttemptEPOCHWithAddr`, Hologram temporarily switches EPOCH rewards to the app developer's address, ensuring fair distribution of support.
+
+### How It Works
+
+1. **App requests support** — TELA app calls `AttemptEPOCHWithAddr` with developer address
+2. **Hologram pauses background worker** — Stops passive hashing for Hologram's default address
+3. **Switches to app address** — EPOCH connection switches to app developer's address
+4. **Auto-switch back** — After 30 seconds of inactivity, switches back to Hologram's default address
+5. **Background worker resumes** — Passive hashing continues for Hologram
+
+### Sticky Timeout
+
+The address switching uses a **30-second sticky timeout**:
+
+- Each new request from the app resets the 30-second timer
+- As long as the app is actively requesting hashes, rewards go to the developer
+- After 30 seconds of no requests, automatically switches back to Hologram's default
+
+### Address State API
+
+```go
+// Get current EPOCH reward address
+GetCurrentEPOCHAddress() -> {
+    address: "dero1qy...",
+    is_app_address: true,  // true if on app developer's address
+    default_address: "dero1qy...",  // Hologram's default
+    last_app_request: "2026-01-03T12:00:00Z"
+}
+
+// Check if currently on app developer's address
+IsEPOCHOnAppAddress() -> {
+    on_app_address: true,
+    time_until_switchback: 15  // seconds remaining
+}
+```
+
+### Background Worker Behavior
+
+The background DevSupportWorker automatically pauses and resumes:
+
+- **Pauses** when switched to an app developer's address
+- **Resumes** when switched back to Hologram's default address
+- Ensures only one EPOCH connection is active at a time
+
+### Example Flow
+
+```
+User browsing app.tela
+    ↓
+App calls AttemptEPOCHWithAddr(developerAddr)
+    ↓
+Hologram switches EPOCH to developerAddr
+    ↓
+Background worker pauses
+    ↓
+[User continues using app - requests keep coming]
+    ↓
+[30 seconds pass with no requests]
+    ↓
+Hologram switches back to default address
+    ↓
+Background worker resumes
+    ↓
+Default: Hologram gets support during idle time
+```
+
+<Callout type="info">
+  This system ensures fair distribution: app developers get support when users actively use their apps, while Hologram receives background support during idle periods.
+</Callout>
+
+## Passive Background Support
+
+The **DevSupportWorker** runs in the background when enabled, performing small hashing bursts during idle periods:
+
+- **Cycle Interval**: Every 5 seconds
+- **Hashes per Cycle**: 50 (configurable)
+- **Auto-Pause**: Pauses on battery, high CPU load, or no node connection
+- **Auto-Pause on Address Switch**: Pauses when EPOCH is switched to an app developer's address
+
+### Pause Conditions
+
+The worker automatically pauses when:
+
+| Condition | Reason |
+|-----------|--------|
+| No node connection | Waiting for node connection |
+| On battery power | Preserving battery life |
+| High CPU load | System under heavy load |
+
+## Statistics Tracking
+
+Developer Support tracks your contributions:
+
+```go
+type DevSupportStats struct {
+    TotalHashes      uint64    // Lifetime hashes contributed
+    TotalHashesStr   string    // "1.2M" formatted
+    MiniBlocksFound  int       // Miniblocks found for developers
+    UptimeSeconds    int64     // Total active time
+    SessionHashes    uint64    // Current session hashes
+    SessionMiniblocks int      // Current session miniblocks
+    TotalSessions    int       // Number of sessions
+    IsRunning        bool      // Currently active
+    IsPaused         bool      // Temporarily paused
+    PauseReason      string    // Why paused
+}
+```
+
+## DERO Miniblock System
+
+DERO uses a unique **miniblock system**:
+
+- 48-byte compact blocks
+- Multiple miners can contribute to single block
+- Rewards distributed proportionally
+- Lower barrier to earning (find miniblocks more often than full blocks)
+
+When Developer Support finds a miniblock, the reward goes to the TELA app developer whose app you're using.
+
+## Rate Limiting
+
+Per-app rate limiting prevents abuse:
+
+```go
+type rateLimitEntry struct {
+    lastRequest time.Time
+    hashCount   uint64
+    window      time.Duration
+}
+// Max 500 hashes per app per 10-second window
+```
+
+## Privacy Considerations
+
+- **No tracking**: Your browsing activity is not logged
+- **No data collection**: Only hash computations, no personal data
+- **Opt-out available**: Disable anytime in Settings
+- **Transparent**: Stats show exactly what you've contributed
+
+## FAQ
+
+### Does this affect my computer's performance?
+
+No. EPOCH uses minimal CPU (2 threads max, millisecond bursts). Most users won't notice any impact.
+
+### Do I earn anything from Developer Support?
+
+By default, rewards go to app developers. However, some TELA apps now support **hash splitting**, where you can configure a percentage of rewards to go to your own wallet. Check if the TELA app you're using supports this feature.
+
+### Can I still mine DERO for myself?
+
+Yes! Use a dedicated mining tool:
+- [derohe-miner](https://github.com/deroproject/derohe) - Official DERO miner
+- Connect to your node's GetWork endpoint (default: `localhost:10100`)

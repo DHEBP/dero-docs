@@ -1,0 +1,169 @@
+---
+title: "Quick Start"
+description: "Get started with Hologram in minutes - connect to the network, create a wallet, and browse your first dApp."
+---
+
+import { Callout } from 'nextra/components'
+import { Steps } from 'nextra/components'
+
+# Quick Start
+
+Get Hologram running and browse your first decentralized application in under 5 minutes.
+
+## Prerequisites
+
+- Hologram installed ([Installation Guide](/installation))
+- Internet connection
+
+## First Run Wizard
+
+On your first launch, Hologram displays a **First Run Wizard** to help you get started quickly.
+
+### Wizard Steps
+
+1. **Welcome Screen**: Introduction to Hologram with version info
+2. **Network Selection**: Choose your connection mode
+3. **Node Setup**: Configure daemon connection or use embedded node
+4. **Wallet Setup**: Create, restore, or open a wallet
+5. **Ready**: Start browsing the decentralized web
+
+### Network Options
+
+| Option | Description | Best For |
+|--------|-------------|----------|
+| **Embedded Node** | Run derod inside Hologram | Maximum sovereignty |
+| **Remote Node** | Connect to public node | Quick start |
+| **Custom Node** | Your own derod instance | Advanced users |
+| **Simulator** | Local development mode | Developers |
+
+<Callout type="info">
+  You can skip the wizard and configure everything later from Settings. The wizard is just a convenient starting point.
+</Callout>
+
+### Simulator Quick Start
+
+For developers, the wizard offers a **"Use Simulator Instead"** button that:
+
+1. Skips network configuration
+2. Starts the integrated [Simulator](/simulator)
+3. Opens a pre-funded test wallet
+4. Gets you developing immediately with [Studio](/studio) tools
+
+## Getting Started
+
+<Steps>
+### Launch Hologram
+
+Open Hologram from your applications. Complete the First Run Wizard or skip to configure manually.
+
+### Connect to the Network
+
+Go to **Settings > Node** and configure your daemon connection:
+
+- **Quick Start**: Use a public remote node
+- **Self-Sovereign**: Run the embedded node (recommended)
+- **Custom**: Connect to your own derod instance
+
+<Callout type="info">
+  For the best experience, run the embedded node. Hologram can download and manage derod automatically from Settings > Node.
+</Callout>
+
+### Create or Import Wallet
+
+Navigate to **[Wallet](/wallet)** and either:
+
+- **Create New Wallet**: Generate a new wallet with a secure password
+- **Import Wallet**: Restore from 25-word seed phrase
+- **Open Existing**: Open an existing wallet file
+
+<Callout type="warning">
+  Write down your 25-word seed phrase and store it securely. This is the ONLY way to recover your wallet. For added security, enable [Privacy Mode](/security#privacy-mode).
+</Callout>
+
+### Browse a dApp
+
+Go to **Browser** and try navigating to a TELA application:
+
+- Enter a SCID in the address bar
+- Use `dero://appname` format for named apps
+- Or explore the **Discover** tab to find apps
+
+### (Optional) Enable Developer Support
+
+Go to **Settings > Developer Support** to optionally support TELA app developers through EPOCH passive hashing. This is a lightweight way to contribute to the ecosystem without traditional mining.
+
+</Steps>
+
+## Understanding the Interface
+
+### Navigation
+
+| Tab | Purpose |
+|-----|---------|
+| **Explorer** | Landing page with OmniSearch, blockchain data |
+| **Browser** | Navigate and view TELA dApps, Discover apps |
+| **Wallet** | Balance, transactions, token portfolio |
+| **Developer Support** | EPOCH passive hashing for developers |
+| **Studio** | DOC/INDEX deployment, version control, local development |
+| **Settings** | Configuration, node management, preferences |
+
+### Sidebar Status Indicators
+
+The sidebar shows real-time status:
+
+- **Node**: Connection state (click to go to Settings > Node)
+- **XSWD**: External wallet connection status
+- **Gnomon**: Indexer sync status (click to go to Settings > Gnomon)
+- **EPOCH**: Developer support activity
+- **Network**: Current network (Mainnet/Testnet/Simulator - click to switch)
+- **Block Height**: Current blockchain height
+
+## Your First Transaction
+
+<Steps>
+### Ensure Wallet is Open
+
+Your wallet must be open and synced.
+
+### Get Some DERO
+
+- Mine blocks (slow but self-sovereign)
+- Receive from another wallet
+- Use testnet for development
+
+### Send DERO
+
+1. Go to **Wallet**
+2. Click "Send"
+3. Enter recipient address and amount
+4. Enter wallet password
+5. Confirm transaction
+
+</Steps>
+
+## Simulator Mode (For Developers)
+
+To test without real DERO:
+
+<Steps>
+### Enable Simulator
+
+Click the network indicator in the sidebar (shows "Mainnet") and select "Simulator", or go to **Settings > Simulator**.
+
+### Get Test DERO
+
+The simulator auto-mines blocks and provides test coins.
+
+### Deploy and Test
+
+Use the Studio tab to develop and deploy TELA apps instantly.
+</Steps>
+
+## Next Steps
+
+- [TELA Browser](/browser) - Deep dive into decentralized browsing
+- [Studio](/studio) - Deploy and manage TELA content with version control
+- [Wallet Management](/wallet) - Full wallet features
+- [telaHost API](/telahost-api) - Build dApps with the JavaScript bridge
+- [Mining Guide](/mining) - Optimize your mining setup
+
