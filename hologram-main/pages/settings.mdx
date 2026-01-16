@@ -145,6 +145,33 @@ If Gnomon gets out of sync or corrupted:
 ResyncGnomon() -> { success: true, message: "Resyncing..." }
 ```
 
+### Fastsync Limitations
+
+<Callout type="warning">
+  **Known Limitation**: When using fastsync mode, Gnomon may not have complete historical data for SCIDs deployed before the sync started.
+</Callout>
+
+**What this means:**
+
+- Gnomon fastsync bootstraps quickly by skipping full block validation
+- However, it may miss historical SCID interaction data for older contracts
+- Newly discovered SCIDs work fine; historical queries may return incomplete results
+
+**Symptoms:**
+
+- Version History shows fewer commits than expected
+- SC variable timeline missing early snapshots
+- Search results missing older apps
+
+**Workarounds:**
+
+1. **Full Resync** — Click "Resync Database" to re-index from block 0 (slow but complete)
+2. **Wait for upstream fix** — The Gnomon `addscid_toindex` feature will allow on-demand historical indexing
+
+<Callout type="info">
+  Full resync from block 0 can take many hours or days depending on blockchain height. Only use if you need complete historical data.
+</Callout>
+
 ### Search Exclusions
 
 Filter out specific SCIDs from search results:

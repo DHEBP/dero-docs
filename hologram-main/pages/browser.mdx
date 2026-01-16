@@ -62,7 +62,47 @@ flowchart LR
 | Raw SCID (64 hex) | `abc123...def456` | Fetch directly from blockchain |
 | dero:// URL | `dero://myapp` | Resolve via Gnomon, then fetch |
 | Name lookup | `myapp` | Search indexed apps |
-| Versioned SCID | `abc123...@txid456...` | Fetch specific version (see Version Control) |
+| Versioned SCID | `abc123...@txid456...` | Fetch specific version (see below) |
+
+### Versioned Navigation (scid@txid)
+
+Access any historical version of a TELA app by appending `@txid` to the SCID:
+
+```
+abc123def456...@987fed654...
+└─── SCID ────┘ └── TXID ──┘
+```
+
+**How to use versioned navigation:**
+
+1. Open **Version History** for the app (clock icon in toolbar)
+2. Find the version you want in the timeline
+3. Copy its **TXID** (transaction hash)
+4. Navigate to `scid@txid` in the address bar
+
+**Example:**
+
+```
+# Latest version (default)
+a1b2c3d4e5f6...
+
+# Specific version from January 2026
+a1b2c3d4e5f6...@f9e8d7c6b5a4...
+```
+
+<Callout type="info">
+  Versioned URLs are useful for sharing links to specific app versions, bookmarking known-good states, or auditing changes over time.
+</Callout>
+
+**Version Resolution:**
+
+When you navigate to a versioned URL, Hologram:
+
+1. Parses the SCID and TXID from the address
+2. Finds the block height where that TXID was confirmed
+3. Retrieves the INDEX contract state at that height
+4. Fetches DOC content as it existed at that version
+5. Renders the historical version of the app
 
 ## Browser Toolbar
 
