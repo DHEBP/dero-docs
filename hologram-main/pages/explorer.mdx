@@ -362,7 +362,7 @@ EstimateSCGas(scid, entrypoint, args) -> {
 ## Smart Contract Function Interactor
 
 <Callout type="success">
-  **New in v6.3** - Dynamically discover and call smart contract functions without writing code. The interactor parses DVM bytecode to auto-generate input forms.
+  Dynamically discover and call smart contract functions without writing code. The interactor parses DVM bytecode to auto-generate input forms.
 </Callout>
 
 When viewing any smart contract in Explorer, a **Call Smart Contract Function** panel appears below the SC Variable Editor. This feature:
@@ -498,9 +498,25 @@ GetSCChangeTimeline(scid) -> []SCStateDiff
 
 Watch smart contracts to automatically capture state snapshots when changes occur.
 
-#### Watch/Unwatch Button
+#### Watch Button (Header)
 
-When viewing a smart contract in Explorer, the **Time Machine** panel includes a **Watch** button:
+When viewing any smart contract in Explorer, a **Watch** button appears directly in the SC header alongside the balance:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ◎ SMART CONTRACT                                             │
+│                         0.00500 DERO │ View as TX │  Watch   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+- **Watch** (Eye icon) — Adds the SC to your watch list and captures the current state
+- **Watching** (EyeOff icon, cyan) — Indicates SC is being watched; click to unwatch
+
+This provides one-click access to the Time Machine watch feature without needing to expand the Time Machine panel.
+
+#### Watch/Unwatch in Time Machine Panel
+
+The **Time Machine** panel (further down the SC view) also includes Watch/Unwatch controls:
 
 - **Watch** — Adds the SC to your watch list and captures the current state
 - **Unwatch** — Removes the SC from your watch list
@@ -578,7 +594,7 @@ type SCStateDiff struct {
 ## Historical Variable Timeline
 
 <Callout type="success">
-  **New in v6.3** - View smart contract variable snapshots at any point in history using an interactive timeline slider.
+  View smart contract variable snapshots at any point in history using an interactive timeline slider.
 </Callout>
 
 When viewing a smart contract in Explorer, a **Historical Timeline** panel shows all recorded state changes. Use the slider to travel back in time and see exactly what variables looked like at each snapshot.

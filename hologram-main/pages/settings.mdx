@@ -193,10 +193,50 @@ Set a minimum approval percentage for search results:
 - **50%**: Show apps with majority approval
 - **80%**: Show only highly-rated apps
 
+### Time Machine Watch List
+
+Monitor smart contracts for state changes over time. The Watch List appears in **Settings > Gnomon** and shows all SCs you're tracking.
+
+#### Watched SCs Panel
+
+```
++--------------------------------------------------------------+
+| ◎ WATCHED SMART CONTRACTS                      [Refresh All] |
++--------------------------------------------------------------+
+| My Voting App                                                |
+| abc123...xyz789  │  Since Jan 3  │  3 changes      [Unwatch] |
++--------------------------------------------------------------+
+| Token Contract                                               |
+| def456...uvw012  │  Since Jan 5  │  0 changes      [Unwatch] |
++--------------------------------------------------------------+
+| 2 SCs being watched                                          |
++--------------------------------------------------------------+
+```
+
+#### Features
+
+| Action | Description |
+|--------|-------------|
+| **Refresh All** | Check all watched SCs for changes and capture new snapshots |
+| **Unwatch** | Remove an SC from your watch list |
+| **Change Count** | Number of times the SC has changed since you started watching |
+| **Since Date** | When you started watching the SC |
+
+#### Adding to Watch List
+
+You can add SCs to your watch list from two places:
+
+1. **Explorer SC Header** — Click the **Watch** button next to the balance
+2. **Time Machine Panel** — Expand Time Machine section and click **Watch**
+
+<Callout type="info">
+  Watched SCs automatically capture state snapshots when changes are detected. View the full timeline in Explorer > Time Machine panel.
+</Callout>
+
 ### WebSocket Query API
 
 <Callout type="success">
-  **New in v6.3** - Expose Gnomon's indexing data via WebSocket for external applications and TELA dApps.
+  Expose Gnomon's indexing data via WebSocket for external applications and TELA dApps.
 </Callout>
 
 The Gnomon WebSocket API allows external tools to query indexed blockchain data without embedding Gnomon themselves. This is useful for:
