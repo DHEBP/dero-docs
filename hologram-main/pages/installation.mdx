@@ -93,11 +93,17 @@ Find Hologram in your Start menu or desktop.
 
 ## First Run
 
-On first launch, Hologram will:
+On first launch, Hologram displays a **First Run Wizard** with three options:
 
-1. Create a data directory for settings and cache
-2. Prompt for daemon connection (local or remote)
-3. Offer to create or import a wallet
+1. **Download Node** — Auto-download derod with SHA256 checksum verification
+2. **LAN / External** — Connect to a node on your local network (e.g., `your-node-ip:10102`)
+3. **Simulator** — Start a local development environment immediately
+
+After node setup, you can create or import a wallet.
+
+<Callout type="info">
+  If you already run your own DERO node, select "LAN / External" to connect to it.
+</Callout>
 
 ## Building from Source
 

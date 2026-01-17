@@ -133,6 +133,18 @@ SetGnomonAutostart(enabled bool) -> { success: true }
 GetGnomonAutostart() -> { enabled: bool }
 ```
 
+### Status Indicator
+
+The sidebar displays Gnomon sync status with a visual progress bar:
+
+| State | Appearance | Description |
+|-------|------------|-------------|
+| **Syncing** | Cyan animated bar + percentage | Gnomon is catching up to chain tip |
+| **Synced** | Green bar at 100% | Fully synchronized |
+| **Offline** | Red dim bar + "OFF" | Gnomon not running |
+
+The progress bar shows exact percentage (e.g., "42%") so you always know sync status at a glance. Click the Gnomon row to jump to Settings > Gnomon.
+
 ### Resync Database
 
 If Gnomon gets out of sync or corrupted:
@@ -401,16 +413,15 @@ Switch between networks without restarting:
 | Network | Port | Use Case |
 |---------|------|----------|
 | **Mainnet** | 10102 | Production |
-| **Testnet** | 40402 | Testing |
 | **Simulator** | 20000 | Development |
 
 ```go
 SetNetworkMode(mode string) -> { success: true }
-// mode: "mainnet", "testnet", "simulator"
+// mode: "mainnet", "simulator"
 ```
 
 <Callout type="info">
-  Wallet files are network-specific. Opening a mainnet wallet while on testnet will show a warning.
+  Hologram supports Mainnet and Simulator modes. Testnet support was removed to simplify the codebase—use Simulator for development and testing.
 </Callout>
 
 ## Keyboard Shortcuts

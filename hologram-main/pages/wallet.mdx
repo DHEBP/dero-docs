@@ -53,6 +53,26 @@ Your wallet displays:
 mature, locked := wallet.Get_Balance()
 ```
 
+### Wallet Sync
+
+When you click **Refresh** in the Wallet tab, Hologram automatically syncs your wallet with the daemon to discover new transactions:
+
+```go
+SyncWallet() -> {
+    success: bool,
+    synced: bool,
+    walletHeight: uint64,
+    daemonHeight: uint64,
+    blocksBehind: int64,
+    message: string,
+}
+```
+
+**Sync Status Indicators:**
+- **SYNCED** — Wallet is up to date with the blockchain
+- **X BEHIND** — Shows how many blocks behind the wallet is
+- **SYNCING** — Wallet is catching up to the daemon
+
 ### Transaction History
 
 View all transactions with filters:
@@ -66,6 +86,16 @@ View all transactions with filters:
 ```go
 entries := wallet.Show_Transfers(scid, coinbase, in, out, min, max, sender, receiver, dstport, srcport)
 ```
+
+### Transaction Labels
+
+Add semantic labels to transactions for better organization:
+
+- **Label transactions** — Add custom descriptions to any transaction
+- **Automatic labels** — Version history commits show descriptive labels (e.g., "Updated styles.css, app.js")
+- **Search by label** — Find transactions by their labels
+
+Labels are stored locally and help you track the purpose of transactions over time.
 
 ## Sending DERO
 
@@ -389,6 +419,26 @@ Access wallet backup and security options:
 
 <Callout type="warning">
   Only view your seed phrase in a private, secure location. Anyone with your seed can access your funds.
+</Callout>
+
+### Change Wallet Password
+
+Update your wallet's encryption password:
+
+1. Go to **Wallet > Backup & Security**
+2. Enter your current password
+3. Enter and confirm your new password
+4. Click **Change Password**
+
+```go
+ChangeWalletPassword(currentPassword, newPassword string) -> {
+    success: bool,
+    message: string,
+}
+```
+
+<Callout type="info">
+  Changing your password re-encrypts the wallet file. Your seed phrase remains the same—this only changes the local file encryption.
 </Callout>
 
 ### View Wallet Keys
