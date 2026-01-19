@@ -24,7 +24,7 @@
   "offline-first": "Offline-First Browsing",
   "wallet": "Wallet Management",
   "studio": "Studio",
-  "mining": "Developer Support",
+  "developer-support": "Developer Support",
 
   "-- Developer": {
     "type": "separator",
