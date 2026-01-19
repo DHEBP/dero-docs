@@ -1,21 +1,86 @@
 /* Hologram Documentation Styles */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+}
+
 :root {
-  /* Primary cyan - matches Hologram app (#22d3ee) */
+  /* Primary cyan accent - matches Hologram app (#22d3ee) */
   --hologram-cyan: #22d3ee;
   --hologram-cyan-bright: #67e8f9;
   --hologram-cyan-glow: #a5f3fc;
   --hologram-cyan-deep: #0891b2;
-  --hologram-cyan-dark: #164e63;
   
-  /* Secondary accent */
-  --hologram-violet: #8b5cf6;
-  
-  /* Dark backgrounds - deep navy matching app */
-  --hologram-void-1: #0a0f1a;
-  --hologram-void-2: #0d1421;
-  --hologram-void-3: #111827;
-  --hologram-void-pure: #060a12;
+  /* Shiki syntax highlighting */
+  --shiki-color-text: #414141;
+  --shiki-color-background: transparent;
+  --shiki-token-constant: #1976d2;
+  --shiki-token-string: #22863a;
+  --shiki-token-comment: #aaa;
+  --shiki-token-keyword: #d32f2f;
+  --shiki-token-parameter: #ff9800;
+  --shiki-token-function: #6f42c1;
+  --shiki-token-string-expression: #22863a;
+  --shiki-token-punctuation: #212121;
+  --shiki-token-link: #22863a;
+}
+
+.dark {
+  --shiki-color-text: #d1d1d1;
+  --shiki-token-constant: #79b8ff;
+  --shiki-token-string: #ffab70;
+  --shiki-token-comment: #6b737c;
+  --shiki-token-keyword: #f97583;
+  --shiki-token-parameter: #ff9800;
+  --shiki-token-function: #b392f0;
+  --shiki-token-string-expression: #4bb74a;
+  --shiki-token-punctuation: #bbb;
+  --shiki-token-link: #ffab70;
+}
+
+/* Home content links */
+.home-content p {
+  margin-top: 1.5em;
+  line-height: 1.75em;
+}
+
+.home-content a {
+  --tw-text-opacity: 1;
+  text-underline-position: under;
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  color: var(--hologram-cyan);
+}
+
+figcaption {
+  font-size: 0.85rem;
+  line-height: 1.5rem;
+  display: block;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+code.text-\[\.9em\] {
+  font-size: 14px;
+}
+
+@media screen and (max-width: 1200px) {
+  .home-content .hide-medium {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .home-content p {
+    font-size: 0.9rem;
+  }
+  .home-content .hide-small {
+    display: none;
+  }
 }
 
 /* ========================================
@@ -31,9 +96,8 @@
   padding: 4rem 2rem 3rem;
   margin: -1.5rem -1.5rem 2rem;
   background: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.15), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(13, 74, 85, 0.2), transparent),
-    linear-gradient(180deg, var(--hologram-void-1) 0%, var(--hologram-void-2) 100%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(34, 211, 238, 0.08), transparent);
   border-bottom: 1px solid rgba(34, 211, 238, 0.1);
   overflow: hidden;
 }
@@ -110,8 +174,8 @@
 }
 
 @keyframes arrowGlow {
-  0%, 100% { fill: var(--hologram-cyan-dark); }
-  50% { fill: var(--hologram-cyan-deep); }
+  0%, 100% { fill: #164e63; }
+  50% { fill: #0891b2; }
 }
 
 /* Hero Title */
@@ -272,116 +336,13 @@
   }
 }
 
-/* Enhanced code blocks */
-.nextra-code-block pre {
-  background: var(--hologram-void-2) !important;
-  border: 1px solid rgba(34, 211, 238, 0.15);
-}
+/* ========================================
+   ACCENT COLOR OVERRIDES (Cyan theme)
+   ======================================== */
 
 /* Callout customization */
 .nx-callout {
   border-left-color: var(--hologram-cyan);
-}
-
-/* Links */
-.nx-text-primary-600 {
-  color: var(--hologram-cyan);
-}
-
-/* Sidebar active item */
-.nx-bg-primary-100 {
-  background: rgba(34, 211, 238, 0.1);
-}
-
-/* Custom scrollbar for dark mode */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--hologram-void-1);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(34, 211, 238, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(34, 211, 238, 0.5);
-}
-
-/* ========================================
-   DARK MODE ENHANCEMENTS
-   ======================================== */
-
-/* Override Nextra dark mode backgrounds */
-.dark {
-  --nextra-bg: var(--hologram-void-1);
-}
-
-.dark .nx-bg-dark {
-  background-color: var(--hologram-void-1) !important;
-}
-
-.dark main {
-  background: var(--hologram-void-1);
-}
-
-/* Sidebar styling */
-.dark aside {
-  background: var(--hologram-void-2);
-  border-color: rgba(34, 211, 238, 0.1);
-}
-
-/* Navigation bar */
-.dark nav.nextra-nav-container {
-  background: var(--hologram-void-2);
-  border-color: rgba(34, 211, 238, 0.1);
-}
-
-/* Table of contents */
-.dark .nextra-toc {
-  border-color: rgba(34, 211, 238, 0.1);
-}
-
-/* Cards and containers */
-.dark .nextra-card {
-  background: var(--hologram-void-2);
-  border-color: rgba(34, 211, 238, 0.15);
-}
-
-.dark .nextra-card:hover {
-  border-color: rgba(34, 211, 238, 0.4);
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.1);
-}
-
-/* Tables */
-.dark table {
-  border-color: rgba(34, 211, 238, 0.15);
-}
-
-.dark th {
-  background: var(--hologram-void-2);
-  border-color: rgba(34, 211, 238, 0.15);
-}
-
-.dark td {
-  border-color: rgba(34, 211, 238, 0.1);
-}
-
-/* Blockquotes */
-.dark blockquote {
-  border-left-color: var(--hologram-cyan);
-  background: rgba(34, 211, 238, 0.05);
-}
-
-/* Inline code */
-.dark code:not(pre code) {
-  background: rgba(34, 211, 238, 0.1);
-  color: var(--hologram-cyan-bright);
-  border: 1px solid rgba(34, 211, 238, 0.2);
 }
 
 /* Selection highlight */
@@ -389,9 +350,3 @@
   background: rgba(34, 211, 238, 0.3);
   color: white;
 }
-
-/* Focus states */
-.dark *:focus-visible {
-  outline-color: var(--hologram-cyan);
-}
-
