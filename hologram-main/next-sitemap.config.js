@@ -1,8 +1,10 @@
 /** @type {import('next-sitemap').IConfig} */
-module.exports = {
+const config = {
   siteUrl: 'https://hologram.derod.org',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
   outDir: 'public'
 }
+
+export default config
 

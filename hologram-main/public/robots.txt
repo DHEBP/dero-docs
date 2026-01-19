@@ -1,4 +1,9 @@
+# *
 User-agent: *
 Allow: /
-Sitemap: https://hologram.derod.org/sitemap.xml
 
+# Host
+Host: https://hologram.derod.org
+
+# Sitemaps
+Sitemap: https://hologram.derod.org/sitemap.xml
