@@ -10,7 +10,7 @@ const logo = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 727.4 63.8"
-      fill="#00d4aa"
+      fill="#22d3ee"
       height="24"
       style={{ display: 'block', maxWidth: '140px', width: 'auto' }}
     >
@@ -36,9 +36,9 @@ const logo = (
 )
 
 const config: DocsThemeConfig = {
-  // Teal/Cyan primary color matching Hologram design system
-  primaryHue: { dark: 174, light: 174 },
-  primarySaturation: { dark: 100, light: 72 },
+  // Cyan primary color matching Hologram app design (#22d3ee)
+  primaryHue: { dark: 187, light: 187 },
+  primarySaturation: { dark: 85, light: 85 },
   project: {
     link: 'https://github.com/DHEBP/HOLOGRAM-git'
   },

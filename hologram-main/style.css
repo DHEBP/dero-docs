@@ -1,15 +1,21 @@
 /* Hologram Documentation Styles */
 
 :root {
-  --hologram-cyan: #00d4aa;
-  --hologram-cyan-bright: #22d3ee;
-  --hologram-cyan-glow: #67e8f9;
-  --hologram-teal-deep: #0d4a55;
+  /* Primary cyan - matches Hologram app (#22d3ee) */
+  --hologram-cyan: #22d3ee;
+  --hologram-cyan-bright: #67e8f9;
+  --hologram-cyan-glow: #a5f3fc;
+  --hologram-cyan-deep: #0891b2;
+  --hologram-cyan-dark: #164e63;
+  
+  /* Secondary accent */
   --hologram-violet: #8b5cf6;
-  --hologram-void-1: #0a0a0f;
-  --hologram-void-2: #0f0f14;
-  --hologram-void-3: #141419;
-  --hologram-void-pure: #0c1218;
+  
+  /* Dark backgrounds - deep navy matching app */
+  --hologram-void-1: #0a0f1a;
+  --hologram-void-2: #0d1421;
+  --hologram-void-3: #111827;
+  --hologram-void-pure: #060a12;
 }
 
 /* ========================================
@@ -104,8 +110,8 @@
 }
 
 @keyframes arrowGlow {
-  0%, 100% { fill: #0d4a55; }
-  50% { fill: #115e6e; }
+  0%, 100% { fill: var(--hologram-cyan-dark); }
+  50% { fill: var(--hologram-cyan-deep); }
 }
 
 /* Hero Title */
@@ -187,24 +193,24 @@
 }
 
 .hero-btn-primary {
-  background: linear-gradient(135deg, var(--hologram-cyan) 0%, #0d9488 100%);
+  background: linear-gradient(135deg, var(--hologram-cyan) 0%, var(--hologram-cyan-deep) 100%);
   color: #000;
   border: none;
 }
 
 .hero-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 212, 170, 0.3);
+  box-shadow: 0 8px 30px rgba(34, 211, 238, 0.4);
 }
 
 .hero-btn-secondary {
   background: transparent;
   color: var(--hologram-cyan);
-  border: 1px solid rgba(0, 212, 170, 0.4);
+  border: 1px solid rgba(34, 211, 238, 0.4);
 }
 
 .hero-btn-secondary:hover {
-  background: rgba(0, 212, 170, 0.1);
+  background: rgba(34, 211, 238, 0.1);
   border-color: var(--hologram-cyan);
 }
 
@@ -269,7 +275,7 @@
 /* Enhanced code blocks */
 .nextra-code-block pre {
   background: var(--hologram-void-2) !important;
-  border: 1px solid rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.15);
 }
 
 /* Callout customization */
@@ -284,7 +290,7 @@
 
 /* Sidebar active item */
 .nx-bg-primary-100 {
-  background: rgba(0, 212, 170, 0.1);
+  background: rgba(34, 211, 238, 0.1);
 }
 
 /* Custom scrollbar for dark mode */
@@ -298,11 +304,94 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 170, 0.3);
+  background: rgba(34, 211, 238, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 212, 170, 0.5);
+  background: rgba(34, 211, 238, 0.5);
+}
+
+/* ========================================
+   DARK MODE ENHANCEMENTS
+   ======================================== */
+
+/* Override Nextra dark mode backgrounds */
+.dark {
+  --nextra-bg: var(--hologram-void-1);
+}
+
+.dark .nx-bg-dark {
+  background-color: var(--hologram-void-1) !important;
+}
+
+.dark main {
+  background: var(--hologram-void-1);
+}
+
+/* Sidebar styling */
+.dark aside {
+  background: var(--hologram-void-2);
+  border-color: rgba(34, 211, 238, 0.1);
+}
+
+/* Navigation bar */
+.dark nav.nextra-nav-container {
+  background: var(--hologram-void-2);
+  border-color: rgba(34, 211, 238, 0.1);
+}
+
+/* Table of contents */
+.dark .nextra-toc {
+  border-color: rgba(34, 211, 238, 0.1);
+}
+
+/* Cards and containers */
+.dark .nextra-card {
+  background: var(--hologram-void-2);
+  border-color: rgba(34, 211, 238, 0.15);
+}
+
+.dark .nextra-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.1);
+}
+
+/* Tables */
+.dark table {
+  border-color: rgba(34, 211, 238, 0.15);
+}
+
+.dark th {
+  background: var(--hologram-void-2);
+  border-color: rgba(34, 211, 238, 0.15);
+}
+
+.dark td {
+  border-color: rgba(34, 211, 238, 0.1);
+}
+
+/* Blockquotes */
+.dark blockquote {
+  border-left-color: var(--hologram-cyan);
+  background: rgba(34, 211, 238, 0.05);
+}
+
+/* Inline code */
+.dark code:not(pre code) {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--hologram-cyan-bright);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: white;
+}
+
+/* Focus states */
+.dark *:focus-visible {
+  outline-color: var(--hologram-cyan);
 }
 

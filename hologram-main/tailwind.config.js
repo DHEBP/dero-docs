@@ -8,19 +8,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Hologram Design System Colors
+        // Hologram Design System Colors - Cyan palette matching app (#22d3ee)
         cyan: {
-          DEFAULT: '#00d4aa',
-          50: '#e6fff9',
-          100: '#b3ffe9',
-          200: '#80ffd9',
-          300: '#4dffc9',
-          400: '#1affb9',
-          500: '#00d4aa',
-          600: '#00a888',
-          700: '#007c66',
-          800: '#005044',
-          900: '#002422'
+          DEFAULT: '#22d3ee',
+          50: '#ecfeff',
+          100: '#cffafe',
+          200: '#a5f3fc',
+          300: '#67e8f9',
+          400: '#22d3ee',
+          500: '#06b6d4',
+          600: '#0891b2',
+          700: '#0e7490',
+          800: '#155e75',
+          900: '#164e63',
+          950: '#083344'
+        },
+        // Dark backgrounds matching Hologram app
+        void: {
+          DEFAULT: '#0a0f1a',
+          50: '#1e293b',
+          100: '#1a2234',
+          200: '#151c2c',
+          300: '#111827',
+          400: '#0d1421',
+          500: '#0a0f1a',
+          600: '#080c15',
+          700: '#060a12',
+          800: '#04070d',
+          900: '#020408'
         },
         violet: {
           DEFAULT: '#8b5cf6',
@@ -35,6 +50,9 @@ module.exports = {
           800: '#5b21b6',
           900: '#4c1d95'
         }
+      },
+      backgroundColor: {
+        dark: '#0a0f1a'
       }
     }
   },
