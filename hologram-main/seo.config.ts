@@ -20,10 +20,10 @@ const seoConfig = defineMetadata({
   },
   manifest: '/assets/site.webmanifest',
   icons: [
-    { rel: 'icon', url: '/assets/favicon.ico' },
-    { rel: 'apple-touch-icon', url: '/assets/apple-touch-icon.png' },
-    { rel: 'mask-icon', url: '/assets/favicon.ico' },
-    { rel: 'image/x-icon', url: '/assets/favicon.ico' }
+    { rel: 'icon', url: '/favicon.ico' },
+    { rel: 'icon', type: 'image/svg+xml', url: '/assets/favicon.svg' },
+    { rel: 'icon', type: 'image/png', url: '/assets/favicon.png' },
+    { rel: 'apple-touch-icon', url: '/assets/apple-touch-icon.png' }
   ],
   twitter: {
     card: 'summary_large_image',

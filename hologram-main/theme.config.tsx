@@ -70,8 +70,8 @@ const config: DocsThemeConfig = {
 
     return (
       <>
-        {seoConfig.icons.map((icon, index) => (
-          <link key={index} rel={icon.rel} href={icon.url} />
+        {seoConfig.icons.map((icon: any, index) => (
+          <link key={index} rel={icon.rel} type={icon.type} href={icon.url} />
         ))}
         <meta httpEquiv="Content-Language" content="en" />
         <meta
