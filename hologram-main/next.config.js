@@ -46,6 +46,12 @@ export default withAnalyze(withPwaPlugin(withNextra({
   eslint: {
     ignoreDuringBuilds: true
   },
-  redirects: () => []
+  redirects: () => [
+    {
+      source: '/mining',
+      destination: '/developer-support',
+      permanent: true
+    }
+  ]
 })))
 
