@@ -9,7 +9,7 @@ const seoConfig = defineMetadata({
     default: 'Hologram - DERO Decentralized Web Browser | Browse the Private Web'
   },
   description: 'Official Hologram documentation. Native desktop browser for DERO decentralized applications. Integrated wallet, TELA browser, block explorer, and developer tools with complete privacy.',
-  themeColor: '#00d4aa',
+  themeColor: '#22d3ee',
   openGraph: {
     type: 'website',
     locale: 'en_US',
