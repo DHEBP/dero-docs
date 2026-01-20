@@ -227,7 +227,7 @@ Study XSWD Advanced to learn production-grade XSWD patterns, error handling, and
         const u = new URL(url, window.location.href);
         if (u.origin === window.location.origin) return true; // same-site
         if (u.hostname === '127.0.0.1' || u.hostname === 'localhost') return true;
-        if (u.hostname && u.hostname.endsWith('.dero.io')) return true;
+        if (u.hostname && u.hostname.endsWith('.derofoundation.org')) return true;
         if (u.pathname && (u.pathname.includes('/xswd') || u.pathname.includes('/dero') || u.pathname.includes('/ws'))) return true;
         return false;
       } catch (_) {

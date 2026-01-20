@@ -149,7 +149,7 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed 
 - **Discord**: [discord.gg/H95TJDp](https://discord.gg/H95TJDp)
 - **Twitter**: [@DeroProject](https://twitter.com/DeroProject)
 - **GitHub**: [deroproject/derohe](https://github.com/deroproject/derohe)
-- **Explorer**: [explorer.dero.io](https://explorer.dero.io)
+- **Explorer**: [explorer.derofoundation.org](https://explorer.derofoundation.org)
 
 ## License
 

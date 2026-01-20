@@ -27,8 +27,8 @@ const seoConfig = defineMetadata({
   ],
   twitter: {
     card: 'summary_large_image',
-    site: '@DeroProject',
-    creator: '@DeroProject',
+    site: '@dero_bro',
+    creator: '@dero_bro',
     title: 'Hologram - DERO Decentralized Web Browser',
     description: 'Native desktop browser for DERO decentralized applications. Immutable content, zero tracking, complete privacy.',
     images: '/assets/og-image.png'
