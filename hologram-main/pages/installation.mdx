@@ -114,8 +114,10 @@ For developers who want to build from source:
 git clone https://github.com/DHEBP/HOLOGRAM-git.git
 cd HOLOGRAM-git
 
-# Install dependencies
-npm install
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+
+# Download Go dependencies
 go mod download
 
 # Build for development
@@ -125,12 +127,44 @@ wails dev
 wails build
 ```
 
+### Build All (Including Dependencies)
+
+To build Hologram along with derod and simulator binaries from DERO source:
+
+```bash
+# Build everything from source
+make all
+```
+
+This builds:
+- **Hologram** - The main application
+- **derod** - DERO daemon (from derohe source)
+- **simulator** - DERO simulator (from derohe source)
+
+All binaries are placed in `build/bin/` alongside the Hologram executable.
+
+<Callout type="info">
+  Building from source eliminates the need to download pre-built binaries and ensures you have matching versions of all components.
+</Callout>
+
 ### Build Requirements
 
-- Go 1.21+
+- Go 1.23+
 - Node.js 18+
 - Wails CLI v2
 - Platform-specific requirements (see Wails documentation)
+
+### Linux Dependencies
+
+On Linux, you need GTK and WebKit development libraries:
+
+```bash
+# Ubuntu/Debian
+sudo apt install libgtk-3-dev libglib2.0-dev libwebkit2gtk-4.0-dev
+
+# Arch Linux
+sudo pacman -S gtk3 glib2 webkit2gtk
+```
 
 ## Next Steps
 
