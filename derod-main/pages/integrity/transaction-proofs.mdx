@@ -242,14 +242,13 @@ Properties:
 **Purpose:** Proves the combined 128-bit value is valid (lower 64 bits = transfer, upper 64 bits = remaining balance) without revealing either value.
 
 **This is the bulletproof component:**
-- Uses bit decomposition
-- Logarithmic proof size (~2KB)
-- Prevents negative amounts
-- Prevents overflow amounts
+- Uses bit decomposition (catches negatives)
+- Logarithmic proof size (7 rounds for 128-bit range)
+- Validates both transfer AND remaining balance simultaneously
 
 **[Detailed explanation →](/integrity/range-proof-integrity)**
 
-**Source:** `cryptography/crypto/proof_generate.go:473-487` - Bit decomposition
+**Source:** `cryptography/crypto/proof_generate.go:473-487`
 
 ### A_u: Unspent Proof
 

@@ -105,14 +105,7 @@ A_u  → Proves no double-spending
 
 **Triple-layer defense ensures amounts are always valid.**
 
-DERO's bulletproof implementation provides three independent layers of protection against invalid amounts:
-
-**The Three Layers:**
-```
-Layer 1: Bit Decomposition  → Catches negatives at string level
-Layer 2: Range Proof (A_t)  → Validates mathematical range
-Layer 3: Inner Product      → Cryptographic fail-safe
-```
+DERO's bulletproof implementation provides three independent layers of protection against invalid amounts. Each layer is independently sufficient to block attacks.
 
 **[Explore Range Proof Integrity →](/integrity/range-proof-integrity)**
 
@@ -140,13 +133,7 @@ The protocol cannot accept negative transfer amounts due to fundamental mathemat
 
 **Encrypted balances that support mathematical operations.**
 
-DERO balances are always encrypted using homomorphic encryption, allowing operations without decryption.
-
-**Key Mechanics:**
-- 66-byte encrypted balance (Left + Right commitments)
-- Homomorphic addition/subtraction
-- Zero initialization after block 144,000
-- Balance changes for all ring members (by design)
+DERO balances are always encrypted using homomorphic encryption, allowing operations without decryption. Each balance is 66 bytes (two 33-byte curve points).
 
 **[Explore Balance Mechanics →](/integrity/balance-mechanics)**
 
