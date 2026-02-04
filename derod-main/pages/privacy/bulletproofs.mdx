@@ -1,9 +1,9 @@
 ---
 title: "Bulletproofs: DERO's Zero-Knowledge Range Proofs | DERO Blockchain"
-description: "How DERO's bulletproofs prove amounts are valid without revealing them - 10× faster verification, compact proofs, and cryptographic protection against negative transfers."
+description: "How DERO's bulletproofs prove amounts are valid without revealing them, using logarithmic-size range proofs and cryptographic protection against negative transfers."
 keywords: ["bulletproofs", "zero-knowledge proofs", "range proofs", "DERO bulletproofs", "compact proofs", "ZK proofs", "cryptographic proofs", "proof verification", "logarithmic proofs", "negative transfer protection"]
 date: "2025-10-18"
-lastUpdated: "2025-11-01"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 image: "/assets/bulletproofs.jpeg"
 slug: "bulletproofs"
@@ -17,7 +17,7 @@ import { Tabs } from 'nextra/components'
 # Bulletproofs: Zero-Knowledge Range Proofs
 
 <Callout type="success" emoji="🔒">
-**Zero-Knowledge Magic:** Bulletproofs prove your transaction amount is valid (0 to 2^64) **without revealing what the amount is**. Privacy + Security = Perfect.
+**Zero-Knowledge Magic:** Bulletproofs prove your transaction amounts are valid **without revealing what they are**. DERO uses a 128-bit combined range proof to validate both the transfer amount and remaining balance in a single proof. Privacy + Security = Perfect.
 </Callout>
 
 ## What Problem Do Bulletproofs Solve?
@@ -36,10 +36,9 @@ But WITHOUT revealing:
 ```
 
 **The Solution: Bulletproofs**
-- ✅ Prove amount is in valid range [0, 2^64]
+- ✅ Prove combined 128-bit value is valid (transfer + remaining balance, each 64-bit)
 - ✅ Never reveal the amount value
-- ✅ Compact proof size (~2KB)
-- ✅ Fast verification (~10ms)
+- ✅ Logarithmic-size proof (7 rounds for 128-bit range)
 - ✅ No trusted setup needed
 
 ---
@@ -88,9 +87,9 @@ But WITHOUT revealing:
 </Tabs>
 
 **For DERO:**
-- Bulletproof proves: "Amount is between 0 and 2^64"
-- Network learns: ✅ Amount is valid
-- Network learns: ❌ What the amount is
+- Bulletproof proves: "Combined 128-bit value is valid (transfer amount in lower 64 bits, remaining balance in upper 64 bits)"
+- Network learns: ✅ Both values are valid (in [0, 2^64))
+- Network learns: ❌ What either value actually is
 
 ---
 
@@ -102,7 +101,7 @@ flowchart TD
     B --> C["Bit Decomposition<br/>100 = binary: 1100100"]
     C --> D["Commit to Each Bit<br/>commit1, commit1, commit0, ..."]
     D --> E["Generate Inner Product Proof<br/>Proves bits are 0 or 1"]
-    E --> F["Assemble Bulletproof<br/>~2KB compact proof"]
+    E --> F["Assemble Bulletproof<br/>Logarithmic-size proof"]
     F --> G["Broadcast to Network"]
     G --> H["Network Verifies"]
     H --> I{Valid?}
@@ -112,7 +111,7 @@ flowchart TD
 
 **What Network Sees:**
 - ✅ Commitment (encrypted amount)
-- ✅ Bulletproof (~2KB)
+- ✅ Bulletproof (logarithmic-size proof)
 - ✅ Proof is valid
 - ❌ Actual amount (hidden)
 
@@ -167,12 +166,14 @@ number_string := reverse("0000...000" + number.Text(2))
 
 **What A_t Validates:**
 
+DERO constructs a **combined 128-bit value** where the lower 64 bits represent the transfer amount and the upper 64 bits represent the remaining balance. This is created by: `value = transfer_amount + (remaining_balance << 64)`.
+
 ```
 A_t Range Proof checks:
-  ✓ Amount is ≥ 0
-  ✓ Amount is ≤ 2^64
-  ✓ Bit commitments are valid
-  ✓ All bits are 0 or 1
+  ✓ Combined 128-bit value is valid
+  ✓ Transfer amount (lower 64 bits) is in range [0, 2^64)
+  ✓ Remaining balance (upper 64 bits) is in range [0, 2^64)
+  ✓ All 128 bit commitments are valid (0 or 1)
 ```
 
 **If Layer 1 fails (has `-` character):**
@@ -180,7 +181,11 @@ A_t Range Proof checks:
 - A_t proof generation fails
 - Transaction rejected
 
-**Source:** `cryptography/crypto/proof_generate.go` - Range proof (A_t) generation
+**Source:** `cryptography/crypto/proof_generate.go:471` - Combined value construction: `btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))`
+
+<Callout type="info" emoji="📐">
+**Why 128 bits?** By combining transfer amount and remaining balance into a single 128-bit value, DERO proves both are valid in one proof while keeping both values hidden.
+</Callout>
 
 ### Layer 3: Inner Product Proof - The Cryptographic Fail-Safe
 
@@ -245,7 +250,7 @@ graph LR
 | **A_D** | Encrypted balance update correct | 🔒 Homomorphic validation |
 | **A_b** | Balance commitment valid | 🔒 Binding & hiding |
 | **A_X** | Additional protocol constraints | 🔒 Protocol-specific |
-| **A_t** | Amount in range [0, 2^64] | 🔒 Range proof (bulletproof) |
+| **A_t** | Combined 128-bit value valid (transfer + balance) | 🔒 Range proof (bulletproof) |
 | **A_u** | No double-spending | 🔒 Unspent validation |
 
 **All Bound Together:**
@@ -278,7 +283,7 @@ graph TB
     F --> G["Fold: 32 bits"]
     G --> H["Continue..."]
     H --> I["Final: 1 bit"]
-    I --> J["Proof: 7 rounds<br/>~2KB total"]
+    I --> J["Proof: 7 rounds"]
 ```
 
 **Iterations:**
@@ -291,40 +296,9 @@ graph TB
 - Iteration 6: 2 elements
 - Iteration 7: 1 element
 
-**Total:** log₂(128) = 7 iterations  
-**Proof Size:** 7 rounds × ~300 bytes ≈ 2.1KB
+**Total:** log₂(128) = 7 iterations
   
 **Source:** `cryptography/crypto/proof_innerproduct.go` - Recursive halving algorithm
-
----
-
-## Performance: Why DERO Is 10× Faster
-
-### Custom Implementation
-
-**DERO's Optimizations:**
-
-| Optimization | Benefit | Impact |
-|-------------|---------|--------|
-| **Custom code** | Tailored for DERO | 3× faster |
-| **Efficient EC ops** | Optimized point multiplication | 2× faster |
-| **Streamlined verification** | Reduced redundant checks | 1.5× faster |
-| **Combined** | **Total speedup** | **~10× faster** |
-
-**Real-World Impact:**
-
-```
-Block with 100 transactions:
-  
-Standard bulletproofs:
-  100 tx × 100ms = 10 seconds
-  
-DERO bulletproofs:
-  100 tx × 10ms = 1 second
-  
-Speedup: 10× faster block validation
-Benefit: Better scalability, lower hardware requirements
-```
 
 ---
 
@@ -336,10 +310,11 @@ Benefit: Better scalability, lower hardware requirements
 
 | Information | Learned? | Reason |
 |------------|----------|--------|
-| **Amount is in range [0, 2^64]** | ✅ Yes | This is what's proven |
-| **Exact amount value** | ❌ No | Zero-knowledge property |
-| **Any bits of the amount** | ❌ No | Bits are hidden |
-| **Sender's balance** | ❌ No | Not revealed |
+| **Combined 128-bit value is valid** | ✅ Yes | This is what's proven |
+| **Transfer and balance each in [0, 2^64)** | ✅ Yes | Implicit from 128-bit structure |
+| **Exact transfer amount** | ❌ No | Zero-knowledge property |
+| **Exact remaining balance** | ❌ No | Zero-knowledge property |
+| **Any bits of either value** | ❌ No | Bits are hidden |
 | **Any private information** | ❌ No | Perfect privacy |
 
 **Formal Properties:**
@@ -355,15 +330,14 @@ Benefit: Better scalability, lower hardware requirements
 
 | Application | What It Validates | Protection |
 |------------|------------------|------------|
-| **Transaction Amounts** | Amount ≥ 0, ≤ 2^64 | Prevents negative transfers |
-| **Balance Sufficiency** | Old balance ≥ transfer, New balance ≥ 0 | Prevents overdrafts |
+| **Transaction Amounts** | Combined 128-bit value (transfer + remaining balance) | Prevents negative transfers |
+| **Balance Sufficiency** | Both transfer and remaining balance in [0, 2^64) | Prevents overdrafts |
 | **Smart Contract State** | State transitions valid, no negative balances | Ensures contract integrity |
 
 **All three use the same bulletproof mechanism:**
 - ✅ Prove value is in valid range
 - ✅ Never reveal the actual value
 - ✅ Cryptographic guarantee
-- ✅ Fast verification
 
 ---
 
@@ -374,11 +348,10 @@ Benefit: Better scalability, lower hardware requirements
 | Feature | Benefit | Impact |
 |---------|---------|--------|
 | **🔒 Zero-Knowledge** | Amount hidden from network | Perfect privacy |
-| **📦 Compact Proofs** | ~2KB (logarithmic scaling) | Efficient transactions |
-| **⚡ Fast Verification** | 10× faster than standard | Scalable blockchain |
+| **📦 Logarithmic Proofs** | 7 rounds for 128-bit range | Efficient transactions |
 | **🔐 No Trusted Setup** | Pure cryptography | Decentralized security |
 | **🛡️ Triple-Layer Defense** | Multiple fail-safes | Negative transfers impossible |
-| **✅ Proven Security** | Same as Bitcoin's ECDSA | 256-bit security level |
+| **✅ Proven Security** | bn256 elliptic curve discrete log | Standard discrete log security assumption |
 
 ### What You're Protected From
 
@@ -400,7 +373,7 @@ graph LR
 </Callout>
 
 <Callout type="info" emoji="⚡">
-**Performance + Privacy:** DERO's bulletproof implementation proves you don't have to choose between privacy and performance. Through custom optimization, you get both strong cryptographic guarantees **and** practical blockchain speed (10× faster verification).
+**Performance + Privacy:** DERO's bulletproof implementation keeps proofs logarithmic in size while preserving strong cryptographic guarantees.
 </Callout>
 
 ---

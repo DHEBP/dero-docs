@@ -3,7 +3,7 @@ title: "Complete Transaction Privacy: How DERO Protects Your Data | DERO Blockch
 description: "See how DERO's privacy layers work together - ring signatures, homomorphic encryption, bulletproofs, and network encryption protecting every transaction."
 keywords: ["DERO transaction privacy", "complete privacy", "multi-layer privacy", "sender protection", "amount encryption", "DERO security", "private transactions", "blockchain privacy"]
 date: "2025-10-18"
-lastUpdated: "2025-10-19"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 image: "/assets/transaction-privacy.jpeg"
 slug: "transaction-privacy"
@@ -53,10 +53,10 @@ flowchart TD
 When you send a transaction, each layer adds privacy at a different stage. Network encryption protects your traffic from ISPs. Ring signatures hide which address sent the transaction. Homomorphic encryption keeps all amounts secret. Bulletproofs prove validity without revealing anything. Together, they create defense in depth—multiple barriers that protect your privacy even if one layer is compromised.
 
 **Source Code References:**
-- Network: `p2p/connection.go` (TLS encryption)
+- Network: `p2p/controller.go` (TLS encryption)
 - Sender: `cryptography/crypto/proof_verify.go` (ring signatures)
 - Amount: `cryptography/crypto/algebra_elgamal.go` (homomorphic encryption)
-- Proofs: `cryptography/crypto/bulletproof.go` (zero-knowledge proofs)
+- Proofs: `cryptography/crypto/proof_generate.go` and `cryptography/crypto/proof_innerproduct.go` (range proof + inner product)
 
 ---
 
@@ -149,8 +149,8 @@ graph LR
 | **Creation** | Local only | `walletapi/wallet_transfer.go:62` |
 | **Ring Formation** | Sender hiding | `cryptography/crypto/proof_generate.go` |
 | **Encryption** | Amount hiding | `cryptography/crypto/algebra_elgamal.go:69` |
-| **Proofs** | ZK validation | `cryptography/crypto/bulletproof.go` |
-| **Broadcast** | Network encryption | `p2p/connection.go` (TLS) |
+| **Proofs** | ZK validation | `cryptography/crypto/proof_generate.go` + `cryptography/crypto/proof_innerproduct.go` |
+| **Broadcast** | Network encryption | `p2p/controller.go` (TLS) |
 | **Verification** | Homomorphic check | `blockchain/transaction_execute.go:239` |
 
 ---
@@ -158,7 +158,7 @@ graph LR
 ## Key Takeaways
 
 **What's Protected:**
-- Sender identity (hidden among 2-128 ring members, default: 6.25% chance)
+- Sender identity (hidden among 2-128 ring members; naive guess probability is 1/N)
 - All amounts (encrypted with homomorphic encryption, never decrypted)
 - All balances (encrypted at all times)
 - Transaction linkage (unlinkable, independent rings per transaction)

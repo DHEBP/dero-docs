@@ -1,9 +1,9 @@
 ---
 title: "Account-Based Privacy: DERO's Architectural Innovation | DERO Blockchain"
 description: "Learn why DERO's combination of account-based blockchain with homomorphic encryption creates unique capabilities impossible with UTXO-based privacy systems."
-keywords: ["account-based blockchain", "DERO architecture", "account privacy", "UTXO vs accounts", "encrypted accounts", "instant transactions", "account model privacy", "blockchain architecture", "DERO innovation"]
+keywords: ["account-based blockchain", "DERO architecture", "account privacy", "UTXO vs accounts", "encrypted accounts", "account model privacy", "blockchain architecture", "DERO innovation"]
 date: "2025-10-18"
-lastUpdated: "2025-11-01"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 image: "/assets/account-based-privacy.jpeg"
 slug: "account-based-privacy"
@@ -17,7 +17,7 @@ import { Tabs } from 'nextra/components'
 # Account-Based Privacy: The Unprecedented Combination
 
 <Callout type="success" emoji="🎯">
-**Architectural Breakthrough:** DERO achieves something no other blockchain has accomplished: combining an account-based model with strong privacy guarantees through homomorphic encryption. This enables instant transactions, simple balance tracking, and private smart contracts - all with encrypted amounts.
+**Architectural Breakthrough:** DERO achieves something no other blockchain has accomplished: combining an account-based model with strong privacy guarantees through homomorphic encryption. This enables direct account updates, simple balance tracking, and private smart contracts - all with encrypted amounts.
 </Callout>
 
 ## What Problem Does This Solve?
@@ -28,7 +28,7 @@ Blockchain needs:
   ✓ Account simplicity
   ✓ Privacy guarantees
   ✓ Smart contract support
-  ✓ Instant transactions
+  ✓ Direct account updates
   
 But historically:
   ❌ Accounts = No privacy
@@ -95,7 +95,7 @@ graph TB
       1. Balance must be encrypted
       2. Operations must work on encrypted values
       3. Network must verify without decrypting
-      4. Updates must be instant
+      4. Updates must be direct
       5. Must support smart contracts
     
     The problem:
@@ -116,7 +116,7 @@ graph TB
       1. Encrypt balances: E(balance)
       2. Operations work: E(a) + E(b) = E(a+b)
       3. Verification via proofs (no decryption)
-      4. Instant updates (account model benefit)
+      4. Direct updates (account model benefit)
       5. Smart contracts can use encrypted state
     
     Enables:
@@ -124,7 +124,7 @@ graph TB
       ✓ Amount privacy
       ✓ Balance privacy
       ✓ Smart contract privacy
-      ✓ Instant confirmations
+      ✓ Target block-time confirmations
       ✓ Simple wallet sync
     
     This combination was unprecedented!
@@ -136,34 +136,38 @@ graph TB
 
 ## Three Key Advantages
 
-### 1. Instant Transaction Confirmation
+### 1. Transaction Confirmation (Target Block Time)
 
-**DERO's Flow:** Submit to Sigma-block (~1 sec) → Account update → Main block (~18 sec) = **~18 seconds total**
+**DERO's Flow:** Submit to mini-block system → account update → main block target time (BLOCK_TIME = 18s)
 
 | Aspect | DERO Account Model |
 |--------|-------------------|
-| **Confirmation** | ~18 seconds |
+| **Confirmation** | Target block time: 18 seconds |
 | **Validation** | Simple account update |
-| **Block Structure** | Sigma-blocks + main blocks |
+| **Block Structure** | Mini-blocks + main blocks |
 | **Finality** | Same-block finality |
 
 **Advantage:** Fast confirmation with account model + privacy ✅
+
+<Callout type="info" emoji="⏱️">
+  **Source:** Target block time is defined by `config/config.go` (`BLOCK_TIME = 18`).
+</Callout>
 
 ---
 
 ### 2. Simple Balance Checking
 
-**DERO's Flow:** Query encrypted balance to Decrypt with private key = **Seconds**
+**DERO's Flow:** Query encrypted balance → decrypt with private key (no chain scanning)
 
 | Step | DERO Account Model |
 |------|-------------------|
 | **1** | Query encrypted balance |
 | **2** | Decrypt with private key |
-| **3** | See balance instantly |
-| **Time** | Seconds |
+| **3** | See balance locally |
+| **Time** | No chain scanning required |
 | **Data Required** | One RPC call |
 
-**Advantage:** Instant balance checks without full sync ✅
+**Advantage:** Balance checks without full sync ✅
 
 ---
 
@@ -208,36 +212,36 @@ func UpdateBalance(address, amount):
 
 ---
 
-## Instant Finality: Sigma-Blocks
+## Mini-Blocks and Finality
 
 ### How DERO Achieves Fast Confirmation
 
-**Sigma-Block Architecture:**
+**Mini-Block Architecture:**
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant S as Sigma-Block
+    participant S as Mini-Block
     participant M as Main Block
     participant BC as Blockchain
     
     U->>S: Submit Transaction
-    S->>S: Include in Sigma-block (~1 sec)
+    S->>S: Include in mini-block
     S->>S: Homomorphic Balance Update
     S->>M: Aggregate to Main Block
-    M->>BC: Confirm (~18 seconds)
+    M->>BC: Confirm (target block time 18s)
     BC->>U: Final - Privacy Maintained!
 ```
 
 **Timeline:**
 
-| Step | Time | What Happens |
-|------|------|--------------|
-| **1. Submit** | 0s | User submits transaction |
-| **2. Sigma-Block** | ~1s | Included in micro-block |
-| **3. Update** | ~1s | Homomorphic balance update |
-| **4. Main Block** | ~18s | Aggregated and confirmed |
-| **5. Final** | ~18s | Transaction final |
+| Step | Order | What Happens |
+|------|-------|--------------|
+| **1. Submit** | 1 | User submits transaction |
+| **2. Mini-Block** | 2 | Included in mini-block |
+| **3. Update** | 3 | Homomorphic balance update |
+| **4. Main Block** | 4 | Aggregated and confirmed |
+| **5. Final** | 5 | Transaction final |
 
 **Why This Works:**
 - Single account validation (simple)
@@ -301,11 +305,11 @@ graph TB
 | Feature | DERO Has |
 |---------|----------|
 | **Privacy** | ✅ Built-in (homomorphic encryption) |
-| **Speed** | ✅ Fast (~18s confirmation) |
+| **Speed** | ✅ Target block time: 18 seconds |
 | **Smart Contracts** | ✅ Natural support with privacy |
-| **Balance Check** | ✅ Instant (no sync needed) |
+| **Balance Check** | ✅ No chain scanning required |
 | **Complexity** | ✅ Low (simple account model) |
-| **Wallet Sync** | ✅ Seconds (lightweight clients) |
+| **Wallet Sync** | ✅ Lightweight clients supported |
 
 **DERO proved:** You CAN have account simplicity AND privacy!
 
@@ -326,8 +330,8 @@ graph TB
 
 | Feature | Benefit | Impact |
 |---------|---------|--------|
-| **⚡ Instant Transactions** | ~18 second confirmation | Fast finality |
-| **🔍 Instant Balance** | Query encrypted balance | No sync needed |
+| **⚡ Target Block Time** | 18 seconds | Consensus target |
+| **🔍 Encrypted Balance** | Query encrypted balance | No sync needed |
 | **🔐 Smart Contract Privacy** | Encrypted state | Unique to DERO |
 | **📦 Simple Wallets** | Lightweight clients | Easy adoption |
 | **🎯 Account Simplicity** | One balance per account | Lower complexity |
@@ -336,9 +340,9 @@ graph TB
 ### What It Enables
 
 - ✅ **Private Smart Contracts** - Unique to DERO
-- ✅ **Instant Balance Queries** - No blockchain scanning
-- ✅ **Lightweight Wallets** - Seconds, not hours
-- ✅ **Fast Confirmations** - ~18 seconds
+- ✅ **Encrypted Balance Queries** - No blockchain scanning
+- ✅ **Lightweight Wallets** - No chain scanning required
+- ✅ **Target Block Time** - 18 seconds
 - ✅ **Account Simplicity** - Lower complexity
 - ✅ **Proven in Production** - Working system, not theoretical
 

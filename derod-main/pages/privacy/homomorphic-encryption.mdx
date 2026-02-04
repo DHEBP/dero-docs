@@ -3,7 +3,7 @@ title: "Homomorphic Encryption: DERO's Account Privacy Innovation | DERO Blockch
 description: "Technical deep dive into DERO's homomorphic encryption system using ElGamal, enabling encrypted account balances and operations on encrypted data for blockchain applications."
 keywords: ["homomorphic encryption", "ElGamal encryption", "DERO encryption", "encrypted balances", "additive homomorphism", "partially homomorphic encryption", "blockchain encryption", "encrypted operations", "DERO accounts", "cryptographic commitments"]
 date: "2025-10-18"
-lastUpdated: "2025-11-01"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 image: "/assets/homomorphic-encryption.jpeg"
 slug: "homomorphic-encryption"
@@ -162,7 +162,7 @@ No decryption needed at any step!
 ```
 
 <Callout type="info" emoji="🔐">
-  **Mathematical Guarantee:** Based on elliptic curve discrete logarithm problem - same security assumption as Bitcoin. 256-bit security level.
+  **Mathematical Guarantee:** Based on the elliptic curve discrete logarithm problem on the bn256 (Barreto-Naehrig) curve.
 </Callout>
 
 ---
@@ -408,10 +408,9 @@ Purpose:
 | Aspect | Details |
 |--------|---------|
 | **Encryption Scheme** | ElGamal (additive homomorphism) |
-| **Curve** | bn256 (Barreto-Naehrig) 256-bit |
+| **Curve** | bn256 (Barreto-Naehrig) curve |
 | **Security** | Discrete logarithm problem |
 | **Commitment Size** | 66 bytes (33 left + 33 right) |
-| **Performance** | ~10ms per operation |
 | **Trusted Setup** | ❌ None required |
 
 ---
