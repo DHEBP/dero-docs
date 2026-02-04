@@ -3,7 +3,7 @@ title: "Transaction Proofs: DERO's Six Sigma Proof System | DERO Blockchain"
 description: "Technical deep dive into DERO's six interconnected transaction proofs - how they work together to guarantee transaction integrity through cryptographic binding."
 keywords: ["transaction proofs", "sigma proofs", "DERO proofs", "cryptographic proofs", "proof verification", "A_y proof", "A_D proof", "challenge hash"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "transaction-proofs"
 canonicalUrl: "https://derod.org/integrity/transaction-proofs"
@@ -77,7 +77,7 @@ flowchart TD
 | **A_D** | Encrypted balance update is correct | Ensures math is right |
 | **A_b** | Balance commitment is valid | Binding and hiding properties |
 | **A_X** | Additional protocol constraints | Protocol-specific rules |
-| **A_t** | Amount is in range [0, 2^64] | Prevents negative/overflow |
+| **A_t** | Combined 128-bit value with 64-bit bounds | Prevents negative/overflow |
 | **A_u** | Output is unspent | Prevents double-spending |
 
 ---
@@ -239,7 +239,7 @@ Properties:
 
 ### A_t: Range Proof
 
-**Purpose:** Proves amount is in valid range [0, 2^64] without revealing the amount.
+**Purpose:** Proves the combined 128-bit value is valid (lower 64 bits = transfer, upper 64 bits = remaining balance) without revealing either value.
 
 **This is the bulletproof component:**
 - Uses bit decomposition

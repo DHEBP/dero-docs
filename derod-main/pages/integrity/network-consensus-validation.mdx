@@ -3,7 +3,7 @@ title: "Network Consensus Validation: Distributed Security | DERO Blockchain"
 description: "How DERO's distributed network validates transactions through consensus - every node verifies independently, creating Byzantine fault tolerance and eliminating single points of failure."
 keywords: ["network consensus", "distributed validation", "DERO consensus", "Byzantine fault tolerance", "node validation", "blockchain consensus", "transaction finality"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "network-consensus-validation"
 canonicalUrl: "https://derod.org/integrity/network-consensus-validation"
@@ -176,7 +176,7 @@ sequenceDiagram
 | Check | What It Validates | Failure Means |
 |-------|------------------|---------------|
 | **Sigma proofs** | All 6 proofs valid | Forged transaction |
-| **Range proof** | Amount in [0, 2^64] | Invalid amount |
+| **Range proof** | Combined 128-bit value with 64-bit bounds | Invalid amount |
 | **Inner product** | Cryptographic consistency | Proof manipulation |
 | **Double-spend** | Output not already spent | Replay attack |
 | **Structure** | Valid format, sizes | Malformed TX |
@@ -260,14 +260,25 @@ Total: ~50ms to reach most of network
 
 ### Block Confirmation
 
+<Callout type="info" emoji="⏱️">
+**Block Time:** DERO's block time is **18 seconds** as defined in `config/config.go:34`. The README mentions "16s" but this appears to be outdated - the actual constant is `BLOCK_TIME = uint64(18)`.
+</Callout>
+
 ```
-Block time: ~18 seconds (average)
+Block time: 18 seconds (from config/config.go)
 
 Time 0:      TX in mempool
 Time 18s:    Included in block
 Time 36s:    1 confirmation
 Time 54s:    2 confirmations
-Time 5 min:  ~16 confirmations (very secure)
+Time ~5 min: ~17 confirmations (very secure)
+```
+
+**Source verification:**
+```go
+// config/config.go:34
+const BLOCK_TIME = uint64(18)
+const BLOCK_TIME_MILLISECS = BLOCK_TIME * 1000
 ```
 
 ---

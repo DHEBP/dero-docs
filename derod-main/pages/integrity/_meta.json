@@ -4,6 +4,7 @@
   "range-proof-integrity": "Range Proof Integrity",
   "proof-verification-flow": "Verification Flow",
   "negative-transfer-protection": "Negative Transfer Protection",
+  "overflow-protection": "Overflow Protection",
   "balance-mechanics": "Balance Mechanics",
   "ring-member-behavior": "Ring Member Behavior",
   "payload-vs-transaction-proofs": "Proof Types Explained",

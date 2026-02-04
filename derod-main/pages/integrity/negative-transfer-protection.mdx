@@ -3,7 +3,7 @@ title: "Negative Transfer Protection: Mathematical Impossibility | DERO Blockcha
 description: "Technical proof that negative transfers are mathematically impossible in DERO - not 'difficult' but genuinely impossible due to fundamental constraints in the proof system."
 keywords: ["negative transfer", "inflation protection", "DERO security", "mathematical proof", "bit decomposition", "uint64", "int64", "protocol security"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "negative-transfer-protection"
 canonicalUrl: "https://derod.org/integrity/negative-transfer-protection"
@@ -37,9 +37,16 @@ This is a mathematical guarantee, not a policy. The protocol's fundamental desig
 
 ### The Protection Mechanism
 
-**Location:** `cryptography/crypto/proof_generate.go:473-487`
+**Location:** `cryptography/crypto/proof_generate.go:468-487`
 
 ```go
+// Line 468: Cast transfer amount to int64 (overflow wraps here)
+btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount))
+bdiff := new(big.Int).SetInt64(int64(witness.Balance))
+
+// Line 471: Combine into 128-bit value (transfer + balance)
+number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))
+
 // Line 473: Convert amount to binary string
 number_string := reverse("0000...000" + number.Text(2))
 number_string_left_128bits := string(number_string[0:128])
@@ -51,13 +58,17 @@ var aL, aR FieldVector // convert the amount to make sure it cannot be negative
 for _, b := range []byte(number_string_left_128bits) {
     if b == '1' {
         aL.vector = append(aL.vector, new(big.Int).SetInt64(1))
-        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))
+        aR.vector = append(aR.vector, new(big.Int).SetInt64(0))  // aR = 0 for bit 1
     } else {
         aL.vector = append(aL.vector, new(big.Int).SetInt64(0))
-        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))
+        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))  // aR = -1 mod Order for bit 0
     }
 }
 ```
+
+<Callout type="info" emoji="📐">
+**Why aR differs:** The `aR` vector is constructed so that `aL[i] - aR[i] = 1 (mod Order)` for valid bits. For bit=1: `1 - 0 = 1`. For bit=0: `0 - (-1) = 1 mod Order`. This enforces the bulletproof constraint that each component is a valid binary bit.
+</Callout>
 
 ---
 

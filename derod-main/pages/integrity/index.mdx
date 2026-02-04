@@ -3,7 +3,7 @@ title: "DERO Protocol Integrity: Complete Technical Guide | DERO Blockchain"
 description: "Deep dive into DERO's mathematical integrity guarantees including transaction proofs, range proofs, negative transfer protection, and network consensus validation."
 keywords: ["DERO integrity", "protocol integrity", "transaction proofs", "range proofs", "bulletproofs", "negative transfer protection", "blockchain integrity", "cryptographic proofs"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "integrity"
 canonicalUrl: "https://derod.org/integrity"
@@ -36,6 +36,7 @@ import { Callout } from 'nextra/components'
 | **Transaction Proofs** | Transaction integrity | Six interconnected proofs must all pass | [Explore →](/integrity/transaction-proofs) |
 | **Range Proofs** | Amount validity | Proves amounts valid without revealing them | [Explore →](/integrity/range-proof-integrity) |
 | **Negative Transfer Protection** | Inflation prevention | Mathematically impossible to create tokens | [Explore →](/integrity/negative-transfer-protection) |
+| **Overflow Protection** | Arithmetic safety | Prevents integer overflow attacks | [Explore →](/integrity/overflow-protection) |
 | **Balance Mechanics** | State integrity | Encrypted balances with homomorphic operations | [Explore →](/integrity/balance-mechanics) |
 | **Network Consensus** | Transaction finality | Distributed validation by all nodes | [Explore →](/integrity/network-consensus-validation) |
 
@@ -200,6 +201,7 @@ Every transaction is validated by multiple independent nodes before acceptance. 
 
 **Protection Guarantees:**
 - [Negative Transfer Protection](/integrity/negative-transfer-protection) - Mathematical impossibility
+- [Overflow Protection](/integrity/overflow-protection) - Integer arithmetic safety
 - [Balance Mechanics](/integrity/balance-mechanics) - Encrypted state management
 - [Ring Member Behavior](/integrity/ring-member-behavior) - Decoy participation
 
@@ -209,17 +211,100 @@ Every transaction is validated by multiple independent nodes before acceptance. 
 
 ---
 
+## Verify It Yourself
+
+<Callout type="info" emoji="🔍">
+**Don't Trust, Verify:** All claims in this documentation can be independently verified against the DERO source code. Here's how.
+</Callout>
+
+### Clone and Verify
+
+```bash
+# Clone the official DERO repository
+git clone https://github.com/deroproject/derohe.git
+cd derohe
+
+# Verify key protection mechanisms:
+
+# 1. Bit decomposition (negative transfer protection)
+sed -n '468,487p' cryptography/crypto/proof_generate.go
+
+# 2. Overflow protection
+sed -n '108,110p' cryptography/crypto/proof_verify.go
+
+# 3. Parity check
+sed -n '136,141p' cryptography/crypto/proof_verify.go
+
+# 4. Challenge hash verification
+sed -n '410,425p' cryptography/crypto/proof_verify.go
+
+# 5. Inner product verification
+sed -n '457,459p' cryptography/crypto/proof_verify.go
+
+# 6. Block time constant
+grep "BLOCK_TIME" config/config.go
+
+# 7. Balance initialization (block 144,000)
+grep -A2 "144000" blockchain/transaction_execute.go
+```
+
+### Quick Verification Tests
+
+**Test 1: Negative number binary representation**
+```bash
+cat <<'EOF' > /tmp/verify_negative.go
+package main
+import ("fmt"; "math/big")
+func main() {
+    n := new(big.Int).SetInt64(-2200000)
+    fmt.Printf("Binary: %s\n", n.Text(2))
+    fmt.Printf("First char: '%c' (ASCII %d)\n", n.Text(2)[0], n.Text(2)[0])
+}
+EOF
+go run /tmp/verify_negative.go
+```
+
+**Test 2: Overflow detection**
+```bash
+cat <<'EOF' > /tmp/verify_overflow.go
+package main
+import "fmt"
+func main() {
+    fees := uint64(18446744073709551610)
+    extra := uint64(10)
+    total := fees + extra
+    fmt.Printf("Overflow detected: %v\n", total < fees || total < extra)
+}
+EOF
+go run /tmp/verify_overflow.go
+```
+
+### Source Code References
+
+| Protection | File | Lines |
+|------------|------|-------|
+| Bit decomposition | `cryptography/crypto/proof_generate.go` | 468-487 |
+| Overflow check | `cryptography/crypto/proof_verify.go` | 108-110 |
+| Parity check | `cryptography/crypto/proof_verify.go` | 136-141 |
+| Challenge hash | `cryptography/crypto/proof_verify.go` | 410-425 |
+| Inner product | `cryptography/crypto/proof_verify.go` | 457-459 |
+| Block time | `config/config.go` | 34 |
+| Balance init | `blockchain/transaction_execute.go` | 189-194 |
+
+---
+
 ## Security Guarantees Summary
 
 ### What DERO Protects Against
 
-| Threat | Protection | Confidence |
-|--------|------------|------------|
-| **Negative transfers** | Bit decomposition + range proofs | 99.9% (mathematical) |
-| **Double spending** | A_u proof + consensus | 99.9% (cryptographic) |
-| **Invalid amounts** | Range proofs (0 to 2^64) | 99.9% (mathematical) |
-| **Forged transactions** | A_y proof (private key) | 99.9% (cryptographic) |
-| **Balance manipulation** | Homomorphic commitments | 99.9% (mathematical) |
+| Threat | Protection | Basis |
+|--------|------------|-------|
+| **Negative transfers** | Bit decomposition + range proofs | Discrete log assumption + deterministic parsing |
+| **Double spending** | A_u proof + consensus | Discrete log assumption + consensus rules |
+| **Invalid amounts** | 128-bit combined range proof | Discrete log assumption |
+| **Forged transactions** | A_y proof (private key) | Discrete log assumption |
+| **Balance manipulation** | Homomorphic commitments | Discrete log assumption |
+| **Arithmetic overflow** | Explicit overflow checks | Deterministic integer arithmetic |
 
 ### Honest Limitations
 
@@ -230,7 +315,7 @@ Every transaction is validated by multiple independent nodes before acceptance. 
 | **Metadata correlation** | Transaction patterns | Use multiple wallets |
 
 <Callout type="info" emoji="📐">
-**Mathematical Foundation:** DERO's security relies on the elliptic curve discrete logarithm problem - the same mathematical foundation that secures Bitcoin. Breaking DERO's security would require breaking Bitcoin's security.
+**Mathematical Foundation:** DERO's security relies on the elliptic curve discrete logarithm problem on its chosen curve parameters. Breaking DERO's security would require a breakthrough on those assumptions.
 </Callout>
 
 ---

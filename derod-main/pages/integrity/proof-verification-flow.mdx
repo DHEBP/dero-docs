@@ -3,7 +3,7 @@ title: "Proof Verification Flow: End-to-End Transaction Validation | DERO Blockc
 description: "Complete walkthrough of how DERO validates transactions from creation through network acceptance - every step of the cryptographic verification process."
 keywords: ["proof verification", "transaction validation", "DERO verification", "cryptographic verification", "consensus validation", "transaction flow"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "proof-verification-flow"
 canonicalUrl: "https://derod.org/integrity/proof-verification-flow"
@@ -210,6 +210,127 @@ func BasicCheck(tx *Transaction) error {
 
 ## Phase 3: Full Verification
 
+<Callout type="info" emoji="🔍">
+**Five Highlighted Checkpoints:** The verification process includes many checks. Below are five key checkpoints that must pass. Failure at any checkpoint results in immediate rejection.
+</Callout>
+
+### The Five Verification Checkpoints
+
+```mermaid
+flowchart TD
+    TX["Transaction Submitted"] --> C1{"Checkpoint 1:<br/>Overflow Check"}
+    C1 -->|Fail| REJ["❌ REJECTED"]
+    C1 -->|Pass| C2{"Checkpoint 2:<br/>Parity Check"}
+    C2 -->|Fail| REJ
+    C2 -->|Pass| C3{"Checkpoint 3:<br/>B^w × A Recovery"}
+    C3 -->|Fail| REJ
+    C3 -->|Pass| C4{"Checkpoint 4:<br/>Challenge Hash (c)"}
+    C4 -->|Fail| REJ
+    C4 -->|Pass| C5{"Checkpoint 5:<br/>Inner Product"}
+    C5 -->|Fail| REJ
+    C5 -->|Pass| ACC["✅ ACCEPTED"]
+```
+
+---
+
+### Checkpoint 1: Overflow Protection
+
+**Location:** `proof_verify.go:108-110`
+
+```go
+// Prevent integer overflow attacks on fees
+total_open_value := s.Fees + extra_value
+if total_open_value < s.Fees || total_open_value < extra_value {
+    return false  // Overflow detected!
+}
+```
+
+**What it catches:** Arithmetic overflow attacks that could manipulate transaction fees.
+
+**[Learn more →](/integrity/overflow-protection)**
+
+---
+
+### Checkpoint 2: Parity Check
+
+**Location:** `proof_verify.go:136-141`
+
+```go
+// Verify the secret parity is well-formed
+if anonsupport.w.Cmp(proof.f.vector[0]) == 0 || anonsupport.w.Cmp(proof.f.vector[m]) == 0 {
+    // Parity is well formed - continue
+} else {
+    Logger.V(1).Info("Parity check failed")
+    return false
+}
+```
+
+**What it catches:** Invalid sender index encoding. The parity check ensures the prover knows which ring member position they occupy without revealing it.
+
+**Why it matters:** In a ring signature, the real sender's position is hidden among decoys. The parity check cryptographically verifies the prover knows their position without revealing which one it is.
+
+---
+
+### Checkpoint 3: B^w × A Recovery
+
+**Location:** `proof_verify.go:177-179`
+
+```go
+// Verify we can recover B^w * A from the proof components
+stored := new(bn256.G1).Add(new(bn256.G1).ScalarMult(proof.B, anonsupport.w), proof.A)
+computed := new(bn256.G1).Add(anonsupport.temp, new(bn256.G1).ScalarMult(gparams.H, proof.z_A))
+
+if stored.String() != computed.String() {
+    Logger.V(1).Info("Recover key failed B^w * A")
+    return false
+}
+```
+
+**What it catches:** Malformed proof structure. This verifies the polynomial commitment structure is consistent.
+
+---
+
+### Checkpoint 4: Challenge Hash Verification
+
+**Location:** `proof_verify.go:410-425`
+
+```go
+// Recompute challenge hash and verify it matches
+var input []byte
+input = append(input, ConvertBigIntToByte(x)...)
+input = append(input, sigmasupport.A_y.Marshal()...)
+input = append(input, sigmasupport.A_D.Marshal()...)
+input = append(input, sigmasupport.A_b.Marshal()...)
+input = append(input, sigmasupport.A_X.Marshal()...)
+input = append(input, sigmasupport.A_t.Marshal()...)
+input = append(input, sigmasupport.A_u.Marshal()...)
+
+if reducedhash(input).Text(16) != proof.c.Text(16) {
+    Logger.V(1).Info("C calculation failed")
+    return false
+}
+```
+
+**What it catches:** Any tampering with proof components. If ANY proof element was modified, the challenge hash won't match.
+
+---
+
+### Checkpoint 5: Inner Product Verification
+
+**Location:** `proof_verify.go:457-459`
+
+```go
+// Final cryptographic verification
+if !proof.ip.Verify(hPrimes, u_x, P, o, gparams) {
+    Logger.V(1).Info("inner proof failed")
+    return false
+}
+```
+
+**What it catches:** Invalid range proofs, forged bit commitments, and any cryptographic inconsistency in the bulletproof.
+
+---
+
 ### Step 3.1: Recompute Challenge Hash
 
 **The verifier recomputes the challenge from the submitted proofs:**
@@ -278,7 +399,7 @@ func Verify(proof *Proof) bool {
     ```go
     func VerifyAt(A_t, proof, c) bool {
         // Bulletproof range proof verification
-        // Check: amount is in [0, 2^64]
+        // Check: combined 128-bit value is valid (transfer + balance)
         
         // 1. Verify bit commitments
         if !ValidateBitCommitments(proof.BitCommits) {

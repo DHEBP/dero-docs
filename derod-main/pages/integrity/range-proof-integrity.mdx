@@ -3,7 +3,7 @@ title: "Range Proof Integrity: DERO's Triple-Layer Defense | DERO Blockchain"
 description: "Technical deep dive into how DERO's bulletproof implementation provides triple-layer protection against invalid amounts through bit decomposition, range proofs, and inner product verification."
 keywords: ["range proofs", "bulletproofs", "bit decomposition", "inner product proof", "DERO security", "amount validation", "cryptographic proofs"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "range-proof-integrity"
 canonicalUrl: "https://derod.org/integrity/range-proof-integrity"
@@ -62,10 +62,17 @@ flowchart TD
 
 ### How It Works
 
-**From Source Code** (`cryptography/crypto/proof_generate.go:473-487`):
+**From Source Code** (`cryptography/crypto/proof_generate.go:468-487`):
 
 ```go
-// Line 473: Convert amount to binary string representation
+// Line 468: Cast transfer amount to int64 (this is where overflow wraps)
+btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount))
+bdiff := new(big.Int).SetInt64(int64(witness.Balance))
+
+// Line 471: Combine transfer + balance into 128-bit value for range proof
+number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))
+
+// Line 473: Convert to binary string representation
 number_string := reverse("0000...000" + number.Text(2))
 number_string_left_128bits := string(number_string[0:128])
 
@@ -76,13 +83,15 @@ var aL, aR FieldVector // convert the amount to make sure it cannot be negative
 for _, b := range []byte(number_string_left_128bits) {
     if b == '1' {
         aL.vector = append(aL.vector, new(big.Int).SetInt64(1))
-        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))
+        aR.vector = append(aR.vector, new(big.Int).SetInt64(0))  // aR = 0 when bit is 1
     } else {
         aL.vector = append(aL.vector, new(big.Int).SetInt64(0))
-        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))
+        aR.vector = append(aR.vector, new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order))  // aR = -1 mod Order when bit is 0
     }
 }
 ```
+
+**Key Insight:** The `aR` vector is constructed such that `aL[i] * (aL[i] - 1) = 0` for valid bits. When `aL[i] = 1`, we need `aR[i] = 0`. When `aL[i] = 0`, we need `aR[i] = -1 mod Order`. This ensures the bulletproof constraint `aL ○ aR = 0` (Hadamard product equals zero vector) holds only for valid binary values.
 
 ### What Happens with Negative Values
 
@@ -146,16 +155,41 @@ func (x *Int) Text(base int) string {
 
 ---
 
+## The 128-Bit Combined Range Proof
+
+<Callout type="info" emoji="📐">
+**Dual Validation:** DERO's range proof validates TWO values simultaneously in a single 128-bit proof: the transfer amount (lower 64 bits) AND the remaining balance (upper 64 bits). This proves both values are non-negative in one efficient proof.
+</Callout>
+
+**From Source Code** (`proof_generate.go:471`):
+```go
+// Combine transfer amount + remaining balance into single 128-bit value
+number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))
+```
+
+**What This Means:**
+```
+128-bit value structure:
+┌────────────────────────────────────────────────────────────────┐
+│  Upper 64 bits: Remaining Balance  │  Lower 64 bits: Transfer  │
+└────────────────────────────────────────────────────────────────┘
+
+Both 64-bit components must be in range [0, 2^64) for the proof to be valid.
+A negative transfer OR negative remaining balance makes the combined 128-bit proof invalid.
+```
+
+---
+
 ## Layer 2: Range Proof (A_t)
 
 ### What A_t Validates
 
 ```
 A_t Range Proof verifies:
-  ✓ Amount ≥ 0
-  ✓ Amount ≤ 2^64
+  ✓ Transfer amount is in [0, 2^64) (lower 64 bits)
+  ✓ Remaining balance is in [0, 2^64) (upper 64 bits)
   ✓ Bit commitments are valid
-  ✓ All bits are 0 or 1 (binary)
+  ✓ All 128 bits are 0 or 1 (binary)
 ```
 
 ### How It Works
@@ -351,7 +385,7 @@ cat cryptography/crypto/proof_generate.go | sed -n '473,487p'
 | Threat | Layer | How It's Blocked |
 |--------|-------|------------------|
 | **Negative amounts** | Layer 1 | '-' character detected in bit string |
-| **Overflow amounts** | Layer 2 | Range proof validates 0 to 2^64 |
+| **Overflow amounts** | Layer 2 | Range proof validates the 128-bit combined value with 64-bit bounds |
 | **Forged proofs** | Layer 3 | Inner product verification fails |
 | **Partial forgery** | All | All layers must pass |
 

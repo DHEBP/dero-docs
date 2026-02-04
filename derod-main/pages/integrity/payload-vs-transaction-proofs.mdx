@@ -3,7 +3,7 @@ title: "Proof Types Explained: Transaction vs. Payload Proofs | DERO Blockchain"
 description: "Critical distinction between DERO's two proof systems - transaction proofs (consensus-level, secure) and payload proofs (display-level, by design unverifiable). Includes technical analysis of fake proof creation and explorer mitigation."
 keywords: ["transaction proofs", "payload proofs", "DERO proofs", "proof verification", "proof types", "wallet proofs", "consensus proofs", "fake proofs", "int64 wraparound", "explorer validation"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2025-01-26"
 authors: ["DHEBP"]
 slug: "payload-vs-transaction-proofs"
 canonicalUrl: "https://derod.org/integrity/payload-vs-transaction-proofs"
@@ -349,7 +349,7 @@ x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
     ```
     ✓ Transaction is valid
     ✓ Proofs are cryptographically correct
-    ✓ Amount is in valid range [0, 2^64]
+    ✓ Combined 128-bit value is valid (transfer + remaining balance)
     ✓ No double-spending
     ✓ Sender has private key
     
