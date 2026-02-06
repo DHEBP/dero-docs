@@ -3,7 +3,7 @@ title: "Proof Verification Flow: End-to-End Transaction Validation | DERO Blockc
 description: "Complete walkthrough of how DERO validates transactions from creation through network acceptance - every step of the cryptographic verification process."
 keywords: ["proof verification", "transaction validation", "DERO verification", "cryptographic verification", "consensus validation", "transaction flow"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "proof-verification-flow"
 canonicalUrl: "https://derod.org/integrity/proof-verification-flow"
@@ -38,9 +38,8 @@ sequenceDiagram
     
     Note over V: Phase 3: Verification
     N->>V: Full verification
-    V->>V: Verify all 6 sigma proofs
-    V->>V: Verify range proof
-    V->>V: Verify inner product
+    V->>V: Verify all 6 sigma proofs (including A_t range proof)
+    V->>V: Verify inner product proof (bulletproof sub-component of A_t)
     
     Note over BC: Phase 4: Acceptance
     V-->>N: Valid/Invalid
@@ -59,26 +58,12 @@ sequenceDiagram
 
 ### Step 1.1: Prepare Transaction Data
 
-**What happens in the wallet:**
+**What happens in the wallet** (see `walletapi/wallet_transfer.go`):
 
-```go
-// Pseudocode from walletapi/wallet_transfer.go
-
-func CreateTransaction(recipient, amount) {
-    // 1. Check balance (encrypted)
-    balance := wallet.GetEncryptedBalance()
-    
-    // 2. Select ring members
-    ring := daemon.GetRandomAddresses(ring_size)
-    
-    // 3. Create transfer commitment
-    commitment := EncryptAmount(amount, recipient_pubkey)
-    
-    // 4. Proceed to proof generation
-}
-```
-
-**Source:** `walletapi/wallet_transfer.go:62` - Transaction creation
+1. **Check balance** -- Retrieve the sender's current encrypted balance from the daemon
+2. **Select ring members** -- Request random addresses from the daemon to form the ring (decoys)
+3. **Create transfer commitment** -- Encrypt the transfer amount using the recipient's public key
+4. **Proceed to proof generation** -- Build the cryptographic proofs for the transaction
 
 ### Step 1.2: Generate Proofs
 
@@ -92,7 +77,7 @@ flowchart TD
     D --> E["Generate A_b (balance commitment)"]
     E --> F["Generate A_X (constraints)"]
     F --> G["Generate A_t (range proof)"]
-    G --> H["Generate A_u (unspent)"]
+    G --> H["Generate A_u (key image)"]
     
     H --> I["Compute Challenge Hash"]
     I --> J["Generate Responses (s_y, s_D, ...)"]
@@ -100,33 +85,15 @@ flowchart TD
     K --> L["Assemble Complete Transaction"]
 ```
 
-**From Source Code** (`cryptography/crypto/proof_generate.go`):
+**Source:** `cryptography/crypto/proof_generate.go`
 
-```go
-// Simplified proof generation flow
-func GenerateProof(witness *Witness) *Proof {
-    // 1. Create commitments for each proof component
-    A_y := generateAy(witness)
-    A_D := generateAD(witness)
-    A_b := generateAb(witness)
-    A_X := generateAX(witness)
-    A_t := generateAt(witness)  // Includes bit decomposition
-    A_u := generateAu(witness)
-    
-    // 2. Compute challenge hash (binds all proofs together)
-    c := HashToScalar(A_y, A_D, A_b, A_X, A_t, A_u, ...)
-    
-    // 3. Generate responses using challenge
-    s_y := computeResponse(k_y, c, x_y)
-    s_D := computeResponse(k_D, c, x_D)
-    // ... other responses
-    
-    // 4. Generate inner product proof
-    innerProof := generateInnerProduct(aL, aR, ...)
-    
-    return &Proof{A_y, A_D, A_b, A_X, A_t, A_u, s_y, s_D, ..., innerProof}
-}
-```
+The proof generation function builds all components in sequence:
+
+1. **Create commitments** for each sigma proof component (A_y, A_D, A_b, A_X, A_t, A_u)
+2. **Bit decomposition** occurs during A_t construction (lines 468-487) -- this is where negative amounts are caught
+3. **Compute challenge hash** binding all six components together via `reducedhash()`
+4. **Generate responses** (s_y, s_D, etc.) using the challenge `c` and secret values
+5. **Generate inner product proof** for the bulletproof range verification
 
 ### Step 1.3: Bit Decomposition (Critical Security Point)
 
@@ -151,46 +118,22 @@ flowchart TD
     end
 ```
 
-**From Source Code** (`p2p/connection.go`):
+**From Source Code** (`p2p/controller.go`):
 
 ```go
-// All connections use TLS
-func (c *Connection) Connect() error {
-    tlsConfig := &tls.Config{
-        // TLS 1.3 minimum
-        MinVersion: tls.VersionTLS13,
-    }
-    conn, err := tls.Dial("tcp", address, tlsConfig)
-    // ...
-}
+// Outgoing connections use TLS
+conntls := tls.Client(conn, &tls.Config{InsecureSkipVerify: true})
 ```
 
 ### Step 2.2: Basic Format Check
 
 **Before full verification, nodes do quick sanity checks:**
 
-```go
-// Pseudocode from blockchain/transaction_verify.go
+- Transaction size is within acceptable limits
+- Required proof fields are present and properly formatted
+- Basic structural validity (correct number of payloads, ring sizes within `MIN_RINGSIZE`/`MAX_RINGSIZE` from `config/config.go`)
 
-func BasicCheck(tx *Transaction) error {
-    // 1. Check transaction size limits
-    if tx.Size() > MAX_TX_SIZE {
-        return errors.New("transaction too large")
-    }
-    
-    // 2. Check required fields present
-    if tx.Proofs == nil {
-        return errors.New("missing proofs")
-    }
-    
-    // 3. Check signature format
-    if !ValidSignatureFormat(tx.Signature) {
-        return errors.New("invalid signature format")
-    }
-    
-    return nil
-}
-```
+If format checks fail, the transaction is rejected immediately without proceeding to expensive cryptographic verification.
 
 ---
 
@@ -259,14 +202,17 @@ if anonsupport.w.Cmp(proof.f.vector[0]) == 0 || anonsupport.w.Cmp(proof.f.vector
 
 ### Checkpoint 3: B^w × A Recovery
 
-**Location:** `proof_verify.go:177-179`
+**Location:** `proof_verify.go:162-179`
 
 ```go
-// Verify we can recover B^w * A from the proof components
+// proof_verify.go:161-179 (actual source)
+// check whether we successfuly recover B^w * A
 stored := new(bn256.G1).Add(new(bn256.G1).ScalarMult(proof.B, anonsupport.w), proof.A)
 computed := new(bn256.G1).Add(anonsupport.temp, new(bn256.G1).ScalarMult(gparams.H, proof.z_A))
 
-if stored.String() != computed.String() {
+// ... debug logging (lines 165-175) ...
+
+if stored.String() != computed.String() {  // line 177
     Logger.V(1).Info("Recover key failed B^w * A")
     return false
 }
@@ -319,112 +265,71 @@ if !proof.ip.Verify(hPrimes, u_x, P, o, gparams) {
 
 ### Step 3.1: Recompute Challenge Hash
 
-**The verifier recomputes the challenge from the submitted proofs:**
+**The verifier recomputes the challenge from the submitted proofs.**
+
+From `proof_verify.go:410-425`, the verifier builds an input byte array from all six recovered sigma components (A_y, A_D, A_b, A_X, A_t, A_u), then runs `reducedhash()` over them. The result must match the `proof.c` value submitted with the transaction:
 
 ```go
-// From proof_verify.go
+// proof_verify.go:410-425 (actual source)
+var input []byte
+input = append(input, ConvertBigIntToByte(x)...)
+input = append(input, sigmasupport.A_y.Marshal()...)
+input = append(input, sigmasupport.A_D.Marshal()...)
+input = append(input, sigmasupport.A_b.Marshal()...)
+input = append(input, sigmasupport.A_X.Marshal()...)
+input = append(input, sigmasupport.A_t.Marshal()...)
+input = append(input, sigmasupport.A_u.Marshal()...)
 
-func Verify(proof *Proof) bool {
-    // 1. Extract all proof components
-    A_y := proof.A_y
-    A_D := proof.A_D
-    A_b := proof.A_b
-    A_X := proof.A_X
-    A_t := proof.A_t
-    A_u := proof.A_u
-    
-    // 2. Recompute challenge hash
-    c := HashToScalar(A_y, A_D, A_b, A_X, A_t, A_u, ...)
-    
-    // This 'c' must match what the prover used
-    // If any proof component was changed, c will be different
-    // And all verifications will fail
+if reducedhash(input).Text(16) != proof.c.Text(16) {
+    Logger.V(1).Info("C calculation failed")
+    return false
 }
 ```
 
+If any proof component was tampered with, the recomputed hash won't match `proof.c`, and verification fails.
+
 ### Step 3.2: Verify Each Proof
 
-<Tabs items={['A_y Verification', 'A_D Verification', 'A_t Verification', 'Inner Product']}>
+<Tabs items={['A_y: Secret Key', 'A_D: Balance Update', 'A_t: Range Proof', 'Inner Product']}>
   <Tabs.Tab>
     **A_y: Secret Key Proof**
     
-    ```go
-    func VerifyAy(A_y, s_y, c, PublicKey) bool {
-        // Schnorr verification
-        // Check: s_y × G = A_y + c × PublicKey
-        
-        left := ScalarMult(G, s_y)
-        right := PointAdd(A_y, ScalarMult(PublicKey, c))
-        
-        return left.Equals(right)
-    }
-    ```
+    Uses Schnorr-style verification: checks that the response `s_y` is consistent with the commitment `A_y`, the challenge `c`, and the sender's public key. This proves the sender possesses the private key without revealing it.
     
-    **What it proves:** Sender has the private key
+    **What it proves:** Sender owns the funds
   </Tabs.Tab>
   
   <Tabs.Tab>
     **A_D: Balance Update Proof**
     
-    ```go
-    func VerifyAD(A_D, s_D, c, OldBalance, NewBalance) bool {
-        // Verify encrypted balance update is correct
-        // E(old) - E(amount) = E(new)
-        
-        // Uses homomorphic properties
-        return ValidateBalanceUpdate(A_D, s_D, c, OldBalance, NewBalance)
-    }
-    ```
+    Verifies that the encrypted balance update is mathematically correct using homomorphic properties: `E(old_balance) - E(amount) = E(new_balance)`. The verification checks this relationship holds without decrypting any values.
     
-    **What it proves:** Math is correct (old - amount = new)
+    **What it proves:** Balance math is correct (old - amount = new)
   </Tabs.Tab>
   
   <Tabs.Tab>
     **A_t: Range Proof**
     
-    ```go
-    func VerifyAt(A_t, proof, c) bool {
-        // Bulletproof range proof verification
-        // Check: combined 128-bit value is valid (transfer + balance)
-        
-        // 1. Verify bit commitments
-        if !ValidateBitCommitments(proof.BitCommits) {
-            return false
-        }
-        
-        // 2. Verify range bounds
-        if !ValidateRange(proof, 0, MAX_UINT64) {
-            return false
-        }
-        
-        return true
-    }
-    ```
+    The bulletproof range proof component. Validates that the combined 128-bit value (transfer amount in lower 64 bits + remaining balance in upper 64 bits) is within valid range. This is where bit decomposition, bit commitments, and range bounds are all verified.
     
     **What it proves:** Amount is valid (not negative, not overflow)
+    
+    **[Full technical details →](/integrity/range-proof-integrity)**
   </Tabs.Tab>
   
   <Tabs.Tab>
     **Inner Product Proof**
     
+    The final cryptographic check. From `proof_verify.go:457-459`:
+    
     ```go
-    func VerifyInnerProduct(proof *InnerProof) bool {
-        // Recursive verification
-        for i := 0; i < log2(128); i++ {
-            L := proof.L[i]
-            R := proof.R[i]
-            x := proof.Challenges[i]
-            
-            // Verify this round
-            if !VerifyRound(L, R, x) {
-                return false
-            }
-        }
-        
-        // Final check
-        return proof.FinalA * proof.FinalB == proof.InnerProduct
+    if !proof.ip.Verify(hPrimes, u_x, P, o, gparams) {
+        Logger.V(1).Info("inner proof failed")
+        return false
     }
     ```
+    
+    This recursively verifies that the bit vectors, commitments, and all proof components are cryptographically consistent. Uses 7 rounds of halving (from `proof_innerproduct.go:71: length := 7`) to verify 128 bits.
     
     **What it proves:** All components are cryptographically consistent
   </Tabs.Tab>
@@ -459,32 +364,12 @@ flowchart TD
 
 ### Step 4.1: Mempool Addition
 
-```go
-// Pseudocode from blockchain/mempool.go
+Before a transaction enters the mempool, the node:
 
-func AddToMempool(tx *Transaction) error {
-    // 1. Verify transaction (full verification)
-    if !VerifyTransaction(tx) {
-        return errors.New("invalid transaction")
-    }
-    
-    // 2. Check not already in mempool
-    if mempool.Contains(tx.Hash) {
-        return errors.New("duplicate transaction")
-    }
-    
-    // 3. Check not already spent (double-spend prevention)
-    for _, input := range tx.Inputs {
-        if spent.Contains(input) {
-            return errors.New("input already spent")
-        }
-    }
-    
-    // 4. Add to mempool
-    mempool.Add(tx)
-    return nil
-}
-```
+1. **Full verification** -- Runs the complete `Verify()` function from `proof_verify.go` (all checkpoints must pass)
+2. **Duplicate check** -- Ensures the transaction isn't already in the mempool
+3. **State check** -- Confirms the transaction is valid against current chain state
+4. **Add to mempool** -- Transaction is queued for inclusion in a future block
 
 ### Step 4.2: Block Inclusion
 
@@ -506,28 +391,10 @@ sequenceDiagram
 
 ### Step 4.3: State Update
 
-```go
-// From blockchain/transaction_execute.go
+Once a transaction is included in a block, the state is updated (see `blockchain/transaction_execute.go`):
 
-func ExecuteTransaction(tx *Transaction) error {
-    // 1. Update sender's encrypted balance
-    sender_balance := GetEncryptedBalance(tx.Sender)
-    new_sender_balance := HomomorphicSubtract(sender_balance, tx.Amount)
-    SetEncryptedBalance(tx.Sender, new_sender_balance)
-    
-    // 2. Update receiver's encrypted balance
-    receiver_balance := GetEncryptedBalance(tx.Receiver)
-    new_receiver_balance := HomomorphicAdd(receiver_balance, tx.Amount)
-    SetEncryptedBalance(tx.Receiver, new_receiver_balance)
-    
-    // 3. Mark outputs as spent
-    MarkSpent(tx.Inputs)
-    
-    return nil
-}
-```
-
-**Source:** `blockchain/transaction_execute.go:239` - Transaction execution
+1. **Update encrypted balances** -- For each ring member, the encrypted balance is updated using `ElGamal.Add()` from `cryptography/crypto/algebra_elgamal.go:69`. All ring members' encrypted balances change (see [Ring Member Behavior](/integrity/ring-member-behavior)), but only the real sender/receiver's decrypted balance changes.
+2. **Record the transaction** -- The transaction is committed to the chain state via Graviton (DERO's key-value store).
 
 ---
 
@@ -537,23 +404,21 @@ func ExecuteTransaction(tx *Transaction) error {
 |-------|---------------|------------------|
 | **Creation** | Bit decomposition | Negative amounts |
 | **Broadcast** | TLS encryption | Network snooping |
-| **Verification** | All proofs | Forgery, double-spend |
+| **Verification** | All proofs | Forgery, transaction replay |
 | **Acceptance** | Consensus | Byzantine actors |
 
 ---
 
-## Timing Breakdown
+## Verification Order
 
-**Typical verification times:**
+| Step | What Happens |
+|------|-------------|
+| **Format check** | Basic structural validation (field counts, size limits, parity) |
+| **Proof verification** | All six sigma proofs recovered and challenge hash recomputed |
+| **Inner product** | Recursive 7-round inner product proof verified (bulletproof sub-component of A_t) |
+| **Consensus** | Transaction included in next block (~18s block time from `config/config.go:34`) |
 
-| Step | Time | Notes |
-|------|------|-------|
-| **Format check** | < 1ms | Basic validation |
-| **Proof verification** | ~10ms | All 6 sigma proofs |
-| **Inner product** | ~5ms | Recursive verification |
-| **Consensus** | ~18s | Block time |
-
-**Total verification per transaction:** ~15-20ms
+> **Note:** No official benchmarks exist for per-step verification times. The codebase does not include benchmark tests. Actual performance depends on hardware and ring size.
 
 ---
 
@@ -565,10 +430,9 @@ func ExecuteTransaction(tx *Transaction) error {
 Transaction Accepted ⟺ ALL of:
   ✓ Wallet could generate valid proofs
   ✓ TLS encrypted during transit
-  ✓ All 6 sigma proofs valid
-  ✓ Range proof valid
-  ✓ Inner product valid
-  ✓ No double-spending
+  ✓ All 6 sigma proofs valid (A_y, A_D, A_b, A_X, A_t, A_u)
+  ✓ Inner product proof valid (bulletproof sub-component of A_t)
+  ✓ Nonce/height valid (replay prevention)
   ✓ Consensus acceptance
 ```
 

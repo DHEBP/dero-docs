@@ -3,7 +3,7 @@ title: "Network Consensus Validation: Distributed Security | DERO Blockchain"
 description: "How DERO's distributed network validates transactions through consensus - every node verifies independently, creating Byzantine fault tolerance and eliminating single points of failure."
 keywords: ["network consensus", "distributed validation", "DERO consensus", "Byzantine fault tolerance", "node validation", "blockchain consensus", "transaction finality"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "network-consensus-validation"
 canonicalUrl: "https://derod.org/integrity/network-consensus-validation"
@@ -84,40 +84,17 @@ sequenceDiagram
 
 ### Phase 2: Full Verification
 
-**Each node performs complete verification:**
+**Each node performs complete verification.**
 
-```go
-// From blockchain/transaction_verify.go (simplified)
+The core verification logic lives in `cryptography/crypto/proof_verify.go` in the `Verify()` function. Each node independently runs through the same sequence:
 
-func FullVerification(tx *Transaction) error {
-    // 1. Verify all six sigma proofs
-    if !VerifySigmaProofs(tx) {
-        return errors.New("sigma proof verification failed")
-    }
-    
-    // 2. Verify range proof (A_t)
-    if !VerifyRangeProof(tx) {
-        return errors.New("range proof verification failed")
-    }
-    
-    // 3. Verify inner product proof
-    if !VerifyInnerProduct(tx) {
-        return errors.New("inner product verification failed")
-    }
-    
-    // 4. Check double-spend
-    if IsDoubleSpend(tx) {
-        return errors.New("double spend detected")
-    }
-    
-    // 5. Verify transaction structure
-    if !ValidStructure(tx) {
-        return errors.New("invalid transaction structure")
-    }
-    
-    return nil
-}
-```
+1. **Overflow check** -- Reject if `fees + extra_value` overflows (`proof_verify.go:108-110`)
+2. **Parity check** -- Verify the secret parity is well-formed (`proof_verify.go:136-141`)
+3. **Polynomial recovery** -- Verify B^w × A recovery (`proof_verify.go:177-179`)
+4. **Challenge hash** -- Recompute and compare challenge `c` from all six sigma proof components (`proof_verify.go:410-425`)
+5. **Inner product** -- Final cryptographic consistency check (`proof_verify.go:457-459`)
+
+If any step fails, `Verify()` returns `false` and the transaction is rejected.
 
 ### Phase 3: Propagation
 
@@ -175,11 +152,10 @@ sequenceDiagram
 
 | Check | What It Validates | Failure Means |
 |-------|------------------|---------------|
-| **Sigma proofs** | All 6 proofs valid | Forged transaction |
-| **Range proof** | Combined 128-bit value with 64-bit bounds | Invalid amount |
-| **Inner product** | Cryptographic consistency | Proof manipulation |
-| **Double-spend** | Output not already spent | Replay attack |
-| **Structure** | Valid format, sizes | Malformed TX |
+| **6 sigma proofs** | A_y, A_D, A_b, A_X, A_t, A_u all valid (A_t includes range proof) | Forged transaction |
+| **Inner product** | Bulletproof verification (sub-component of A_t range proof) | Invalid amount / proof manipulation |
+| **Structure** | Valid format, sizes, parity | Malformed TX |
+| **Overflow** | Fee arithmetic doesn't overflow `uint64` | Arithmetic attack |
 | **Fee** | Sufficient fee included | Underpaid TX |
 
 ### Block-Level Checks
@@ -247,16 +223,14 @@ If TX is invalid:
 
 ### Single Transaction
 
-```
-Time 0ms:     Transaction submitted to node
-Time 1ms:     Basic format check (pass)
-Time 5-15ms:  Full proof verification
-Time 15ms:    Added to mempool (if valid)
-Time 15-30ms: Propagated to peers
-Time 30ms+:   Peers verify and propagate
+When a transaction is submitted, it passes through these stages in order:
 
-Total: ~50ms to reach most of network
-```
+1. **Basic format check** -- Structural validation (field counts, size limits, parity)
+2. **Full proof verification** -- All sigma proofs and inner product proof verified mathematically
+3. **Mempool admission** -- If valid, added to the node's mempool
+4. **Peer propagation** -- Forwarded to connected peers, who independently verify
+
+> **Note:** No official benchmarks exist for per-step verification times. Actual performance depends on hardware, network conditions, and ring size. The codebase does not include benchmark tests for proof verification.
 
 ### Block Confirmation
 
@@ -311,27 +285,23 @@ graph TD
 **All node communication is encrypted:**
 
 ```go
-// From p2p/connection.go
+// From p2p/controller.go
 
-func Connect(peer string) (*Connection, error) {
-    tlsConfig := &tls.Config{
-        MinVersion: tls.VersionTLS13,
-        // ...
-    }
-    
-    conn, err := tls.Dial("tcp", peer, tlsConfig)
-    if err != nil {
-        return nil, err
-    }
-    
-    return &Connection{conn: conn}, nil
-}
+// Outgoing connections wrap in TLS
+conntls := tls.Client(conn, &tls.Config{InsecureSkipVerify: true})
+
+// Server generates random TLS certificate
+tlsconfig := &tls.Config{Certificates: []tls.Certificate{generate_random_tls_cert()}}
 ```
 
 **Benefits:**
 - Prevents eavesdropping on transaction data
-- Protects against man-in-the-middle attacks
-- Ensures peer authenticity
+- Encrypts all peer-to-peer traffic
+
+**Honest limitations:**
+- Uses `InsecureSkipVerify: true` -- peers are not authenticated via certificate validation
+- TLS provides transport encryption, not peer identity verification
+- Peer identity is established through the DERO handshake protocol, not TLS certificates
 
 ---
 
@@ -339,39 +309,39 @@ func Connect(peer string) (*Connection, error) {
 
 ### When is a Transaction "Final"?
 
-<Tabs items={['Probabilistic', 'Practical']}>
+<Tabs items={['How It Works', 'What We Can Say']}>
   <Tabs.Tab>
     **Probabilistic Finality:**
     
-    ```
-    Each confirmation reduces reversal probability:
+    Like all Proof-of-Work chains, DERO has probabilistic finality -- each additional block confirmation makes reversal exponentially harder. The general principle:
     
-    1 confirmation:  ~1% reversal chance
-    2 confirmations: ~0.1% reversal chance
-    3 confirmations: ~0.01% reversal chance
-    6 confirmations: ~0.0001% reversal chance
+    - **1 confirmation** -- Transaction is in a block, but a competing chain could still overtake
+    - **More confirmations** -- Each subsequent block multiplies the computational cost of a reversal
+    - **Deep confirmations** -- Reversal becomes economically and computationally impractical
     
-    After 6+ confirmations:
-      Reversal is computationally infeasible
-      Would require >50% network hashrate
-    ```
+    The exact reversal probability for any given confirmation depth depends on the attacker's share of total network hashrate. No fixed percentages can be stated without knowing the current hashrate distribution.
+    
+    > **Note:** DERO uses AstroBWT proof-of-work and an 18-second block time (`config/config.go:34`). Specific finality guarantees depend on the live network's hashrate, which varies over time.
   </Tabs.Tab>
   
   <Tabs.Tab>
-    **Practical Finality:**
+    **What the source code defines:**
     
     ```
-    For most use cases:
-    
-    Small amounts (<$100):  1-2 confirmations (~30-36s)
-    Medium amounts:         3-4 confirmations (~1 min)
-    Large amounts:          6+ confirmations (~2 min)
-    Exchanges:              10-20 confirmations (~3-6 min)
-    
-    After 6 confirmations:
-      Consider transaction final
-      Reversal would be front-page news
+    Block time: 18 seconds (config/config.go:34)
     ```
+    
+    **Confirmation timing** (simple arithmetic):
+    
+    | Confirmations | Time |
+    |--------------|------|
+    | 1 | ~18s |
+    | 3 | ~54s |
+    | 6 | ~108s (~2 min) |
+    | 10 | ~180s (~3 min) |
+    | 20 | ~360s (~6 min) |
+    
+    How many confirmations to wait is a risk decision for the application or service -- it depends on the transaction value and the current network hashrate, neither of which are protocol constants.
   </Tabs.Tab>
 </Tabs>
 
@@ -410,7 +380,7 @@ graph LR
 | Guarantee | How It's Achieved |
 |-----------|------------------|
 | **No fake transactions** | Cryptographic proof verification |
-| **No double-spending** | Spent output tracking |
+| **No transaction replay** | Nonce/height tracking and key image binding to tree state |
 | **No censorship** | Decentralized mining |
 | **Eventual finality** | Longest chain rule |
 | **Consistent state** | Deterministic verification |

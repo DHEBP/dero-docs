@@ -3,7 +3,7 @@ title: "Balance Mechanics: Encrypted State Management | DERO Blockchain"
 description: "Technical deep dive into how DERO manages encrypted balances - the 66-byte structure, homomorphic operations, zero initialization, and what balance changes mean."
 keywords: ["encrypted balance", "DERO balance", "homomorphic encryption", "ElGamal", "balance mechanics", "encrypted state", "blockchain state"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "balance-mechanics"
 canonicalUrl: "https://derod.org/integrity/balance-mechanics"
@@ -38,15 +38,21 @@ Every DERO balance is stored as 66 bytes of encrypted data:
 
 ```go
 type ElGamal struct {
-    Left  *bn256.G1  // L = amount×G + r×P (33 bytes compressed)
-    Right *bn256.G1  // R = r×G (33 bytes compressed)
+    G          *bn256.G1   // Generator point
+    Randomness *big.Int    // Blinding factor (used during construction)
+    Left       *bn256.G1   // L = amount×G + r×P (33 bytes compressed)
+    Right      *bn256.G1   // R = r×G (33 bytes compressed)
 }
 
-func (e *ElGamal) Serialize() []byte {
-    // Returns 66 bytes total
-    return append(e.Left.EncodeCompressed(), e.Right.EncodeCompressed()...)
+// Only Left and Right are serialized (66 bytes)
+func (e *ElGamal) Serialize() (data []byte) {
+    data = append(data, e.Left.EncodeCompressed()...)
+    data = append(data, e.Right.EncodeCompressed()...)
+    return data
 }
 ```
+
+> **Note:** The full struct includes `G` (generator) and `Randomness` (blinding factor) fields used during construction, but only `Left` and `Right` are serialized to the 66-byte on-chain representation.
 
 ### What Each Component Represents
 
@@ -59,7 +65,7 @@ func (e *ElGamal) Serialize() []byte {
 - `amount` = The actual balance (hidden)
 - `G` = Generator point (public constant)
 - `r` = Random blinding factor (secret)
-- `P` = Recipient's public key
+- `P` = Account's public key
 
 ---
 
@@ -86,12 +92,11 @@ if globals.IsMainnet() && height < 144000 {
 | **≥ 144,000** | 0 DERO | Standard registration |
 
 **For context:**
-- Block 144,000 ≈ 30 days after mainnet launch
-- Current block height: 6,000,000+
-- 99.9%+ of addresses have zero initial balance
+- 144,000 blocks = 30 days of 18-second blocks (`86400 / 18 × 30`)
+- This bonus period ended long ago; the vast majority of addresses have zero initial balance
 
 <Callout type="warning" emoji="📅">
-**Timeline:** The 200-unit bonus only applied to addresses registered in the first month of mainnet. Any address registered after block 144,000 (October 2020+) starts with exactly zero DERO.
+**Timeline:** The 200-unit bonus only applied to addresses registered in the first ~30 days of mainnet (before block 144,000). Any address registered after that starts with exactly zero DERO.
 </Callout>
 
 ---
@@ -214,21 +219,13 @@ changed_balance_e := previous_balance_e_tx.Add(changes)
   <Tabs.Tab>
     **Decrypt Balance (Requires Private Key)**
     
-    ```go
-    // Only wallet with private key can decrypt
-    func (w *Wallet) DecryptBalance(encrypted []byte) uint64 {
-        elgamal := crypto.DeserializeElGamal(encrypted)
-        
-        // L - x*R = amount*G
-        // Use baby-step giant-step to solve DLP
-        amount := w.DecryptAmount(elgamal)
-        
-        return amount
-    }
-    ```
+    **Decryption process:**
+    1. Deserialize the 66-byte encrypted balance into an ElGamal pair (Left, Right)
+    2. Compute `Left - privateKey × Right` which yields `amount × G`
+    3. Solve the discrete log (baby-step giant-step) to recover the integer amount
     
     **What you see:** Actual balance (e.g., 500 DERO)
-    **Who can do this:** Only the address owner
+    **Who can do this:** Only the address owner (requires private key for step 2)
   </Tabs.Tab>
 </Tabs>
 
@@ -278,22 +275,9 @@ The total is unchanged (minus fee to miner)
 
 ### Network Verification
 
-**The network verifies conservation without seeing amounts:**
+**The network verifies conservation without seeing amounts.**
 
-```go
-// Simplified from blockchain/transaction_execute.go
-
-func VerifyConservation(tx *Transaction) bool {
-    // Sum of encrypted inputs
-    inputSum := SumEncrypted(tx.Inputs)
-    
-    // Sum of encrypted outputs
-    outputSum := SumEncrypted(tx.Outputs)
-    
-    // Must be equal (homomorphic check)
-    return inputSum.Equals(outputSum)
-}
-```
+Because ElGamal is additively homomorphic, the network can confirm that the sum of encrypted inputs equals the sum of encrypted outputs -- without decrypting any of them. If the encrypted totals don't match, the transaction is rejected. The actual balance updates happen in `blockchain/transaction_execute.go` using the `ElGamal.Add()` operation from `cryptography/crypto/algebra_elgamal.go:69`.
 
 ---
 
@@ -324,7 +308,7 @@ func VerifyConservation(tx *Transaction) bool {
 ### The Encryption Guarantee
 
 <Callout type="success" emoji="🔒">
-**Always Encrypted:** From creation to storage to operations, DERO balances are always encrypted. The network processes billions in value without ever seeing a single plaintext balance.
+**Always Encrypted:** From creation to storage to operations, DERO balances are always encrypted. The network processes all value transfers without ever seeing a single plaintext balance.
 </Callout>
 
 ### Balance Change Interpretation

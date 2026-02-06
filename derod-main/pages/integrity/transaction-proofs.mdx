@@ -3,7 +3,7 @@ title: "Transaction Proofs: DERO's Six Sigma Proof System | DERO Blockchain"
 description: "Technical deep dive into DERO's six interconnected transaction proofs - how they work together to guarantee transaction integrity through cryptographic binding."
 keywords: ["transaction proofs", "sigma proofs", "DERO proofs", "cryptographic proofs", "proof verification", "A_y proof", "A_D proof", "challenge hash"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "transaction-proofs"
 canonicalUrl: "https://derod.org/integrity/transaction-proofs"
@@ -27,7 +27,7 @@ DERO needs to verify:
   ✓ Sender owns the funds (has private key)
   ✓ Balance update is mathematically correct
   ✓ Amount is valid (not negative, not impossible)
-  ✓ No double-spending occurred
+  ✓ Transaction is bound to sender's secret key (key image)
   ✓ All protocol constraints satisfied
   
 But WITHOUT revealing:
@@ -54,7 +54,7 @@ flowchart TD
         A_b["A_b<br/>Balance Commitment"]
         A_X["A_X<br/>Constraints"]
         A_t["A_t<br/>Range Proof"]
-        A_u["A_u<br/>Unspent"]
+        A_u["A_u<br/>Key Image"]
     end
     
     A_y --> H["Challenge Hash (c)<br/>= hash(A_y || A_D || A_b || A_X || A_t || A_u || ...)"]
@@ -78,7 +78,7 @@ flowchart TD
 | **A_b** | Balance commitment is valid | Binding and hiding properties |
 | **A_X** | Additional protocol constraints | Protocol-specific rules |
 | **A_t** | Combined 128-bit value with 64-bit bounds | Prevents negative/overflow |
-| **A_u** | Output is unspent | Prevents double-spending |
+| **A_u** | Key image (linking tag) is correctly derived | Binds transaction to sender's secret key |
 
 ---
 
@@ -86,22 +86,24 @@ flowchart TD
 
 ### The Challenge Hash
 
-**From Source Code** (`cryptography/crypto/proof_generate.go`):
+**From Source Code** (`cryptography/crypto/proof_verify.go:410-425`):
 
 ```go
-// All proofs contribute to the challenge hash
-statement_hash := crypto.HashToScalar(
-    A_y,        // Secret key proof
-    A_D,        // Balance update proof  
-    A_b,        // Balance commitment
-    A_X,        // Constraint proof
-    A_t,        // Range proof
-    A_u,        // Unspent proof
-    // ... additional components
-)
+// All six sigma proof components contribute to the challenge hash
+var input []byte
+input = append(input, ConvertBigIntToByte(x)...)
+input = append(input, sigmasupport.A_y.Marshal()...)
+input = append(input, sigmasupport.A_D.Marshal()...)
+input = append(input, sigmasupport.A_b.Marshal()...)
+input = append(input, sigmasupport.A_X.Marshal()...)
+input = append(input, sigmasupport.A_t.Marshal()...)
+input = append(input, sigmasupport.A_u.Marshal()...)
 
-// Challenge 'c' is derived from this hash
-c := statement_hash
+// Challenge 'c' must match - if any component was tampered, this fails
+if reducedhash(input).Text(16) != proof.c.Text(16) {
+    Logger.V(1).Info("C calculation failed")
+    return false
+}
 ```
 
 **The Binding Effect:**
@@ -250,19 +252,25 @@ Properties:
 
 **Source:** `cryptography/crypto/proof_generate.go:473-487`
 
-### A_u: Unspent Proof
+### A_u: Key Image Proof
 
-**Purpose:** Proves the output hasn't been spent before (prevents double-spending).
+**Purpose:** Proves the transaction's linking tag (`proof.u`) was correctly derived from the sender's secret key.
 
-**Mechanism:**
+**From Source Code** (`cryptography/crypto/proof_generate.go:1123-1136`):
+
+```go
+A_u := new(bn256.G1)
+// ... build input from transaction-specific data ...
+point := HashToPoint(HashtoNumber(input))
+A_u = new(bn256.G1).ScalarMult(point, k_sk)
 ```
-Each output has unique identifier
-Proof shows: identifier not in spent set
-Network tracks: all spent identifiers
-Result: Cannot spend same output twice
-```
 
-**Source:** `cryptography/crypto/proof_generate.go` - A_u generation
+**What this does:**
+- Computes a key image by scalar-multiplying a transaction-derived curve point by the secret key nonce
+- The verifier recovers A_u from `proof.s_sk` and `proof.u` (`proof_verify.go:399-400`)
+- Binds the proof to a specific (hidden) ring member without revealing which one
+
+> **Note on naming:** DERO uses an account model, not UTXO. There are no "outputs" to mark as spent. The A_u proof serves as a key image / linking tag that cryptographically ties the transaction to the sender's secret key within the ring signature framework.
 
 ---
 
@@ -294,28 +302,17 @@ sequenceDiagram
     end
 ```
 
-**From Source Code** (`cryptography/crypto/proof_verify.go`):
+**Verification flow** (see `cryptography/crypto/proof_verify.go`):
 
-```go
-// Verification pseudocode
-func VerifyTransaction(tx *Transaction) bool {
-    // 1. Recompute challenge hash from proofs
-    c := HashToScalar(tx.A_y, tx.A_D, tx.A_b, tx.A_X, tx.A_t, tx.A_u, ...)
-    
-    // 2. Verify each proof against the challenge
-    if !VerifyAy(tx.A_y, tx.s_y, c) { return false }
-    if !VerifyAD(tx.A_D, tx.s_D, c) { return false }
-    if !VerifyAb(tx.A_b, tx.s_b, c) { return false }
-    if !VerifyAX(tx.A_X, tx.s_X, c) { return false }
-    if !VerifyAt(tx.A_t, tx.s_t, c) { return false }
-    if !VerifyAu(tx.A_u, tx.s_u, c) { return false }
-    
-    // 3. Verify inner product proof
-    if !VerifyInnerProduct(tx.InnerProof) { return false }
-    
-    return true
-}
-```
+The `Verify()` function performs all checks in sequence. The key checkpoints are:
+
+1. **Overflow check** (`line 108-110`) -- Reject if fees overflow
+2. **Parity check** (`line 136-141`) -- Verify the secret parity is well-formed
+3. **B^w × A recovery** (`line 177-179`) -- Verify polynomial commitment structure
+4. **Challenge hash** (`line 410-425`) -- Recompute `c` from all six sigma components and compare to `proof.c`
+5. **Inner product** (`line 457-459`) -- `proof.ip.Verify(hPrimes, u_x, P, o, gparams)`
+
+If any checkpoint returns `false`, the entire transaction is rejected. See [Proof Verification Flow](/integrity/proof-verification-flow) for the full walkthrough.
 
 ---
 
@@ -326,7 +323,7 @@ func VerifyTransaction(tx *Transaction) bool {
 | Attack | Why It Fails |
 |--------|-------------|
 | **Forge single proof** | Changes hash → all proofs invalid |
-| **Replay old transaction** | A_u proves unspent → fails if already spent |
+| **Replay old transaction** | A_u key image is bound to Roothash (tree state) → stale proof fails; nonce/height prevents reuse |
 | **Spend without key** | A_y requires private key → fails |
 | **Negative amount** | A_t range proof → fails |
 | **Incorrect balance** | A_D validates math → fails |
@@ -334,12 +331,14 @@ func VerifyTransaction(tx *Transaction) bool {
 ### Cryptographic Assumptions
 
 **Security relies on:**
-1. **Discrete Logarithm Problem (DLP)** - Same as Bitcoin
-2. **Random Oracle Model** - Hash functions behave randomly
-3. **Elliptic Curve Security** - 256-bit curve (bn256)
+1. **Elliptic Curve Discrete Logarithm Problem (ECDLP)** on the bn256 (Barreto-Naehrig) curve -- a pairing-friendly curve also used by Ethereum's precompiles and early Zcash
+2. **Random Oracle Model** -- Hash functions behave as random oracles
+3. **Decisional Diffie-Hellman (DDH)** -- Underpins the ElGamal encryption used for balance confidentiality
+
+**Note on curve choice:** DERO uses bn256, a pairing-friendly curve. Bitcoin uses secp256k1, a non-pairing curve. Both rely on ECDLP hardness, but they are different curves with different security profiles. bn256 enables the pairing operations needed for DERO's proof system; its parameters are chosen so that both the curve ECDLP and the finite field DLP (via pairing reduction) remain computationally infeasible.
 
 **Breaking DERO's proofs would require:**
-- Breaking the same math that secures Bitcoin
+- Solving ECDLP on bn256 (no known efficient algorithm exists for these parameters)
 - Or finding a flaw in the proof system itself (open source, auditable)
 
 ---
@@ -352,7 +351,7 @@ func VerifyTransaction(tx *Transaction) bool {
 |---------|---------|
 | **🔐 All-or-nothing security** | Cannot fake partial proofs |
 | **🔒 Zero-knowledge** | Reveals nothing about transaction |
-| **⚡ Efficient verification** | ~10ms to verify all proofs |
+| **⚡ Efficient verification** | Logarithmic proof size (7 rounds for 128-bit range) enables fast verification |
 | **📐 Mathematical guarantee** | Based on proven cryptography |
 
 ### The Circular Dependency

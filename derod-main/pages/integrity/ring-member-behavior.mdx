@@ -3,7 +3,7 @@ title: "Ring Member Behavior: Understanding Decoy Participation | DERO Blockchai
 description: "Technical explanation of why ring members' encrypted balances change even as decoys - this is normal behavior by design, not a protocol anomaly."
 keywords: ["ring member", "decoy", "ring signature", "balance change", "DERO privacy", "plausible deniability", "ring decoy"]
 date: "2025-01-20"
-lastUpdated: "2025-01-20"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "ring-member-behavior"
 canonicalUrl: "https://derod.org/integrity/ring-member-behavior"
@@ -255,18 +255,17 @@ Nobody else can prove it.
 
 ### Method 1: Decrypt Balance (Owner Only)
 
+The wallet performs this check automatically. From `walletapi/daemon_communication.go:900-903`:
+
 ```go
-// Only works with private key
-func AmITheSender(tx *Transaction) bool {
-    before := wallet.GetDecryptedBalance(tx.Block - 1)
-    after := wallet.GetDecryptedBalance(tx.Block)
-    
-    if before != after {
-        return true  // I was the sender
-    }
-    return false  // I was a decoy
-}
+switch {
+case previous_balance == changed_balance:
+    ring_member = true  // We were a decoy - balance unchanged after decryption
+case previous_balance > changed_balance:
+    // We were the sender - balance decreased
 ```
+
+The wallet decrypts the balance before and after the transaction using the owner's private key. If the decrypted balance is unchanged, you were a decoy. If it decreased, you were the sender.
 
 ### Method 2: Check Wallet History (Owner Only)
 

@@ -3,7 +3,7 @@ title: "Proof Types Explained: Transaction vs. Payload Proofs | DERO Blockchain"
 description: "Critical distinction between DERO's two proof systems - transaction proofs (consensus-level, secure) and payload proofs (display-level, by design unverifiable). Includes technical analysis of fake proof creation and explorer mitigation."
 keywords: ["transaction proofs", "payload proofs", "DERO proofs", "proof verification", "proof types", "wallet proofs", "consensus proofs", "fake proofs", "int64 wraparound", "explorer validation"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "payload-vs-transaction-proofs"
 canonicalUrl: "https://derod.org/integrity/payload-vs-transaction-proofs"
@@ -86,23 +86,9 @@ sequenceDiagram
 
 ### Security Guarantees
 
-**From Source Code** (`cryptography/crypto/proof_verify.go`):
+**Verification** (see `cryptography/crypto/proof_verify.go`):
 
-```go
-func VerifyTransaction(tx *Transaction) bool {
-    // Recompute challenge hash
-    c := HashToScalar(tx.A_y, tx.A_D, tx.A_b, tx.A_X, tx.A_t, tx.A_u, ...)
-    
-    // ALL proofs must pass
-    if !VerifyAy(tx.A_y, tx.s_y, c) { return false }
-    if !VerifyAD(tx.A_D, tx.s_D, c) { return false }
-    // ... verify all proofs
-    
-    if !VerifyInnerProduct(tx.InnerProof) { return false }
-    
-    return true
-}
-```
+The `Verify()` function recomputes the challenge hash `c` from all six recovered sigma components (A_y, A_D, A_b, A_X, A_t, A_u) at lines 410-425, then verifies the inner product proof at lines 457-459. If any component was tampered with, the recomputed hash won't match and `Verify()` returns `false`.
 
 **Why they can't be faked:**
 - All proofs are cryptographically bound
@@ -141,24 +127,9 @@ flowchart TD
 
 **What payload proof verification actually checks:**
 
-```go
-// From proof/proof.go (simplified)
+The verification in `proof/proof.go` performs a scalar multiplication to check math consistency: it takes the commitment `C[position]`, subtracts a shared key derived from the proof, and checks whether the result equals `amount × G`. If the math is consistent, the amount is displayed.
 
-func VerifyPayloadProof(proof string, tx *Transaction) (uint64, error) {
-    // 1. Decode the proof string
-    decoded := DecodeProof(proof)
-    
-    // 2. Check math consistency
-    // This checks: Does the claimed amount match the commitment math?
-    x := tx.C[position] - decoded.SharedKey
-    expected := ScalarMult(G, decoded.Amount)
-    
-    if x.Equals(expected) {
-        return decoded.Amount, nil  // Math checks out
-    }
-    return 0, errors.New("math doesn't match")
-}
-```
+The critical detail: this uses `ScalarMult(crypto.G, new(big.Int).SetInt64(int64(amount)))` at line 98 -- the `int64` cast is where the wraparound issue occurs (see [Technical Cause](#technical-cause-the-int64-cast-issue) below).
 
 **What this does NOT check:**
 - ❌ Whether the sender actually had that amount
@@ -203,7 +174,8 @@ Transaction: c4fbc0d541c40abf6f5c818f3a0f8430e3ebb5c3f0811d74a4318892be4a4632
 Fake proof created showing: 184,467,436,737,095 DERO (184 trillion)
 Official DERO explorer result: "✓ Proof Verified Successfully"
 
-Reality: Total DERO supply is only ~16 million
+Reality: DERO's emission model targets ~10.5 million total from mining
+  (source: transaction_execute.go:57 comment + CalcBlockReward halving schedule)
 Conclusion: Payload proofs can show impossible amounts
 ```
 
@@ -350,7 +322,7 @@ x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
     ✓ Transaction is valid
     ✓ Proofs are cryptographically correct
     ✓ Combined 128-bit value is valid (transfer + remaining balance)
-    ✓ No double-spending
+    ✓ No transaction replay (nonce/height + key image binding)
     ✓ Sender has private key
     
     Does NOT prove:
@@ -498,7 +470,7 @@ Don't confuse the two!
 The payload encryption issue involved **randomness reuse** between ElGamal ciphertexts and payload encryption keys. This allowed an attacker to perform trial decryption, potentially revealing sender, receiver, and amount for transactions made with vulnerable wallet software.
 
 **Key points:**
-- **Fixed in Release142** (August 2025) via `ENCRYPTED_DEFAULT_PAYLOAD_CBOR_V2`
+- **Fixed in Release142** via `ENCRYPTED_DEFAULT_PAYLOAD_CBOR_V2`
 - **Affected:** Wallet-layer privacy (sender/receiver/amount deanonymization)
 - **Not affected:** Consensus layer, ledger integrity, transaction validity
 - **Historical transactions** made before Release142 remain potentially affected

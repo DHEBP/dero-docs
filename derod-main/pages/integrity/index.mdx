@@ -3,7 +3,7 @@ title: "DERO Protocol Integrity: Complete Technical Guide | DERO Blockchain"
 description: "Deep dive into DERO's mathematical integrity guarantees including transaction proofs, range proofs, negative transfer protection, and network consensus validation."
 keywords: ["DERO integrity", "protocol integrity", "transaction proofs", "range proofs", "bulletproofs", "negative transfer protection", "blockchain integrity", "cryptographic proofs"]
 date: "2025-01-20"
-lastUpdated: "2025-01-26"
+lastUpdated: "2026-02-06"
 authors: ["DHEBP"]
 slug: "integrity"
 canonicalUrl: "https://derod.org/integrity"
@@ -26,7 +26,7 @@ import { Callout } from 'nextra/components'
 - Honest limitations (what we protect against, what we don't)
 
 <Callout type="success" emoji="🔒">
-**The Foundation:** Every DERO transaction requires multiple cryptographic proofs that must all pass. These proofs are mathematically verifiable and cannot be faked without breaking elliptic curve cryptography (same security assumption as Bitcoin).
+**The Foundation:** Every DERO transaction requires multiple cryptographic proofs that must all pass. These proofs are mathematically verifiable and cannot be faked without solving the elliptic curve discrete logarithm problem (ECDLP) on DERO's bn256 curve -- a well-studied hardness assumption used by multiple major blockchain systems.
 </Callout>
 
 ## Integrity Technologies Overview
@@ -42,25 +42,23 @@ import { Callout } from 'nextra/components'
 
 ---
 
-## The Eight Proof System
+## The Six Sigma Proof System
 
-Every DERO transaction requires **eight cryptographic components** that must all validate:
+Every DERO transaction requires **six sigma proof components** that must all validate. The inner product proof is a sub-component of A_t (the bulletproof range proof), not a separate proof:
 
 ```mermaid
 flowchart TD
     TX["Transaction"] --> SIG["Six Sigma Proofs"]
-    TX --> RANGE["Range Proof (Bulletproof)"]
-    TX --> INNER["Inner Product Proof"]
     
     SIG --> A_y["A_y: Secret Key Proof"]
     SIG --> A_D["A_D: Balance Update Proof"]
     SIG --> A_b["A_b: Balance Commitment"]
     SIG --> A_X["A_X: Constraint Proof"]
-    SIG --> A_t["A_t: Range Proof"]
-    SIG --> A_u["A_u: Unspent Proof"]
+    SIG --> A_t["A_t: Range Proof (Bulletproof)"]
+    SIG --> A_u["A_u: Key Image Proof"]
     
-    RANGE --> BIT["Bit Decomposition"]
-    BIT --> INNER
+    A_t --> BIT["Bit Decomposition"]
+    BIT --> INNER["Inner Product Proof"]
     
     A_y --> HASH["Challenge Hash (c)"]
     A_D --> HASH
@@ -94,7 +92,7 @@ A_D  → Proves balance update is correct
 A_b  → Proves balance commitment is valid
 A_X  → Proves additional protocol constraints
 A_t  → Proves amount is in valid range
-A_u  → Proves no double-spending
+A_u  → Proves key image (linking tag) is correctly derived from sender's secret key
 ```
 
 **[Explore Transaction Proofs →](/integrity/transaction-proofs)**
@@ -287,7 +285,7 @@ go run /tmp/verify_overflow.go
 | Threat | Protection | Basis |
 |--------|------------|-------|
 | **Negative transfers** | Bit decomposition + range proofs | Discrete log assumption + deterministic parsing |
-| **Double spending** | A_u proof + consensus | Discrete log assumption + consensus rules |
+| **Transaction replay** | A_u key image + nonce/height + consensus | Discrete log assumption + consensus rules |
 | **Invalid amounts** | 128-bit combined range proof | Discrete log assumption |
 | **Forged transactions** | A_y proof (private key) | Discrete log assumption |
 | **Balance manipulation** | Homomorphic commitments | Discrete log assumption |
@@ -302,7 +300,7 @@ go run /tmp/verify_overflow.go
 | **Metadata correlation** | Transaction patterns | Use multiple wallets |
 
 <Callout type="info" emoji="📐">
-**Mathematical Foundation:** DERO's security relies on the elliptic curve discrete logarithm problem on its chosen curve parameters. Breaking DERO's security would require a breakthrough on those assumptions.
+**Mathematical Foundation:** DERO's security relies on the hardness of the elliptic curve discrete logarithm problem (ECDLP) on the bn256 (Barreto-Naehrig) curve (`cryptography/bn256/`). This is a pairing-friendly curve -- the same curve family used by Ethereum's bn256 precompiles and early Zcash. Its parameters are chosen so that both the curve ECDLP and the related finite field DLP remain computationally infeasible.
 </Callout>
 
 ---
