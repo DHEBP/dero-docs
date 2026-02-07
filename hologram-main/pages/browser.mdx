@@ -42,7 +42,7 @@ flowchart TD
 
 ## Address Bar Navigation
 
-The address bar intelligently detects input type and routes accordingly:
+The Browser address bar uses the same **OmniSearch** engine as the Explorer, with intelligent type detection and cross-tab routing. Browsable content (dURLs, SCIDs, names) loads directly in the Browser. Explorer-type queries (block heights, addresses, search prefixes) automatically switch to the Explorer tab.
 
 ```mermaid
 flowchart LR
@@ -52,11 +52,15 @@ flowchart LR
     DETECT -->|"dero://"| DURL["dURL Resolution via Gnomon"]
     DETECT -->|"name@txid"| VER["Versioned Fetch"]
     DETECT -->|"text"| SEARCH["Name Search"]
+    DETECT -->|"number"| EXPLORER["→ Explorer Tab"]
+    DETECT -->|"dero1..."| EXPLORER
+    DETECT -->|"key: value: code: class: tag:"| EXPLORER
     
     SCID --> RENDER["Render App"]
     DURL --> RENDER
     VER --> RENDER
     SEARCH --> RENDER
+    EXPLORER --> RESULT["Explorer Search Results"]
 ```
 
 | Input Format | Example | Action |
@@ -65,6 +69,13 @@ flowchart LR
 | dero:// URL | `dero://myapp` | Resolve via Gnomon, then fetch |
 | Name lookup | `myapp` | Search indexed apps |
 | Versioned SCID | `abc123...@txid456...` | Fetch specific version (see below) |
+| Block height | `5000000` | Switch to Explorer |
+| Address | `dero1qy...` | Switch to Explorer |
+| Search prefix | `key:owner` | Switch to Explorer with results |
+
+<Callout type="info">
+  The address bar runs in compact mode — no search button or helper text. Just type and press Enter. A type badge appears as you type to show what OmniSearch detected (Block, SCID, dURL, etc.).
+</Callout>
 
 ### Versioned Navigation (scid@txid)
 

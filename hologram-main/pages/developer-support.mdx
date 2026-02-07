@@ -94,18 +94,12 @@ The address switching uses a **30-second sticky timeout**:
 ### Address State API
 
 ```go
-// Get current EPOCH reward address
-GetCurrentEPOCHAddress() -> {
+// Get current EPOCH address info
+GetEpochAddressInfo() -> {
     address: "dero1qy...",
     is_app_address: true,  // true if on app developer's address
     default_address: "dero1qy...",  // Hologram's default
     last_app_request: "2026-01-03T12:00:00Z"
-}
-
-// Check if currently on app developer's address
-IsEPOCHOnAppAddress() -> {
-    on_app_address: true,
-    time_until_switchback: 15  // seconds remaining
 }
 ```
 
