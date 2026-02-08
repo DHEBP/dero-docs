@@ -342,10 +342,7 @@ The cast is part of the normal flow. The protection happens downstream.
 
 ### Q: Has this been tested?
 
-**A:** Yes. See the test file in the investigation:
-- `_ExplorerFix/test_negative_transfer.go`
-- Demonstrates the protection mechanism
-- Confirms expected behavior
+**A:** Yes. See the verification methods above — Method 1 tests Go's `BigInt.Text(2)` behavior directly, and Method 3 simulates the complete attack flow. Both confirm the protection mechanism works as described.
 
 ---
 
