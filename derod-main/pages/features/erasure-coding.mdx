@@ -124,6 +124,32 @@ if parity_shard_count < data_shard_count {
 
 These limits balance network efficiency, memory constraints, and latency.
 
+### 100× Block Size Scalability
+
+DERO's official documentation states that erasure coding *"allows 100x block size without increasing propagation delays."* This is a separate claim from the 3× data expansion — and both are correct. They measure different things:
+
+| Metric | Value | What it measures |
+|--------|-------|-----------------|
+| **Data expansion** | 3× | Bandwidth cost per block (48 chunks / 16 data shards) |
+| **Block size scalability** | up to 100× | How much larger blocks can be while maintaining fast propagation |
+
+**Why erasure coding enables larger blocks:**
+
+In traditional blockchains, a block must be transmitted in full to every peer before it can propagate further. If you double the block size, you roughly double the propagation time across the network. This creates a practical ceiling on block size — larger blocks mean slower propagation, more orphans, and reduced security.
+
+Erasure coding breaks this bottleneck:
+
+1. **Parallel dispersal** — 48 small chunks propagate simultaneously across different peers, rather than one large block moving sequentially
+2. **Partial reconstruction** — Peers don't need the full 48 chunks; any 16 suffice, so propagation completes as soon as the fastest 16 paths deliver
+3. **Reduced per-peer load** — Each peer only transmits a small chunk (~1/48th of the expanded data), not the entire block
+4. **Network-wide parallelism** — While peer A sends chunk 1 to peer B, peer C is already forwarding chunk 7 to peer D
+
+The net effect: a 100 MB block broken into 48 chunks of ~6.25 MB each propagates far faster than sending 100 MB sequentially to each peer — even though the total data in the network is 3× larger. The parallelism more than compensates for the redundancy overhead.
+
+<Callout type="info">
+  **The tradeoff:** Pay 3× in total bandwidth to unlock dramatically larger block sizes without sacrificing propagation speed. This is a key enabler of DERO's scalability.
+</Callout>
+
 ---
 
 ## Chunk Dispersal
