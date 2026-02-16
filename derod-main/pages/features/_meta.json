@@ -2,6 +2,7 @@
   "dvm": "DERO Virtual Machine",
   "smart-contracts": "Private Smart Contracts",
   "encrypted-network": "Encrypted Network",
+  "erasure-coding": "Erasure Coded Blocks",
   "golang": "Golang",
   "astroBWT": "AstroBWT",
   "graviton": "GravitonDB",
