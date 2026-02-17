@@ -1,0 +1,52 @@
+{
+  "index": {
+    "display": "hidden",
+    "title": "DeroPay Documentation",
+    "theme": {
+      "breadcrumb": false
+    }
+  },
+
+  "-- Getting Started": {
+    "type": "separator",
+    "title": "Getting Started"
+  },
+  "guides": "Guides",
+
+  "-- DeroPay": {
+    "type": "separator",
+    "title": "DeroPay SDK"
+  },
+  "dero-pay": "dero-pay",
+
+  "-- Escrow": {
+    "type": "separator",
+    "title": "Escrow"
+  },
+  "escrow": "Escrow System",
+
+  "-- DeroAuth": {
+    "type": "separator",
+    "title": "DeroAuth SDK"
+  },
+  "dero-auth": "dero-auth",
+
+  "GitHub (DeroPay)": {
+    "title": "GitHub (DeroPay)",
+    "type": "page",
+    "href": "https://github.com/DHEBP/DeroPay",
+    "newWindow": true
+  },
+  "GitHub (DeroAuth)": {
+    "title": "GitHub (DeroAuth)",
+    "type": "page",
+    "href": "https://github.com/DHEBP/DeroAuth",
+    "newWindow": true
+  },
+  "DERO Docs": {
+    "title": "DERO Docs",
+    "type": "page",
+    "href": "https://derod.org",
+    "newWindow": true
+  }
+}

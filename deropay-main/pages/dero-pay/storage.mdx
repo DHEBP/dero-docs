@@ -1,0 +1,85 @@
+---
+title: "Storage Backends — Invoice Persistence"
+description: "DeroPay supports pluggable storage backends. Use in-memory for development and SQLite for production, or implement your own."
+---
+
+import { Callout, Tabs, Tab } from 'nextra/components';
+
+# Storage Backends
+
+DeroPay uses a pluggable storage system for invoice persistence. Two backends are included, and you can implement your own.
+
+## Built-in Backends
+
+<Tabs items={['In-Memory (Dev)', 'SQLite (Production)']}>
+  <Tab>
+    The default backend — stores everything in memory. Data is lost when the process restarts.
+
+    ```ts
+    import { InvoiceEngine, MemoryInvoiceStore } from "dero-pay/server";
+
+    // MemoryInvoiceStore is the default — no config needed
+    const engine = new InvoiceEngine({
+      walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+      daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+      // store defaults to new MemoryInvoiceStore()
+    });
+    ```
+
+    Good for: development, testing, prototyping.
+  </Tab>
+  <Tab>
+    Persistent storage using SQLite via `better-sqlite3`. Invoices survive restarts.
+
+    ```ts
+    import { InvoiceEngine, SqliteInvoiceStore } from "dero-pay/server";
+
+    const store = new SqliteInvoiceStore({ path: "./data/invoices.db" });
+
+    const engine = new InvoiceEngine({
+      walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+      daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+      store,
+    });
+    ```
+
+    <Callout type="info">
+      `better-sqlite3` is an optional peer dependency. Install it separately:
+      ```bash
+      bun add better-sqlite3
+      ```
+    </Callout>
+  </Tab>
+</Tabs>
+
+## Custom Storage
+
+Implement the `InvoiceStore` interface to use any database:
+
+```ts
+import type { InvoiceStore, Invoice } from "dero-pay/server";
+
+const myStore: InvoiceStore = {
+  async save(invoice: Invoice): Promise<void> {
+    // Persist the invoice
+  },
+
+  async get(id: string): Promise<Invoice | null> {
+    // Retrieve by ID
+  },
+
+  async getByPaymentId(paymentId: string): Promise<Invoice | null> {
+    // Retrieve by payment ID (used by the monitor)
+  },
+
+  async update(id: string, updates: Partial<Invoice>): Promise<void> {
+    // Update invoice fields
+  },
+
+  async list(filter?: InvoiceFilter): Promise<Invoice[]> {
+    // List invoices with optional filtering
+  },
+};
+```
+
+This makes it straightforward to use PostgreSQL, MySQL, Redis, or any other storage backend your application already uses.

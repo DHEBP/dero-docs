@@ -1,0 +1,159 @@
+---
+title: "Guide: DERO Wallet Auth in Next.js"
+description: "End-to-end guide for adding DERO wallet authentication to a Next.js 15 App Router project."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# DERO Wallet Auth in Next.js
+
+Add "Sign in with DERO" to your Next.js 15 app — from installation to protected routes.
+
+## What You'll Build
+
+- Challenge and verify API routes
+- A login page with the `<SignInWithDero />` button
+- Middleware-based route protection
+- A protected dashboard showing the user's DERO address
+
+<Steps>
+
+### Install Dependencies
+
+```bash
+bun add dero-auth
+```
+
+### Set Environment Variables
+
+```env
+# .env.local
+JWT_SECRET=your-jwt-secret-at-least-32-bytes-long
+```
+
+Generate a strong secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### Create Auth Handlers
+
+```ts
+// lib/dero-auth.ts
+import { createAuthHandlers } from "dero-auth/next";
+
+export const { challengeHandler, verifyHandler } = createAuthHandlers({
+  domain: "localhost:3000",
+  uri: "http://localhost:3000",
+  jwtSecret: process.env.JWT_SECRET!,
+  statement: "Sign in to My App",
+});
+```
+
+### Create API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+import { challengeHandler } from "@/lib/dero-auth";
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+import { verifyHandler } from "@/lib/dero-auth";
+export const POST = verifyHandler;
+```
+
+### Add the Auth Provider
+
+```tsx
+// app/layout.tsx
+import { DeroAuthProvider } from "dero-auth/react";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <DeroAuthProvider appName="My App">
+          {children}
+        </DeroAuthProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### Create the Login Page
+
+```tsx
+// app/login/page.tsx
+import { SignInWithDero } from "dero-auth/react";
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-8">Welcome</h1>
+        <SignInWithDero
+          onSuccess={() => window.location.href = "/dashboard"}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### Protect Routes with Middleware
+
+```ts
+// middleware.ts
+import { createDeroAuthMiddleware } from "dero-auth/next";
+
+export const middleware = createDeroAuthMiddleware({
+  jwtSecret: process.env.JWT_SECRET!,
+  protectedPaths: ["/dashboard"],
+  loginPath: "/login",
+});
+
+export const config = {
+  matcher: ["/dashboard/:path*"],
+};
+```
+
+### Create the Protected Dashboard
+
+```tsx
+// app/dashboard/page.tsx
+import { getAuthAddress } from "dero-auth/next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const address = await getAuthAddress(headers());
+
+  if (!address) {
+    redirect("/login");
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <p className="text-gray-600">Connected wallet:</p>
+      <code className="block mt-2 p-3 bg-gray-100 rounded text-sm">
+        {address}
+      </code>
+    </div>
+  );
+}
+```
+
+</Steps>
+
+<Callout type="info">
+  The user's DERO wallet (Engram or CLI) must be running locally for the XSWD connection to work. See [Prerequisites](/guides/prerequisites).
+</Callout>

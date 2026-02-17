@@ -1,0 +1,109 @@
+---
+title: "DeroPay & DeroAuth Documentation — Payments and Authentication for DERO"
+description: "Accept DERO payments with invoices, escrow, and webhooks. Authenticate users with privacy-preserving wallet signatures. TypeScript SDKs for the DERO ecosystem."
+keywords: "DeroPay, DeroAuth, DERO, payments, cryptocurrency, invoices, escrow, authentication, wallet, privacy, blockchain, SDK, TypeScript"
+date: "2026-02-16"
+lastUpdated: "2026-02-16"
+authors: ["DHEBP"]
+image: "/assets/og-deropay.png"
+slug: ""
+canonicalUrl: "https://deropay.derod.org/"
+tags: ["DeroPay", "DeroAuth", "DERO", "payments", "authentication", "privacy", "documentation"]
+ogTitle: "DeroPay & DeroAuth Documentation"
+ogDescription: "Payment processing and wallet authentication for DERO. TypeScript SDKs with React and Next.js support."
+ogImage: "/assets/og-deropay.png"
+ogType: "website"
+twitterCard: "summary_large_image"
+twitterTitle: "DeroPay & DeroAuth Documentation"
+twitterDescription: "Payment processing and wallet authentication for DERO. TypeScript SDKs with React and Next.js support."
+twitterImage: "/assets/og-deropay.png"
+robots: "index, follow"
+priority: 1.0
+changefreq: "daily"
+schemaType: "Organization"
+---
+
+import { Card, Cards } from 'nextra/components';
+import { Callout } from 'nextra/components';
+
+# DeroPay & DeroAuth
+
+Payment processing and wallet-based authentication for DERO — the privacy blockchain where every transaction is encrypted by default.
+
+<Callout emoji="🔒">
+  Unlike other blockchains, DERO transactions are **fully encrypted**. That means accepting payments and authenticating users without exposing anyone's financial history. These SDKs make that possible.
+</Callout>
+
+## Two Libraries, One Ecosystem
+
+<Cards num={2}>
+  <Card title="dero-pay — Accept DERO Payments" href="/dero-pay/overview">
+    Invoices, payment monitoring, webhooks, escrow, React components, and a merchant dashboard. The Stripe equivalent for DERO.
+  </Card>
+  <Card title="dero-auth — Wallet Authentication" href="/dero-auth/overview">
+    Sign in with your DERO wallet. Schnorr signatures on BN256, XSWD wallet connection, React components, and Next.js middleware.
+  </Card>
+</Cards>
+
+## Quick Links
+
+<Cards num={3}>
+  <Card title="Prerequisites" href="/guides/prerequisites">
+    Set up your DERO wallet and development environment.
+  </Card>
+  <Card title="DeroPay Quick Start" href="/dero-pay/quick-start">
+    Accept your first DERO payment in under 5 minutes.
+  </Card>
+  <Card title="DeroAuth Quick Start" href="/dero-auth/quick-start">
+    Add wallet-based login to your app.
+  </Card>
+</Cards>
+
+---
+
+## Why DeroPay and DeroAuth?
+
+DERO is unique among blockchains — all transactions are encrypted using homomorphic encryption, the block structure is DAG-based, and it uses BN256 elliptic curve cryptography. There is no MetaMask. No Stripe. No existing auth standard.
+
+**These libraries fill that void.**
+
+| | Other Chains | DERO (with these SDKs) |
+|---|---|---|
+| **Transaction privacy** | Transactions visible on-chain | All transactions encrypted |
+| **Payment processing** | Stripe, BTCPay, etc. | `dero-pay` |
+| **Wallet auth** | MetaMask + SIWE | `dero-auth` + XSWD |
+| **Personal data exposed** | Full transaction history linked to address | Address reveals nothing |
+| **Wallet extension** | Browser extension required | Connects to local wallet via WebSocket |
+
+---
+
+## Package Exports at a Glance
+
+### dero-pay
+
+| Import | Purpose |
+|---|---|
+| `dero-pay` | Core types, payment ID generation, pricing utilities (`deroToAtomic`, `formatDero`) |
+| `dero-pay/rpc` | Wallet and Daemon RPC clients |
+| `dero-pay/server` | Invoice engine, storage, monitor, webhooks |
+| `dero-pay/client` | Browser-side XSWD payment client |
+| `dero-pay/react` | React components and provider |
+| `dero-pay/next` | Next.js API route handlers and middleware |
+| `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
+
+### dero-auth
+
+| Import | Purpose |
+|---|---|
+| `dero-auth` | Core types and message format |
+| `dero-auth/crypto` | Pure crypto: Schnorr verify, BN256, address parsing |
+| `dero-auth/server` | Challenge generation, verification, JWT sessions |
+| `dero-auth/client` | Browser SDK: XSWD wallet connection, signing flow |
+| `dero-auth/react` | `<SignInWithDero />` button, provider, hooks |
+| `dero-auth/next` | Next.js API route handlers, auth middleware |
+
+---
+
+**Built by [DHEBP](https://github.com/DHEBP)** — Digital Human Empowerment & Blockchain Privacy.
+
+DHEBP is not affiliated with or endorsed by the DERO Project or its core developers.

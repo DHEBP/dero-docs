@@ -1,0 +1,150 @@
+---
+title: "Next.js Integration — DeroPay Route Handlers & Middleware"
+description: "Set up DeroPay in a Next.js 14/15 App Router project with ready-made API handlers and middleware."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Next.js Integration
+
+DeroPay provides ready-made API route handlers and middleware for Next.js 14+ App Router.
+
+```ts
+import { createPaymentHandlers } from "dero-pay/next";
+```
+
+## Setup
+
+<Steps>
+
+### Create the Payment Handlers
+
+```ts
+// lib/deropay.ts
+import { createPaymentHandlers } from "dero-pay/next";
+
+export const {
+  createInvoiceHandler,  // POST — create a new invoice
+  statusHandler,         // GET  — check invoice status
+  listInvoicesHandler,   // GET  — list all invoices
+  statsHandler,          // GET  — invoice statistics
+  webhookHandler,        // POST — receive webhooks
+  healthHandler,         // GET  — engine health check
+  escrowActionHandler,   // POST — perform escrow action
+  listEscrowsHandler,    // GET  — list escrow records
+  getEngine,             // () => Promise<InvoiceEngine>
+} = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+### Wire Up the API Routes
+
+```ts
+// app/api/pay/create/route.ts
+import { createInvoiceHandler } from "@/lib/deropay";
+
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+import { statusHandler } from "@/lib/deropay";
+
+export const GET = statusHandler;
+```
+
+```ts
+// app/api/webhooks/dero/route.ts
+import { webhookHandler } from "@/lib/deropay";
+
+export const POST = webhookHandler;
+```
+
+### Environment Variables
+
+```env
+# .env.local
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+WEBHOOK_SECRET=your-webhook-secret-here
+```
+
+### Client-Side Payment Page
+
+```tsx
+// app/pay/[invoiceId]/page.tsx
+import { DeroPayProvider, InvoiceView, PayWithDero } from "dero-pay/react";
+
+export default function PayPage({
+  params,
+}: {
+  params: { invoiceId: string };
+}) {
+  return (
+    <DeroPayProvider appName="My Store" statusEndpoint="/api/pay/status">
+      <InvoiceView
+        invoiceId={params.invoiceId}
+        onCompleted={() => window.location.href = "/thank-you"}
+      />
+      <PayWithDero invoiceId={params.invoiceId} />
+    </DeroPayProvider>
+  );
+}
+```
+
+</Steps>
+
+## Creating Invoices from Server Components
+
+```tsx
+// app/checkout/page.tsx (Server Component)
+import { createInvoice } from "@/lib/deropay";
+import { deroToAtomic } from "dero-pay";
+import { redirect } from "next/navigation";
+
+export default async function CheckoutPage() {
+  async function handleCheckout(formData: FormData) {
+    "use server";
+    const invoice = await createInvoice({
+      name: "Order",
+      amount: deroToAtomic("10.0"),
+    });
+    redirect(`/pay/${invoice.id}`);
+  }
+
+  return (
+    <form action={handleCheckout}>
+      <button type="submit">Pay 10 DERO</button>
+    </form>
+  );
+}
+```
+
+## API Key Middleware
+
+DeroPay includes middleware for protecting payment API routes with API keys:
+
+```ts
+// middleware.ts
+import { createDeroPayMiddleware } from "dero-pay/next";
+
+export const middleware = createDeroPayMiddleware({
+  apiKeys: [process.env.DEROPAY_API_KEY!],
+  protectedPaths: ["/api/pay/create", "/api/pay/escrow"],
+  publicPaths: ["/api/pay/status", "/api/pay/health"],
+  headerName: "X-DeroPay-ApiKey", // default
+});
+
+export const config = {
+  matcher: ["/api/pay/:path*"],
+};
+```
+
+Requests to protected paths must include the API key in the header. Public paths are accessible without authentication.
+
+<Callout type="info">
+  The payment handlers are designed for the **App Router** (`app/` directory). For Pages Router, use the `InvoiceEngine` directly in API routes under `pages/api/`.
+</Callout>

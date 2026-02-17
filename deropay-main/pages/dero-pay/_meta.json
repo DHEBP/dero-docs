@@ -1,0 +1,12 @@
+{
+  "overview": "Overview",
+  "quick-start": "Quick Start",
+  "invoice-engine": "Invoice Engine",
+  "payment-monitor": "Payment Monitor",
+  "webhooks": "Webhooks",
+  "storage": "Storage Backends",
+  "rpc": "RPC Clients",
+  "react": "React Components",
+  "nextjs": "Next.js Integration",
+  "api-reference": "API Reference"
+}

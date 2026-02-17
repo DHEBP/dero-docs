@@ -1,0 +1,99 @@
+---
+title: "DeroPay Overview — Payment Processing for DERO"
+description: "DeroPay is a TypeScript SDK for accepting DERO payments with invoices, payment monitoring, webhooks, escrow, and a merchant dashboard."
+---
+
+import { Callout } from 'nextra/components';
+
+# DeroPay Overview
+
+**DeroPay** is a full payment processing SDK for DERO — invoices, payment monitoring, webhooks, escrow, and a merchant dashboard. Think "Stripe for DERO" but self-hosted and privacy-preserving.
+
+<Callout type="info">
+  No actively maintained payment processor exists for current DERO (HE/Stargate). DeroPay is the first.
+</Callout>
+
+## Features
+
+- **Invoice Engine** — Create invoices with unique integrated addresses, track payments, manage lifecycle
+- **Payment Monitor** — Polls the DERO wallet for incoming transactions, tracks confirmations
+- **Webhook Dispatcher** — HMAC-signed HTTP POST notifications on payment state changes
+- **Pluggable Storage** — In-memory (dev) and SQLite (production) backends, or bring your own
+- **Escrow System** — On-chain smart contract with full escrow lifecycle (deposit, release, refund, dispute, arbitration)
+- **React Components** — Drop-in `<PayWithDero>`, `<InvoiceView>`, `<PaymentStatus>` components
+- **Next.js Integration** — Ready-made API route handlers and middleware
+- **XSWD Client** — Browser-side wallet connection for "pay from wallet" UX
+- **Self-Hosted Dashboard** — Admin UI for invoice management, payment history, wallet status
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant Merchant
+    participant DeroPay
+    participant Customer
+    participant Wallet as DERO Wallet
+    participant Chain as DERO Network
+
+    Merchant->>DeroPay: Create invoice (amount, description)
+    DeroPay->>DeroPay: Generate payment ID + integrated address
+    DeroPay-->>Customer: Show payment page (QR, address, timer)
+    Customer->>Wallet: Send DERO to integrated address
+    Wallet->>Chain: Encrypted transaction
+    DeroPay->>Wallet: Poll for matching transactions
+    Wallet-->>DeroPay: Transaction found
+    DeroPay->>DeroPay: Verify amount, track confirmations
+    DeroPay->>Merchant: Fire webhook (HMAC-signed)
+    DeroPay-->>Customer: Payment confirmed
+```
+
+## Invoice States
+
+```
+created → pending → confirming → completed
+                  ↘ expired
+                  ↘ partial (underpaid, still waiting)
+```
+
+| State | Description |
+|---|---|
+| `created` | Invoice generated, not yet displayed to customer |
+| `pending` | Awaiting payment, timer running |
+| `confirming` | Transaction detected, waiting for confirmations (default: 3) |
+| `completed` | Fully paid and confirmed |
+| `expired` | Payment window closed (default TTL: 900s / 15 min) |
+| `partial` | Some DERO received but less than required amount |
+
+## Architecture
+
+```
+dero-pay/
+├── core/        # Types, payment ID generation, pricing utilities
+├── rpc/         # Wallet & Daemon RPC clients (HTTP JSON-RPC)
+├── monitor/     # Payment polling engine with confirmation tracking
+├── webhook/     # HMAC-signed webhook dispatcher with retry
+├── store/       # Pluggable storage (memory, SQLite)
+├── server/      # Invoice engine orchestrator
+├── client/      # Browser XSWD client + payment session
+├── react/       # React components (Provider, PayWithDero, InvoiceView)
+├── next/        # Next.js API handlers + middleware
+└── escrow/      # On-chain escrow contract wrapper + lifecycle manager
+```
+
+## Package Exports
+
+| Import Path | Description |
+|---|---|
+| `dero-pay` | Core types, payment ID generation, pricing utilities (`deroToAtomic`, `formatDero`) |
+| `dero-pay/rpc` | Wallet and Daemon RPC clients |
+| `dero-pay/server` | Invoice engine, storage, monitor, webhooks |
+| `dero-pay/client` | Browser-side XSWD payment client |
+| `dero-pay/react` | React components and provider |
+| `dero-pay/next` | Next.js API route handlers and middleware |
+| `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
+
+## Next Steps
+
+- [Quick Start](/dero-pay/quick-start) — Accept your first payment
+- [Invoice Engine](/dero-pay/invoice-engine) — Deep dive into the core
+- [Escrow System](/escrow/overview) — On-chain escrow for trustless transactions

@@ -42,6 +42,9 @@ tela-main/build/
 hologram-main/.next/
 hologram-main/out/
 hologram-main/build/
+deropay-main/.next/
+deropay-main/out/
+deropay-main/build/
 
 # Vercel
 .vercel

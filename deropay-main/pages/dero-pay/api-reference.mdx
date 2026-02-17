@@ -1,0 +1,215 @@
+---
+title: "DeroPay API Reference"
+description: "Complete API reference for the dero-pay package — all exports, types, and interfaces."
+---
+
+# API Reference
+
+Complete reference for all `dero-pay` package exports.
+
+## Core (`dero-pay`)
+
+Types, pricing utilities, and payment ID generation.
+
+```ts
+import {
+  // Pricing
+  deroToAtomic,              // Convert DERO string to atomic BigInt
+  atomicToDero,              // Convert atomic BigInt to DERO string
+  formatDero,                // Format atomic units as "X.XXXX DERO"
+  isValidAmount,             // Validate amount is positive and valid
+
+  // Payment IDs
+  generatePaymentId,         // Generate random uint64 payment ID
+  paymentIdToHex,            // Convert payment ID to hex string
+  hexToPaymentId,            // Convert hex string to payment ID
+  isValidPaymentId,          // Validate payment ID format
+
+  // Constants
+  ATOMIC_UNITS_PER_DERO,     // 1_000_000_000_000n (10^12)
+  DERO_DECIMALS,             // 12
+
+  // Types
+  type Invoice,
+  type InvoiceStatus,        // "created" | "pending" | "confirming" | "completed" | "expired" | "partial"
+  type Payment,
+  type PaymentStatus,
+  type WalletStatus,
+  type CreateInvoiceParams,
+  type CreateInvoiceEscrowParams,
+  type InvoiceEscrow,
+  type EscrowInvoiceStatus,
+  type DeroPayConfig,
+  type DeroChainId,
+  type WebhookEvent,
+  type WebhookEventType,
+  type DeroPayError,
+  type DeroPayErrorCode,
+} from "dero-pay";
+```
+
+## RPC (`dero-pay/rpc`)
+
+```ts
+import {
+  WalletRpcClient,   // DERO wallet JSON-RPC client
+  DaemonRpcClient,   // DERO daemon JSON-RPC client
+
+  type WalletRpcConfig,
+  type DaemonRpcConfig,
+  type GetTransfersParams,
+  type GetTransfersResult,
+  type TransferEntry,
+  type TransferParams,
+  type MakeIntegratedAddressParams,
+  type GetInfoResult,
+  type GetScParams,
+  type GetScResult,
+  type InvokeScParams,
+  type InstallScParams,
+} from "dero-pay/rpc";
+```
+
+## Server (`dero-pay/server`)
+
+```ts
+import {
+  // Core
+  InvoiceEngine,
+  PaymentMonitor,
+  WebhookDispatcher,
+
+  // Storage
+  MemoryInvoiceStore,        // In-memory (dev)
+  SqliteInvoiceStore,        // SQLite (production, requires better-sqlite3)
+
+  // Webhook helpers
+  createWebhookEvent,
+  signWebhookPayload,
+  verifyWebhookSignature,
+
+  // Re-exported from other modules
+  WalletRpcClient,
+  DaemonRpcClient,
+  EscrowContract,
+  EscrowManager,
+
+  // Types
+  type InvoiceStore,         // Interface for custom storage backends
+  type InvoiceFilter,
+  type InvoiceStats,
+  type InvoiceEngineEvents,
+  type PaymentMonitorEvents,
+  type SqliteStoreConfig,
+  type WebhookConfig,
+  type WebhookDelivery,
+  type EscrowRecord,
+  type EscrowStatus,
+  type EscrowManagerConfig,
+} from "dero-pay/server";
+```
+
+## Client (`dero-pay/client`)
+
+```ts
+import {
+  XSWDPayClient,       // Browser-side XSWD client for payments
+  PaymentSession,      // Payment session manager
+
+  type XSWDPayAppData,
+  type XSWDPayEvents,
+  type PaymentSessionEvents,
+} from "dero-pay/client";
+```
+
+## React (`dero-pay/react`)
+
+```tsx
+import {
+  DeroPayProvider,       // Context provider
+  PayWithDero,           // "Pay with DERO" button (XSWD)
+  InvoiceView,           // Full payment interface (QR, address, timer)
+  PaymentStatus,         // Compact status indicator
+  EscrowInvoiceView,     // Escrow-specific payment view
+  useDeroPayContext,     // Hook for custom payment UIs
+
+  type DeroPayProviderProps,
+  type DeroPayContextValue,
+  type PayWithDeroProps,
+  type InvoiceViewProps,
+  type PaymentStatusProps,
+  type EscrowInvoiceViewProps,
+} from "dero-pay/react";
+```
+
+## Next.js (`dero-pay/next`)
+
+```ts
+import {
+  createPaymentHandlers,    // Factory for API route handlers
+  createDeroPayMiddleware,  // API key middleware
+  generateApiKey,           // Generate a random API key
+
+  type PaymentHandlersConfig,
+  type DeroPayMiddlewareConfig,
+} from "dero-pay/next";
+```
+
+### createPaymentHandlers Return Value
+
+```ts
+const {
+  createInvoiceHandler,  // POST — create invoice
+  statusHandler,         // GET  — invoice status by ID
+  listInvoicesHandler,   // GET  — list invoices with filters
+  statsHandler,          // GET  — invoice statistics
+  webhookHandler,        // POST — incoming webhook receiver
+  healthHandler,         // GET  — engine health check
+  escrowActionHandler,   // POST — escrow lifecycle actions
+  listEscrowsHandler,    // GET  — list escrow records
+  getEngine,             // () => Promise<InvoiceEngine>
+} = createPaymentHandlers(config);
+```
+
+## Escrow (`dero-pay/escrow`)
+
+```ts
+import {
+  EscrowContract,         // Smart contract RPC wrapper
+  EscrowManager,          // Lifecycle manager
+
+  // Status utilities
+  EscrowStatusCode,       // { AWAITING_DEPOSIT: 0, FUNDED: 1, ... }
+  statusCodeToString,     // Convert code to human-readable string
+
+  type EscrowStatus,
+  type EscrowStatusCodeValue,
+  type EscrowOnChainState,
+  type EscrowRecord,
+  type EscrowResolution,
+  type EscrowManagerEvents,
+  type EscrowManagerConfig,
+  type CreateEscrowParams,
+} from "dero-pay/escrow";
+```
+
+See the [Escrow documentation](/escrow/overview) for full escrow API details.
+
+## Configuration Reference
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `walletRpcUrl` | `string` | `localhost:10103` | Wallet RPC endpoint |
+| `daemonRpcUrl` | `string` | `localhost:10102` | Daemon RPC endpoint |
+| `rpcAuth` | `{ username, password }` | — | RPC authentication |
+| `chainId` | `DeroChainId` | `"dero-mainnet"` | Network identifier |
+| `defaultTtlSeconds` | `number` | `900` | Invoice expiration (15 min) |
+| `defaultRequiredConfirmations` | `number` | `3` | Confirmation depth |
+| `pollIntervalMs` | `number` | `5000` | Monitor poll interval |
+| `webhookUrl` | `string` | — | Webhook destination |
+| `webhookSecret` | `string` | — | HMAC signing secret |
+| `webhookMaxRetries` | `number` | `3` | Max delivery attempts |
+| `store` | `InvoiceStore` | `MemoryInvoiceStore` | Storage backend |
+| `enableEscrow` | `boolean` | `false` | Enable escrow subsystem |
+| `escrowFeeBasisPoints` | `number` | `250` | Default escrow fee (2.5%) |
+| `escrowBlockExpiration` | `number` | `60` | Escrow block expiry |

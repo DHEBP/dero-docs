@@ -1,0 +1,148 @@
+---
+title: "React Components — Payment UI"
+description: "Drop-in React components for DeroPay: PayWithDero button, InvoiceView, PaymentStatus, and DeroPayProvider."
+---
+
+import { Callout } from 'nextra/components';
+
+# React Components
+
+DeroPay provides drop-in React components for building payment UIs.
+
+```tsx
+import {
+  DeroPayProvider,
+  PayWithDero,
+  InvoiceView,
+  PaymentStatus,
+  EscrowInvoiceView,
+  useDeroPayContext,
+} from "dero-pay/react";
+```
+
+## DeroPayProvider
+
+Wraps your app (or payment section) to provide DeroPay context:
+
+```tsx
+import { DeroPayProvider } from "dero-pay/react";
+
+function App({ children }) {
+  return (
+    <DeroPayProvider
+      appName="My Store"
+      statusEndpoint="/api/pay/status"
+    >
+      {children}
+    </DeroPayProvider>
+  );
+}
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `appName` | `string` | Your app name (shown in wallet connection prompts) |
+| `statusEndpoint` | `string` | API endpoint for invoice status polling |
+| `children` | `ReactNode` | Child components |
+
+## InvoiceView
+
+Displays a complete payment interface with QR code, address, amount, and countdown:
+
+```tsx
+<InvoiceView
+  invoiceId="inv_abc123"
+  onCompleted={() => router.push("/thank-you")}
+  onExpired={() => console.log("Payment expired")}
+/>
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `invoiceId` | `string` | The invoice ID to display |
+| `onCompleted` | `() => void` | Callback when payment completes |
+| `onExpired` | `() => void` | Callback when invoice expires |
+| `showQR` | `boolean` | Show QR code (default: `true`) |
+| `className` | `string` | Additional CSS classes |
+
+## PayWithDero
+
+A button that connects to the customer's local DERO wallet via XSWD and initiates a direct payment:
+
+```tsx
+<PayWithDero
+  invoiceId="inv_abc123"
+  onSuccess={() => console.log("Payment sent!")}
+  onError={(err) => console.error(err)}
+/>
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `invoiceId` | `string` | The invoice to pay |
+| `onSuccess` | `() => void` | Callback on successful send |
+| `onError` | `(error: Error) => void` | Callback on failure |
+| `label` | `string` | Button text (default: "Pay with DERO") |
+| `className` | `string` | Additional CSS classes |
+
+<Callout type="info">
+  The `PayWithDero` button uses the **XSWD protocol** to connect to the customer's locally-running DERO wallet (Engram or CLI). The customer approves the transaction in their wallet — no browser extension needed.
+</Callout>
+
+## PaymentStatus
+
+A compact status indicator:
+
+```tsx
+<PaymentStatus invoiceId="inv_abc123" />
+```
+
+Shows the current state with appropriate icons and colors (pending, confirming, completed, expired).
+
+## EscrowInvoiceView
+
+A specialized view for escrow-backed invoices, showing deposit status, escrow state, and resolution controls:
+
+```tsx
+<EscrowInvoiceView
+  invoiceId="inv_abc123"
+  onReleased={() => console.log("Funds released")}
+/>
+```
+
+## useDeroPayContext
+
+Hook for building fully custom payment UIs:
+
+```tsx
+"use client";
+import { useDeroPayContext } from "dero-pay/react";
+
+function CustomPaymentUI({ invoiceId }: { invoiceId: string }) {
+  const ctx = useDeroPayContext();
+  // Access provider state and methods
+}
+```
+
+## Full Example
+
+```tsx
+import { DeroPayProvider, InvoiceView, PayWithDero } from "dero-pay/react";
+
+function PaymentPage({ invoiceId }: { invoiceId: string }) {
+  return (
+    <DeroPayProvider appName="My Store" statusEndpoint="/api/pay/status">
+      <div className="max-w-md mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">Complete Your Payment</h1>
+        <InvoiceView
+          invoiceId={invoiceId}
+          onCompleted={() => console.log("Paid!")}
+        />
+        <div className="mt-4">
+          <PayWithDero invoiceId={invoiceId} />
+        </div>
+      </div>
+    </DeroPayProvider>
+  );
+}
+```
