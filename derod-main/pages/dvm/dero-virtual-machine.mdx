@@ -26,7 +26,7 @@ DVM apps run on a from scratch custom built privacy supporting, encrypted blockc
 
 - DVM-BASIC is a contract-oriented, high-level language for implementing smart contracts. It is influenced by GW-BASIC, Visual Basic and C and is designed to target the DERO Virtual Machine (DVM). It is very easy to program and very readable.
 
-- DVM runs Smart Contracts which are a collection of functions written in DVM-BASIC. These functions can be invoked over the blockchain to do something. Smart contracts can act as libraries for other Smart contracts.
+- DVM runs Smart Contracts which are a collection of functions written in DVM-BASIC. These functions can be invoked over the blockchain to do something. Each smart contract is currently self-contained — cross-contract calls are architecturally planned but not yet enabled.
 
 - DVM supports a number of comment formats such as ', //, /* */ as good documentation is necessary.
 
@@ -129,7 +129,7 @@ Function syntax can be of two types:
 
 - All functions start with the `Function` keyword.
 - Function names should be alphanumeric.
-- If the first letter of the function is an uppercase alphabet, the function can be invoked by the blockchain and other smart contracts.
+- If the first letter of the function is an uppercase alphabet, the function is exported and can be invoked externally via blockchain transactions.
 - If the first letter of the function is a lowercase alphabet, the function can only be invoked by other functions within the smart contract.
 - Functions may or may not have a return type.
 - All functions must use `RETURN` to return from the function or to return a value. `RETURN` is mandatory.

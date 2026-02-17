@@ -1,0 +1,320 @@
+---
+title: "Smart Contract Fundamentals: Understanding DERO Contracts | DERO Blockchain"
+description: "Learn what DERO smart contracts actually are, how they execute on-chain, why DVM-BASIC was chosen over Solidity, and the core patterns that make contracts secure and auditable."
+keywords: ["DERO smart contracts", "DVM-BASIC", "blockchain programming", "smart contract security", "DERO vs Ethereum", "on-chain execution", "state machine", "DERO development", "blockchain fundamentals", "contract deployment"]
+date: "2026-02-17"
+lastUpdated: "2026-02-17"
+authors: ["DHEBP"]
+image: "/assets/dvm.jpeg"
+slug: "smart-contract-fundamentals"
+canonicalUrl: "https://derod.org/dvm/smart-contract-fundamentals"
+tags: ["dvm", "smart-contracts", "fundamentals", "development", "security", "dvm-basic"]
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# Smart Contract Fundamentals
+
+Before diving into syntax or examples, it helps to understand what a DERO smart contract actually *is*, how it runs, and why DERO chose a radically different approach from other chains.
+
+---
+
+## What Is a Smart Contract?
+
+At its core, a DERO smart contract is a **program that lives on the blockchain and controls money**. When you deploy one, the source code gets stored on every node in the DERO network. When someone calls a function on that contract, every node runs the same code and arrives at the same result. That consensus is what makes it trustless — no single party can cheat.
+
+Think of it as a **state machine with a bank account**:
+
+| Component | What It Does |
+|-----------|-------------|
+| **Storage** | Key-value pairs that persist on-chain (the contract's "database") |
+| **Balance** | The contract can hold and send DERO |
+| **Functions** | Entry points that anyone can call |
+| **Rules** | Logic that determines who can do what and when |
+
+Every interaction with a smart contract follows the same pattern: someone sends a transaction that says *"call function X with these arguments"*, the network executes it, and the result either commits or reverts.
+
+---
+
+## Why DVM-BASIC?
+
+Most chains use Solidity (Ethereum), Rust (Solana), or Move (Aptos). DERO chose a BASIC dialect called **DVM-BASIC** — and that's a deliberate decision, not a limitation.
+
+| Design Goal | How DVM-BASIC Achieves It |
+|-------------|--------------------------|
+| **Auditability** | BASIC is one of the simplest languages ever created. Anyone can read a contract and understand what it does, even non-programmers. On a privacy chain where trust matters, readability is a feature. |
+| **Deterministic Execution** | No floating point, no complex memory model, no recursion traps. Every operation produces the same result on every node. This is critical for consensus. |
+| **Small Attack Surface** | Solidity's complexity has led to billions in exploits (reentrancy, overflow, delegatecall). DVM-BASIC doesn't support the patterns that create those vulnerabilities. |
+| **Source = Bytecode** | Unlike Ethereum where you deploy compiled bytecode (and must separately verify source), DERO stores and executes the actual source code. What you deploy is what runs. What anyone reads on-chain with `getsc` is the actual executing code. |
+
+<Callout type="info">
+**What you deploy is what runs.** There is no compiler step, no bytecode translation, no room for compiler backdoors. The source code *is* the program. Anyone can inspect it on-chain at any time.
+</Callout>
+
+---
+
+## The Line Number System
+
+This is often the most visually unfamiliar part for newcomers:
+
+```basic
+Function Initialize() Uint64
+  10 STORE("owner", SIGNER())
+  20 STORE("treasury", 0)
+  30 RETURN 0
+  200 RETURN 1
+End Function
+```
+
+**Line numbers are the control flow mechanism.** There are no `if/else` blocks, no `while` loops, no `try/catch`. Instead, you have `GOTO` — jump to a specific line number. This is how BASIC has always worked since the 1960s.
+
+- Lines `10, 20, 30...` execute sequentially
+- `GOTO 200` jumps to line 200 (typically an error/failure return)
+- The gap between numbers (10, 20, 30 instead of 1, 2, 3) is intentional — it leaves room to insert lines later without renumbering
+- `RETURN 0` means success, `RETURN 1` means failure
+
+This looks primitive, but it's **by design**. There is no hidden control flow. You can trace every possible execution path by following the line numbers. An auditor can verify a contract in minutes.
+
+---
+
+## The Core Primitives
+
+Everything in DVM-BASIC is built from a handful of building blocks:
+
+### Storage: `STORE` and `LOAD`
+
+The contract's persistent memory. These write to and read from on-chain state that survives between calls.
+
+```basic
+10 STORE("owner", SIGNER())      // Write to state
+20 IF LOAD("owner") == SIGNER() THEN GOTO 40   // Read from state
+30 RETURN 1
+```
+
+Every `STORE` modifies the global blockchain state (and costs gas). Every `LOAD` reads what was previously stored. This is the contract's database.
+
+### Identity: `SIGNER()`
+
+Returns the address of whoever is calling the function right now. This is how access control works:
+
+```basic
+10 IF SIGNER() != LOAD("owner") THEN GOTO 100
+```
+
+*"If the person calling this isn't the owner, reject."* The blockchain cryptographically guarantees that `SIGNER()` is authentic — it cannot be faked.
+
+<Callout type="warning">
+`SIGNER()` requires a ring size of 2. If the transaction uses a higher ring size, `SIGNER()` returns empty. Functions that check `SIGNER()` cannot be called anonymously.
+</Callout>
+
+### Receiving Value: `DEROVALUE()`
+
+Returns how much DERO was sent along with this function call:
+
+```basic
+10 IF DEROVALUE() == 0 THEN GOTO 100   // Reject if no DERO sent
+20 STORE("balance", LOAD("balance") + DEROVALUE())
+30 RETURN 0
+100 RETURN 1
+```
+
+When someone calls a function and includes DERO, it goes into the contract's balance automatically. `DEROVALUE()` tells the code how much arrived.
+
+### Sending Value: `SEND_DERO_TO_ADDRESS`
+
+The contract sends DERO from its own balance to someone:
+
+```basic
+10 SEND_DERO_TO_ADDRESS(LOAD("recipient"), amount)
+20 RETURN 0
+```
+
+This is the money moving. It happens atomically — either the entire function succeeds (RETURN 0) or everything reverts.
+
+### Address Handling: `ADDRESS_RAW`
+
+Converts a human-readable DERO address into the raw format used internally:
+
+```basic
+10 STORE("admin", ADDRESS_RAW(adminAddress))
+```
+
+Two addresses should always be compared in raw form. Textual representations can vary, but raw format is canonical.
+
+### Time: `BLOCK_HEIGHT()`
+
+Returns the current block number. Used for time-based logic:
+
+```basic
+10 IF BLOCK_HEIGHT() < LOAD("unlockHeight") THEN GOTO 100
+```
+
+Since DERO produces blocks roughly every 18 seconds, you can calculate approximate durations. For example, `BLOCK_HEIGHT() + 200` is roughly one hour in the future.
+
+---
+
+## The Execution Model
+
+When someone calls a function on a contract, here is what actually happens:
+
+<Steps>
+### Transaction Submitted
+The caller's wallet signs a transaction that says *"call function X on contract Y with these arguments and this much DERO attached."*
+
+### Transaction Enters the DAG
+DERO uses a block-DAG (not a linear chain), so the transaction gets included in a block.
+
+### Every Node Executes
+Each node in the network runs the function independently and verifies the result matches.
+
+### State Commits or Reverts
+If the function returns `0` (success), all `STORE` operations take effect. If it returns `1` (failure), nothing changes — the entire execution is rolled back.
+
+### Consensus Confirms
+Once enough nodes agree on the result, the state change is finalized.
+</Steps>
+
+This is why the return value matters so much:
+
+| Return Value | Meaning | State Changes |
+|-------------|---------|---------------|
+| `RETURN 0` | Success | All `STORE` operations commit |
+| `RETURN 1` | Failure | Everything reverts — as if the function was never called |
+
+It is an all-or-nothing atomic operation. There is no partial state change.
+
+---
+
+## The Security Model
+
+DERO smart contracts rely on two fundamental checks that together form the entire security model:
+
+### State Guards
+
+Every function checks the contract's current state before acting:
+
+```basic
+// Only allow withdrawal if status is "funded"
+10 IF LOAD("status") != 1 THEN GOTO 100
+```
+
+This prevents functions from being called at the wrong time or in the wrong order.
+
+### Access Guards
+
+Every function checks *who* is calling:
+
+```basic
+// Only the owner can call this
+10 IF SIGNER() != LOAD("owner") THEN GOTO 100
+```
+
+This prevents unauthorized users from calling privileged functions.
+
+**Combine both** for robust security:
+
+```basic
+Function Withdraw(amount Uint64) Uint64
+  10 IF SIGNER() != LOAD("owner") THEN GOTO 100    // Access guard
+  20 IF LOAD("locked") == 1 THEN GOTO 100            // State guard
+  30 SEND_DERO_TO_ADDRESS(SIGNER(), amount)
+  40 RETURN 0
+  100 RETURN 1
+End Function
+```
+
+These two checks — **who is calling** and **is the contract in the right state** — are sufficient to secure any contract logic.
+
+---
+
+## How DERO Contracts Differ from Ethereum
+
+| Aspect | Ethereum / Solidity | DERO / DVM-BASIC |
+|--------|-------------------|-----------------|
+| **Language** | Solidity (complex, C-like) | DVM-BASIC (simple, line numbers) |
+| **Deployed As** | Compiled bytecode | Raw source code |
+| **Privacy** | All state and transactions public | Homomorphic encryption on transactions |
+| **Contract Calls** | Contracts can call other contracts (composability) | Contracts are currently isolated (cross-contract calls are architecturally planned but not yet enabled) |
+| **Reentrancy Risk** | Major attack vector | Impossible — no external calls during execution |
+| **Token Storage** | Balances stored in contract mapping | Balances stored encrypted in user wallets |
+| **Upgradability** | Proxy patterns (complex) | Immutable (deploy new version, migrate) |
+| **Gas Model** | Dynamic gas market | Simpler fee structure |
+
+The **isolation** point is worth understanding: DERO contracts are currently self-contained. The DVM architecture includes the internal infrastructure for cross-contract calls (the `Shared_State` structure supports it), but this capability is not yet enabled. Today, each contract executes independently. This eliminates an entire class of exploits (reentrancy, flash loans, composability attacks) while the DVM matures. Cross-contract composability is a design goal for the future.
+
+<Callout type="info">
+**Tokens in wallets, not contracts.** On Ethereum, your token balance lives inside a contract's storage (the contract *controls* your tokens). On DERO, tokens are sent to your wallet as encrypted balances. Once issued, the contract cannot freeze, seize, or track them. See [DERO Tokens](/basics/tokens) for details.
+</Callout>
+
+---
+
+## Putting It All Together
+
+Here is a complete minimal contract that demonstrates every core concept — storage, access control, receiving DERO, sending DERO, and state management:
+
+```basic
+// Tip Jar: anyone can deposit, only the owner can withdraw
+
+Function Initialize() Uint64
+  10 IF EXISTS("owner") THEN GOTO 100
+  20 STORE("owner", SIGNER())
+  30 STORE("totalTips", 0)
+  40 RETURN 0
+  100 RETURN 1
+End Function
+
+Function Deposit() Uint64
+  10 IF DEROVALUE() == 0 THEN GOTO 100
+  20 STORE("totalTips", LOAD("totalTips") + DEROVALUE())
+  30 RETURN 0
+  100 RETURN 1
+End Function
+
+Function Withdraw(amount Uint64) Uint64
+  10 IF SIGNER() != LOAD("owner") THEN GOTO 100
+  20 SEND_DERO_TO_ADDRESS(SIGNER(), amount)
+  30 STORE("totalTips", LOAD("totalTips") - amount)
+  40 RETURN 0
+  100 RETURN 1
+End Function
+```
+
+This is 20 lines of code that creates a trustless payment system: anyone can send tips, only the owner can withdraw, and every operation is verified by the entire network.
+
+---
+
+## What's Next
+
+Now that you understand the fundamentals, explore the language and examples:
+
+**Learn the Language:**
+- [DVM-BASIC Programming Guide](/dvm/dvm-basic) — Full syntax, types, operators, and best practices
+- [DVM Function Reference](/dvm/dero-virtual-machine) — Complete list of built-in functions with costs
+
+**Study Real Contracts:**
+- [Token Contract](/smartContracts/token) — Build a private fungible token
+- [Assets Exchange](/smartContracts/assets) — Token swap mechanics
+- [Lottery Contract](/smartContracts/lottery) — Random selection and payouts
+- [Name Service](/smartContracts/name) — On-chain username registration
+
+**Deploy and Test:**
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) — Deploy contracts via RPC
+- [Daemon RPC API](/rpc-api/daemon-rpc-api) — Query contract state with `getsc`
+
+---
+
+## Related Pages
+
+**Understanding the Platform:**
+- [DERO Tokens](/basics/tokens) — How token storage and privacy work
+- [Private Smart Contracts](/privacy/private-smart-contracts) — Contract privacy features
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) — Encrypted state and balances
+
+**Building Contracts:**
+- [DVM-BASIC Guide](/dvm/dvm-basic) — Language reference and best practices
+- [DVM Function Reference](/dvm/dero-virtual-machine) — Built-in functions and gas costs
+- [Token Smart Contract](/smartContracts/token) — Complete deployment tutorial
+
+**Infrastructure:**
+- [Running a Node](/basics/running-a-node) — Set up a testnet for development
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) — Programmatic deployment and invocation
