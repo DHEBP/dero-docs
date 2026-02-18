@@ -53,7 +53,7 @@ Benefit: Everyone earns daily, no pools needed
 ```mermaid
 graph LR
     M[Miners<br/>Submit Work] --> SB[Miniblock<br/>Every ~2 sec]
-    SB --> MB[Main Block<br/>Every 16 sec]
+    SB --> MB[Main Block<br/>Every 18 sec]
     MB --> SET[Settlement<br/>~10 miniblocks]
     SET --> RWD[Distribute<br/>Rewards]
     RWD --> MIN[All Miners<br/>Get Paid]
@@ -64,8 +64,8 @@ graph LR
 | **Miniblock time** | ~1-2 seconds | Σ-block (miniblock) emission |
 | **Main block** | 18 seconds | Settles 10 miniblocks |
 | **Settlement** | Every block | ~18 seconds |
-| **Daily miniblocks** | ~54,000 | 5,400 blocks × 10 miniblocks |
-| **Blocks per day** | ~5,400 | 86,400 seconds ÷ 16 |
+| **Daily miniblocks** | ~48,000 | 4,800 blocks × 10 miniblocks |
+| **Blocks per day** | ~4,800 | 86,400 seconds ÷ 18 |
 
 ---
 
@@ -75,21 +75,21 @@ graph LR
 
 | Your Share of Network | Reward Frequency | Example Hashrate* |
 |----------------------|------------------|------------------|
-| 1/54,000 | Daily | 1 KH/s (if network = 54 MH/s) |
-| 1/108,000 | Every 2 days | 500 H/s (if network = 54 MH/s) |
-| 1/540,000 | Every 10 days | 100 H/s (if network = 54 MH/s) |
+| 1/48,000 | Daily | 1 KH/s (if network = 48 MH/s) |
+| 1/96,000 | Every 2 days | 500 H/s (if network = 48 MH/s) |
+| 1/480,000 | Every 10 days | 100 H/s (if network = 48 MH/s) |
 
 *Network hashrate varies - check current hashrate in your daemon/miner output
 
 **Formula:**
 ```
-Your expected miniblocks per day = (Your hashrate / Network hashrate) × 54,000
+Your expected miniblocks per day = (Your hashrate / Network hashrate) × 48,000
 
 Example:
   You: 10 KH/s
-  Network: 54 MH/s
-  Your share: 10,000 / 54,000,000 = 0.0185%
-  Daily miniblocks: 54,000 × 0.0185% = 10 miniblocks/day
+  Network: 48 MH/s
+  Your share: 10,000 / 48,000,000 = 0.0208%
+  Daily miniblocks: 48,000 × 0.0208% = 10 miniblocks/day
 ```
 
 ---
@@ -260,17 +260,17 @@ Machine 3: ./dero-miner --daemon-rpc-address=192.168.1.100:10100
 **Daily emission:**
 ```
 Blocks per day: ~4,800 (86,400 seconds / 18 seconds)
-Daily emission: ~3,320 DERO
+Daily emission: ~2,952 DERO
 ```
 
 **Your daily earnings (example):**
 ```
 Your hashrate: 10 KH/s
-Network: 54 MH/s
-Your share: 10,000 / 54,000,000 = 0.0185%
+Network: 48 MH/s
+Your share: 10,000 / 48,000,000 = 0.0208%
 
-Daily rewards: 5,400 × 0.0185% = ~1 DERO/day
-Miniblock rewards: 54,000 × 0.0185% = ~10 miniblocks/day
+Daily rewards: 4,800 × 0.0208% = ~1 DERO/day
+Miniblock rewards: 48,000 × 0.0208% = ~10 miniblocks/day
 ```
 
 *Values are approximate and change with network hashrate and block rewards*

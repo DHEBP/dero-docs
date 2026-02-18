@@ -32,7 +32,7 @@ Running a DERO node supports network decentralization, earns you integrator rewa
 
 ```bash
 # Download latest release
-wget https://github.com/deroproject/derohe/releases/download/latest/dero-linux-amd64.tar.gz
+wget https://github.com/deroproject/derohe/releases/latest/download/dero-linux-amd64.tar.gz
 
 # Extract
 tar -xzf dero-linux-amd64.tar.gz
@@ -105,7 +105,6 @@ cd dero-darwin-*
   --rpc-bind=0.0.0.0:10102 \
   --p2p-bind=0.0.0.0:10101 \
   --node-tag="MyNode" \
-  --lowcpuram \
   --fastsync
 ```
 
@@ -114,7 +113,6 @@ cd dero-darwin-*
 - `--rpc-bind` - RPC server address (default: 127.0.0.1:10102)
 - `--p2p-bind` - P2P network address (default: 0.0.0.0:10101)
 - `--node-tag` - Custom node identifier
-- `--lowcpuram` - Reduce memory usage
 - `--fastsync` - Faster initial sync
 
 **Full list:** `./derod --help`
@@ -280,7 +278,7 @@ watch -n 5 'curl -s http://127.0.0.1:10102/json_rpc -d '\''{"method":"DERO.GetIn
 pkill derod
 
 # Download latest release
-wget https://github.com/deroproject/derohe/releases/download/latest/dero-linux-amd64.tar.gz
+wget https://github.com/deroproject/derohe/releases/latest/download/dero-linux-amd64.tar.gz
 
 # Extract and replace
 tar -xzf dero-linux-amd64.tar.gz
@@ -293,7 +291,7 @@ tar -xzf dero-linux-amd64.tar.gz
 
 ```bash
 # Start with pruning enabled
-./derod-linux-amd64 --prunetopo=100000
+./derod-linux-amd64 --prune-history=100000
 
 # Keeps last 100,000 blocks, prunes older
 # Reduces disk usage significantly
@@ -344,17 +342,14 @@ curl http://127.0.0.1:10102/json_rpc -d '{"method":"DERO.GetPeerList"}'
 
 **High CPU usage:**
 ```bash
-# Reduce threads
-./derod-linux-amd64 --lowcpuram
-
-# Or use nice to lower priority
+# Use nice to lower priority
 nice -n 19 ./derod-linux-amd64
 ```
 
 **High memory:**
 ```bash
 # Enable low memory mode
-./derod-linux-amd64 --lowcpuram --prunetopo=50000
+./derod-linux-amd64 --prune-history=50000
 ```
 
 **Port already in use:**
@@ -376,7 +371,7 @@ nice -n 19 ./derod-linux-amd64
   --rpc-bind=0.0.0.0:10102 \
   --p2p-bind=0.0.0.0:10101 \
   --fastsync \
-  --prunetopo=100000
+  --prune-history=100000
 ```
 
 ### For Home PC
@@ -385,7 +380,6 @@ nice -n 19 ./derod-linux-amd64
 # Optimize for home use (lower resource usage)
 ./derod-linux-amd64 \
   --integrator-address=YOUR_ADDRESS \
-  --lowcpuram \
   --rpc-bind=127.0.0.1:10102
 ```
 

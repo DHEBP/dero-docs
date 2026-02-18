@@ -108,7 +108,7 @@ const MAX_CHUNKS uint8 = 255  // Maximum 255 chunks total
 
 // Minimum requirements:
 if data_shard_count < 10 {
-    panic(fmt.Errorf("data shard must be > 10, actual %d", data_shard_count))
+    panic(fmt.Errorf("data shard must be >= 10, actual %d", data_shard_count))
 }
 if parity_shard_count < data_shard_count {
     panic(fmt.Errorf("parity shard must be equal or more than data shards"))

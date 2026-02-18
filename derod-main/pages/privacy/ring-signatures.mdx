@@ -93,7 +93,7 @@ Which one? HIDDEN
 
 **Blockchain shows:**
 - ✓ 16 possible senders
-- ✓ Amount transferred
+- ✗ Amount (encrypted)
 - ✗ Cannot determine real sender
 - ✗ Cannot link to other TXs
 
@@ -108,6 +108,7 @@ Which one? HIDDEN
 for i := 0; i < 100; i++ {
     address := balance_tree.Random()
     old_balance := balance_tree_old.Get(address)
+    balance := balance_tree.Get(address)
     
     if balance != old_balance {
         continue  // Skip if balance changed recently

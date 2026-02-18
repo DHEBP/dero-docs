@@ -194,7 +194,7 @@ DERO smart contracts rely on two fundamental checks that together form the entir
 Every function checks the contract's current state before acting:
 
 ```basic
-// Only allow withdrawal if status is "funded"
+// Only allow withdrawal if status is 1
 10 IF LOAD("status") != 1 THEN GOTO 100
 ```
 
@@ -237,7 +237,7 @@ These two checks — **who is calling** and **is the contract in the right state
 | **Contract Calls** | Contracts can call other contracts (composability) | Contracts are currently isolated (cross-contract calls are architecturally planned but not yet enabled) |
 | **Reentrancy Risk** | Major attack vector | Impossible — no external calls during execution |
 | **Token Storage** | Balances stored in contract mapping | Balances stored encrypted in user wallets |
-| **Upgradability** | Proxy patterns (complex) | Immutable (deploy new version, migrate) |
+| **Upgradability** | Proxy patterns (complex) | Optional via `UPDATE_SC_CODE()` (simpler than proxy patterns) |
 | **Gas Model** | Dynamic gas market | Simpler fee structure |
 
 The **isolation** point is worth understanding: DERO contracts are currently self-contained. The DVM architecture includes the internal infrastructure for cross-contract calls (the `Shared_State` structure supports it), but this capability is not yet enabled. Today, each contract executes independently. This eliminates an entire class of exploits (reentrancy, flash loans, composability attacks) while the DVM matures. Cross-contract composability is a design goal for the future.

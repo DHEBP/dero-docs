@@ -289,7 +289,7 @@ curl -X POST \
     "result": {
         "entry": {
             "height": 31297,
-            "topo_height": 31297,
+            "topoheight": 31297,
             "blockhash": "44e010e6ae56e66e75b158871570233a8a8b918491efc2d02ce793a7ce258612",
             "minerreward": 0,
             "tpos": 17,
@@ -334,8 +334,8 @@ Returns all transactions present in the portfolio against the applied filters.
 | coinbase | bool  | false     | Accept coinbase TX ?  |
 | in | bool  | false     | Accept incoming TX ?  |
 | out | bool  | false     | Accept outgoing TX ?  |
-| min_height | unint64  | false     | Minimum height  |
-| max_height | unint64  | false     | Maximum height  |
+| min_height | uint64  | false     | Minimum height  |
+| max_height | uint64  | false     | Maximum height  |
 | sender | string  | false     | Sender address equal  |
 | receiver | string  | false     | Receiver address equal  |
 | dstport | uint64  | false     | Destination Port (Service)  |
@@ -382,7 +382,7 @@ curl -X POST \
         "entries": [
             {
                 "height": 31297,
-                "topo_height": 31297,
+                "topoheight": 31297,
                 "blockhash": "44e010e6ae56e66e75b158871570233a8a8b918491efc2d02ce793a7ce258612",
                 "minerreward": 0,
                 "tpos": 17,
@@ -608,7 +608,7 @@ Creates a transaction and returns its hash.
 | scid  | Hash    | false     | SCID of asset  |
 | destination | string | false     | DERO Address of receiver  |
 | amount | uint64  | false     | Amount of token to send  |
-| burn | uint63  | false     | Amount of token to burn  |
+| burn | uint64  | false     | Amount of token to burn  |
 | payload_rpc | Arguments  | false     | Payload Arguments  |
 
 #### Body
@@ -619,9 +619,12 @@ Creates a transaction and returns its hash.
     "id": "1",
     "method": "transfer",
     "params": {
-        "scid": "00000000000000000000000000000000",
-        "destination": "deto1qyj4kx6azntn9psmg7dsfkuv9qs9xde0s94nmmhm2a0damffpm2zzqqcudacc",
-        "amount": 100000
+        "transfers": [{
+            "scid": "0000000000000000000000000000000000000000000000000000000000000000",
+            "destination": "deto1qyj4kx6azntn9psmg7dsfkuv9qs9xde0s94nmmhm2a0damffpm2zzqqcudacc",
+            "amount": 100000
+        }],
+        "ringsize": 16
     }
 }
 ```
@@ -637,9 +640,12 @@ curl -X POST \
     "id": "1",
     "method": "transfer",
     "params": {
-        "scid": "00000000000000000000000000000000",
-        "destination": "deto1qyj4kx6azntn9psmg7dsfkuv9qs9xde0s94nmmhm2a0damffpm2zzqqcudacc",
-        "amount": 100000
+        "transfers": [{
+            "scid": "0000000000000000000000000000000000000000000000000000000000000000",
+            "destination": "deto1qyj4kx6azntn9psmg7dsfkuv9qs9xde0s94nmmhm2a0damffpm2zzqqcudacc",
+            "amount": 100000
+        }],
+        "ringsize": 16
     }
 }'
 ```

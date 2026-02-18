@@ -67,7 +67,7 @@ Everyone can see all balances!
 ```basic
 // Tokens sent TO user wallets (ENCRYPTED)
 Function IssueAsset() Uint64
-    10 SEND_ASSET_TO_ADDRESS(SIGNER(), amount, SCID())
+    10 SEND_ASSET_TO_ADDRESS(SIGNER(), DEROVALUE(), SCID())
     20 RETURN 0
 End Function
 

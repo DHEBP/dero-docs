@@ -162,7 +162,7 @@ curl -X POST \
         "grey_peerlist_size": 0,
         "height": 35995,
         "stableheight": 35987,
-        "topo_height": 35995,
+        "topoheight": 35995,
         "treehash": "2C4A2F8954EA978104D9F4A4D170256B2531F62C30E52A11517FB6375A0D5F29",
         "averageblocktime50": 17.63982,
         "incoming_connections_count": 0,
@@ -189,8 +189,6 @@ curl -X POST \
 Returns all the information of the requested block.
 
 #### Available parameters
-
-Certainly! Here's a Markdown table based on your specifications:
 
 | Name   | Type    | Mandatory | Comment       |
 |--------|---------|-----------|---------------|
@@ -242,7 +240,7 @@ curl -X POST \
             "difficulty": "15743",
             "hash": "60e7e9f73a4a0f2c1b4a97976150ef6f53f0253f8552c6b2e7e4a010929d8259",
             "height": 420,
-            "topo_height": 420,
+            "topoheight": 420,
             "major_version": 1,
             "minor_version": 1,
             "nonce": 0,
@@ -269,7 +267,7 @@ Returns the header of the requested block.
 
 | Name   | Type    | Mandatory | Comment       |
 |--------|---------|-----------|---------------|
-| topo_height   | uint64    | true     | Block Topological Height    |
+| topoheight   | uint64    | true     | Block Topological Height    |
 
 #### Body
 
@@ -279,7 +277,7 @@ Returns the header of the requested block.
     "id": "1",
     "method": "DERO.GetBlockHeaderByTopoHeight",
     "params": {
-        "topo_height": 420
+        "topoheight": 420
     }
 }
 ```
@@ -295,7 +293,7 @@ curl -X POST \
     "id": "1",
     "method": "DERO.GetBlockHeaderByTopoHeight",
     "params": {
-        "topo_height": 420
+        "topoheight": 420
     }
 }'
 ```
@@ -312,7 +310,7 @@ curl -X POST \
             "difficulty": "15743",
             "hash": "60e7e9f73a4a0f2c1b4a97976150ef6f53f0253f8552c6b2e7e4a010929d8259",
             "height": 420,
-            "topo_height": 420,
+            "topoheight": 420,
             "major_version": 1,
             "minor_version": 1,
             "nonce": 0,
@@ -382,7 +380,7 @@ curl -X POST \
             "difficulty": "15528",
             "hash": "6a6856b51e9ffd5b07c6c33ca635d984910f3b7fbbaaaebbb61a99780629e449",
             "height": 419,
-            "topo_height": 419,
+            "topoheight": 419,
             "major_version": 1,
             "minor_version": 1,
             "nonce": 0,
@@ -522,7 +520,7 @@ Returns information related to a transaction.
 
 | Name   | Type    | Mandatory | Comment       |
 |--------|---------|-----------|---------------|
-| tx_hashes   | []Hash    | true     | TXs Hashes    |
+| txs_hashes   | []Hash    | true     | TXs Hashes    |
 | decode_as_json | uint64  | false     | Decode each tx as json  |
 
 #### Body
@@ -1024,8 +1022,8 @@ Returns information related to a Smart Contract.
 | scid  | Hash    | true     | Smart Contract ID   |
 | code | bool  | false     | Returns code or not  |
 | variables | bool  | false     | Returns all variables or not  |
-| topheight | int64  | false     | data at specified height  |
-| keysuint64 | []unint64  | false     | All variables with these int keys  |
+| topoheight | int64  | false     | data at specified height  |
+| keysuint64 | []uint64  | false     | All variables with these int keys  |
 | keysstring | []string  | false     | All variables with these string keys  |
 | keysbytes | [][]byte  | false     | All variables with these bytes keys  |
 

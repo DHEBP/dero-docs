@@ -162,7 +162,7 @@ No decryption needed at any step!
 ```
 
 <Callout type="info" emoji="🔐">
-  **Mathematical Guarantee:** Based on elliptic curve discrete logarithm problem - same security assumption as Bitcoin. 256-bit security level.
+  **Mathematical Guarantee:** Based on elliptic curve discrete logarithm problem - same security assumption as Bitcoin. ~128-bit security level (256-bit curve).
 </Callout>
 
 ---
@@ -274,7 +274,7 @@ sequenceDiagram
 | Feature | Bitcoin/UTXO | Ethereum (Account) | DERO (Account + Encrypted) |
 |---------|-------------|-------------------|---------------------------|
 | **Model** | Outputs | Accounts | Accounts |
-| **Privacy** | Ring sigs | ❌ None | ✅ Encrypted |
+| **Privacy** | ❌ Pseudonymous | ❌ None | ✅ Encrypted |
 | **Smart Contracts** | ❌ Limited | ✅ Yes, public | ✅ Yes, **private** |
 | **Confirmations** | Slower | Fast | Fast |
 | **Balance Lookup** | Scan chain | Instant | Instant + private |

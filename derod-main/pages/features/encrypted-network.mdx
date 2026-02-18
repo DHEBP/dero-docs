@@ -81,27 +81,27 @@ graph LR
 
 ### Self-Signed Certificates
 
-**From source code** (`p2p/controller.go:717-776`):
+Simplified from source — see `p2p/tlsconfig.go` for full implementation (`p2p/controller.go:717-776`):
 
-```go
-// Generate random TLS cert
+```text
+// Simplified pseudocode — actual source handles PEM encoding, error checks, etc.
 func generate_random_tls_cert() tls.Certificate {
-    // ECDSA for fast handshakes
-    key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+    key = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
     
-    tml := x509.Certificate{
-        SerialNumber: big.NewInt(random),
+    tml = x509.Certificate{
+        SerialNumber: big.NewInt(randomSerial),
     }
     
-    cert, _ := x509.CreateCertificate(rand.Reader, &tml, &tml, &key.PublicKey, key)
+    certDER = x509.CreateCertificate(rand.Reader, &tml, &tml, &key.PublicKey, key)
+    // PEM-encode certDER and key, then:
     return tls.X509KeyPair(certPem, keyPem)
 }
 
 // Applied to connections
-tlsconfig := &tls.Config{
+tlsconfig = &tls.Config{
     Certificates: []tls.Certificate{generate_random_tls_cert()}
 }
-tlsconn := tls.Server(conn, tlsconfig)
+tlsconn = tls.Server(conn, tlsconfig)
 ```
 
 **Why self-signed?**
@@ -191,7 +191,7 @@ Layer 4: DERO Protocol
 | **Eavesdropping** | ISP sees all data | ✅ Only sees encrypted packets |
 | **Tampering** | Can modify packets | ✅ Detected and rejected |
 | **Traffic Analysis** | Can identify TX types | ⚠️ Timing still visible |
-| **MITM** | Possible | ✅ Prevented (self-signed certs) |
+| **MITM** | Possible | ⚠️ Not prevented (no cert verification) |
 
 **What TLS does NOT hide (network layer metadata):**
 - ⚠️ Your IP address (visible at network layer)
@@ -235,7 +235,7 @@ RPC:  40402 (HTTP, local only)
 **Firewall rules:**
 ```bash
 # Allow P2P (required)
-sudo ufw allow 10101/tcp
+sudo ufw allow 10101/udp
 
 # RPC should be local-only (security)
 # No firewall rule needed for RPC
@@ -273,9 +273,9 @@ sudo ufw allow 10101/tcp
 
 | Blockchain | Network Encryption | Protocol | Performance |
 |------------|-------------------|----------|-------------|
-| **Bitcoin** | ❌ None | TCP | Slower, public |
-| **Ethereum** | ❌ None | TCP | Slower, public |
-| **Other Privacy Coins** | ❌ None | TCP | Slower, public |
+| **Bitcoin** | ✅ BIP 324 (v2 transport, since Core 26.0) | TCP | Slower, public |
+| **Ethereum** | ✅ RLPx (ECIES encrypted transport) | TCP | Slower, public |
+| **Other Privacy Coins** | ⚠️ Varies by implementation | TCP | Slower, public |
 | **DERO** | ✅ TLS | UDP/KCP | Faster, private |
 
 **DERO = Only blockchain with encrypted P2P layer**

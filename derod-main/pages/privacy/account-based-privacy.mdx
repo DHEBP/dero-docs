@@ -194,10 +194,10 @@ graph TB
 
 **Balance Updates:**
 
-**From Source Code** (`blockchain/transaction_execute.go`):
+**Simplified pseudocode** (`blockchain/transaction_execute.go`):
 
-```go
-// Balance update process
+```text
+// Conceptual flow — see source for actual implementation
 func UpdateBalance(address, amount):
     old_encrypted := LoadBalance(address)  // E(old)
     new_encrypted := HomomorphicAdd(old_encrypted, amount)  // E(old + amount)

@@ -29,17 +29,17 @@ import { Callout } from 'nextra/components'
 
 3. Start Dero wallet in testnet:
    ```bash
-   dero-wallet-cli-linux-amd64 --rpc-server --wallet-file testnet.wallet --testnet
+   ./dero-wallet-cli-linux-amd64 --rpc-server --wallet-file testnet.wallet --testnet
    ```
 
 4. Start a second Dero wallet instance to test transfer/ownership functions, etc.:
    ```bash
-   dero-wallet-cli-linux-amd64 --wallet-file testnet2.wallet --testnet --rpc-server --rpc-bind=127.0.0.1:40403
+   ./dero-wallet-cli-linux-amd64 --wallet-file testnet2.wallet --testnet --rpc-server --rpc-bind=127.0.0.1:40404
    ```
 
 5. Dero testnet Explorer:
    ```bash
-   ./explorer-linux-amd64 --rpc-server-address 127.0.0.1:30306 --http-address=0.0.0.0:8080
+   ./explorer-linux-amd64 --rpc-server-address 127.0.0.1:40402 --http-address=0.0.0.0:8080
    ```
 
    - [Dero Stargate Testnet Explorer](https://testnetexplorer.derofoundation.org/)

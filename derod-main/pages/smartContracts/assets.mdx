@@ -57,7 +57,7 @@ This Smart Contract converts assetOne to assetTwo as per the defined ratio in th
     }' -H 'Content-Type: application/json'
     ```
 
-5. **Deposit assetTwo/token2** to the exchange contract:
+5. **Swap assetOne for assetTwo** via the exchange contract:
     ```bash
     curl --silent http://127.0.0.1:40403/json_rpc -d '{
         "jsonrpc":"2.0",

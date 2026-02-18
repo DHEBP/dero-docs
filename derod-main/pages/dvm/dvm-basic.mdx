@@ -171,12 +171,12 @@ Function Transfer(to String, amount Uint64) Uint64
   60 LET sender_bal = LOAD("balance:" + sender)
   70 IF sender_bal < amount THEN GOTO 200
   
-  80 IF EXISTS("balance:" + to) THEN GOTO 100
-  90 STORE("balance:" + to, 0)
+  80 IF EXISTS("balance:" + ADDRESS_RAW(to)) THEN GOTO 100
+  90 STORE("balance:" + ADDRESS_RAW(to), 0)
   
-  100 LET recipient_bal = LOAD("balance:" + to)
+  100 LET recipient_bal = LOAD("balance:" + ADDRESS_RAW(to))
   110 STORE("balance:" + sender, sender_bal - amount)
-  120 STORE("balance:" + to, recipient_bal + amount)
+  120 STORE("balance:" + ADDRESS_RAW(to), recipient_bal + amount)
   130 RETURN 0
   
   200 RETURN 1 ' Error
