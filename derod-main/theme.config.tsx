@@ -100,15 +100,14 @@ const config: DocsThemeConfig = {
   docsRepositoryBase: 'https://github.com/DHEBP/dero-docs',
   useNextSeoProps() {
     const { route } = useRouter()
-    const { url, images } = seoConfig.openGraph
 
     if (route === '/') {
-      return { titleTemplate: '%s – DERO' }
+      return { titleTemplate: '%s – DERO', description: '' }
     }
 
     return {
       titleTemplate: seoConfig.title.template,
-      openGraph: { url, images: [{ url: `${url}${images}` }] }
+      description: ''
     }
   },
   logo,
@@ -131,30 +130,33 @@ const config: DocsThemeConfig = {
         ))}
         <meta httpEquiv="Content-Language" content="en" />
         <meta
+          key="description"
           name="description"
           content={meta.description || seoConfig.description}
         />
         
         {/* OpenGraph tags */}
         <meta
+          key="og:title"
           property="og:title"
           content={title ? title + ' – DERO' : seoConfig.title.default}
         />
         <meta
+          key="og:description"
           property="og:description"
           content={meta.description || seoConfig.description}
         />
-        <meta property="og:image" content={imageUrl} />
-        <meta property="og:url" content={`${seoConfig.openGraph.url}${pagePath}`} />
-        <meta property="og:type" content="article" />
+        <meta key="og:image" property="og:image" content={imageUrl} />
+        <meta key="og:url" property="og:url" content={`${seoConfig.openGraph.url}${pagePath}`} />
+        <meta key="og:type" property="og:type" content="article" />
         
         {/* Twitter tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content={seoConfig.twitter.site} />
-        <meta name="twitter:creator" content={seoConfig.twitter.creator} />
-        <meta name="twitter:title" content={title ? title + ' – DERO' : seoConfig.title.default} />
-        <meta name="twitter:description" content={meta.description || seoConfig.description} />
-        <meta name="twitter:image" content={imageUrl} />
+        <meta key="twitter:card" name="twitter:card" content="summary_large_image" />
+        <meta key="twitter:site" name="twitter:site" content={seoConfig.twitter.site} />
+        <meta key="twitter:creator" name="twitter:creator" content={seoConfig.twitter.creator} />
+        <meta key="twitter:title" name="twitter:title" content={title ? title + ' – DERO' : seoConfig.title.default} />
+        <meta key="twitter:description" name="twitter:description" content={meta.description || seoConfig.description} />
+        <meta key="twitter:image" name="twitter:image" content={imageUrl} />
         
         {/* Canonical URL */}
         <link rel="canonical" href={`${seoConfig.openGraph.url}${pagePath}`} />
