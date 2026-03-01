@@ -75,6 +75,10 @@ const (
 
 When TELA dApps request developer support via `AttemptEPOCHWithAddr`, Hologram temporarily switches EPOCH rewards to the app developer's address, ensuring fair distribution of support.
 
+<Callout type="info">
+  **External XSWD Support:** The `AttemptEPOCHWithAddr` method is fully supported over the external XSWD WebSocket (port 44326), allowing external dApps to seamlessly request hash computations directed to their specific developer address, just like internal TELA apps.
+</Callout>
+
 ### How It Works
 
 1. **App requests support** — TELA app calls `AttemptEPOCHWithAddr` with developer address

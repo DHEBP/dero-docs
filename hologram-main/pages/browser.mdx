@@ -298,10 +298,18 @@ Hologram supports all standard XSWD methods for full compatibility with existing
 | Category | Methods | Status |
 |----------|---------|--------|
 | **DERO Daemon** | `DERO.GetInfo`, `DERO.GetBlock`, `DERO.GetTransaction`, etc. | ✅ Fully supported |
-| **Wallet** | `GetAddress`, `GetBalance`, `Transfer`, `scinvoke`, etc. | ✅ Fully supported |
+| **Wallet** | `GetAddress`, `GetBalance`, `Transfer`, `scinvoke`, `GetTransfers`, `GetTransferbyTXID`, `MakeIntegratedAddress`, `SplitIntegratedAddress`, `QueryKey`, `SignData`, `CheckSignature`, `HasMethod`, `Unsubscribe`, `transfer_split` | ✅ Fully supported |
 | **Gnomon Indexer** | `Gnomon.GetAllSCIDVariableDetails`, `Gnomon.GetStatus`, etc. | ✅ Fully supported |
 | **EPOCH Mining** | `AttemptEPOCH`, `AttemptEPOCHWithAddr`, `GetMaxHashesEPOCH` | ✅ Fully supported |
 | **TELA Links** | `HandleTELALinks` | ✅ Fully supported |
+
+#### XSWD Parity Features
+
+Hologram's XSWD server has been specifically engineered to ensure 100% plug-and-play parity with Engram and the official DERO CLI:
+
+- **Case-Insensitivity**: Fully supports lowercase aliases (e.g., `getbalance`, `getaddress`, `transfer_split`) to match various dApp implementations.
+- **Advanced Transfer Parsing**: Full support for parsing `sc_dero_deposit`, `sc_token_deposit`, custom `fees`, and per-transfer `scid` (for token transfers) via XSWD.
+- **Smart Contract Deployment**: XSWD `sc` parameter forwarding is fully supported for deploying new contracts directly from dApps.
 
 #### Response Format Compatibility
 

@@ -82,9 +82,21 @@ GetLocalDevServerStatus() -> {
 
 ## Deploy
 
-The Deploy tab enables batch deployment of complete TELA applications to the blockchain.
+The Deploy tab provides tools for deploying both complete TELA applications and raw DVM-BASIC smart contracts to the blockchain.
 
-### Deployment Process
+### Upload Smart Contract (Raw SC)
+
+For developers building standalone smart contracts or testing backend logic, Hologram provides a direct SC deployment interface:
+
+1. **Select "Upload SC"** — Toggle to the raw smart contract deployment mode
+2. **Paste Code** — Paste your DVM-BASIC smart contract code into the editor
+3. **Deploy** — Hologram automatically estimates gas and deploys the contract
+
+<Callout type="info">
+  **Simulator Safe**: When deploying raw smart contracts in Simulator Mode, Hologram uses a specialized connect/disconnect pattern that temporarily pauses the Gnomon indexer to prevent the simulator daemon from crashing due to its single-WebSocket limitation.
+</Callout>
+
+### Batch Deployment Process (TELA Apps)
 
 1. **Choose Directory** — Select your app folder
 2. **Configure** — Set name, description, dURL, and content type

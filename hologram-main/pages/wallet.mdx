@@ -112,6 +112,17 @@ Labels are stored locally and help you track the purpose of transactions over ti
   Transactions require approximately 4-5 seconds to propagate and will show as "pending" until confirmed in a block.
 </Callout>
 
+### Ringsize UI Control
+
+Hologram allows you to explicitly select the **Ringsize** for both DERO and Token transfers.
+
+- **Available Options**: 2, 16, 32, 64, 128
+- **Default**: 16 (Standard anonymity)
+
+<Callout type="warning">
+  **Developer Note on Ringsize 2**: Using ringsize 2 is critical when interacting with smart contracts that need to read the caller's address via `ADDRESS_STRING(SIGNER())`. If you use ringsize 16 or higher, the transaction is fully anonymous, and `SIGNER()` will return an empty string.
+</Callout>
+
 ## Receiving DERO
 
 Your wallet address is always visible in the Wallet tab. You can:

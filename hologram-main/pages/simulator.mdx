@@ -268,6 +268,14 @@ if (line.startsWith('*' + '/')) { ... }
 | Persistence | Can be reset | Permanent |
 | Gnomon | Limited indexing | Full indexing |
 
+### Architectural Resilience & Recovery
+
+The official DERO simulator daemon has a strict limitation: **it only allows one WebSocket connection at a time**. Hologram implements intelligent connection management to prevent daemon crashes and ensure a smooth developer experience:
+
+- **Smart Contract Deployment Protection**: When deploying a smart contract, Hologram automatically pauses the Gnomon indexer to free up the single WebSocket slot, temporarily connects the deployment wallet, executes the transaction, and then resumes Gnomon.
+- **Auto-Reconnect & Fallback**: If Hologram hot-reloads or restarts, it automatically detects and reconnects to the existing simulator daemon. If the simulator is dead or unreachable, Hologram safely falls back to mainnet to prevent the app from locking up.
+- **Gnomon Stale Height Reset**: If a developer resets the simulator blockchain, Gnomon automatically detects if its stored database height exceeds the daemon's current chain height and resets itself to prevent indexing errors.
+
 ## Status Response
 
 ```go

@@ -15,6 +15,14 @@ Hologram includes a comprehensive blockchain explorer for viewing blocks, transa
 
 The Explorer landing page features **OmniSearch**, a universal search that intelligently detects and routes queries to the appropriate handler.
 
+### Intelligent Hash Resolution
+
+When searching a 64-character hex string, OmniSearch automatically determines if it's a Smart Contract (SCID) or a standard Transaction (TXID). It does this by checking if the returned object contains actual smart contract `code`. If the code is empty, it intelligently falls back to displaying the standard transaction details, preventing misclassification.
+
+### Non-Eager Autocomplete
+
+To provide a cleaner user experience, the OmniSearch input field features a non-eager autocomplete. While it focuses automatically on page load, the recent searches dropdown will only appear upon explicit user interaction (clicking the input), preventing the UI from feeling overly aggressive.
+
 ```mermaid
 flowchart LR
     INPUT["Search Input"] --> DETECT{Type Detection}
