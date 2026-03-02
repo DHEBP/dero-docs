@@ -1,0 +1,135 @@
+---
+title: "React Components — DeroAuth UI"
+description: "Drop-in React components for DeroAuth: SignInWithDero button, DeroAuthProvider, and useDeroAuth hook."
+---
+
+import { Callout } from 'nextra/components';
+
+# React Components
+
+DeroAuth provides drop-in React components for wallet-based login.
+
+```tsx
+import {
+  DeroAuthProvider,
+  SignInWithDero,
+  useDeroAuth,
+  useDeroAuthContext,
+} from "dero-auth/react";
+```
+
+## DeroAuthProvider
+
+Wraps your app to provide authentication context:
+
+```tsx
+import { DeroAuthProvider } from "dero-auth/react";
+
+export default function Layout({ children }) {
+  return (
+    <DeroAuthProvider
+      appName="My App"
+      challengeEndpoint="/api/auth/challenge"
+      verifyEndpoint="/api/auth/verify"
+    >
+      {children}
+    </DeroAuthProvider>
+  );
+}
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `appName` | `string` | required | Displayed in wallet connection prompt |
+| `challengeEndpoint` | `string` | `/api/auth/challenge` | Server challenge endpoint |
+| `verifyEndpoint` | `string` | `/api/auth/verify` | Server verify endpoint |
+| `children` | `ReactNode` | required | Child components |
+
+## SignInWithDero
+
+A pre-built button that handles the entire authentication flow:
+
+```tsx
+import { SignInWithDero } from "dero-auth/react";
+
+function LoginPage() {
+  return (
+    <SignInWithDero
+      onSuccess={(session) => console.log("Signed in!", session.address)}
+      onError={(error) => console.error("Auth failed:", error)}
+    />
+  );
+}
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `onSuccess` | `(session) => void` | Callback on successful authentication |
+| `onError` | `(error: Error) => void` | Callback on failure |
+| `label` | `string` | Button text (default: "Sign In with DERO") |
+| `className` | `string` | Additional CSS classes |
+
+The button automatically:
+1. Connects to the local wallet via XSWD
+2. Requests a challenge from the server
+3. Asks the user to sign the challenge
+4. Sends the signature to the server for verification
+5. Stores the JWT session
+
+## useDeroAuth Hook
+
+For building custom login UIs:
+
+```tsx
+"use client";
+import { useDeroAuth } from "dero-auth/react";
+
+export default function CustomLogin() {
+  const {
+    signIn,           // Trigger the auth flow
+    signOut,          // Clear the session
+    isAuthenticated,  // Boolean: currently signed in
+    address,          // DERO address (or null)
+    isLoading,        // Boolean: auth in progress
+    error,            // Error object (or null)
+  } = useDeroAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div>
+        <p>Welcome, {address}</p>
+        <button onClick={signOut}>Sign Out</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={signIn} disabled={isLoading}>
+        {isLoading ? "Connecting wallet..." : "Connect Wallet"}
+      </button>
+      {error && <p className="text-red-500">{error.message}</p>}
+    </div>
+  );
+}
+```
+
+## useDeroAuthContext
+
+Same as `useDeroAuth` but requires being inside a `DeroAuthProvider`:
+
+```tsx
+import { useDeroAuthContext } from "dero-auth/react";
+
+function UserBadge() {
+  const { isAuthenticated, address } = useDeroAuthContext();
+
+  if (!isAuthenticated) return null;
+
+  return <span>Connected: {address?.slice(0, 12)}...</span>;
+}
+```
+
+<Callout type="info">
+  Use `useDeroAuth` for standalone usage (no provider needed). Use `useDeroAuthContext` when you have a `DeroAuthProvider` wrapping your app and want shared state across components.
+</Callout>

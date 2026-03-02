@@ -1,0 +1,68 @@
+---
+title: "DeroAuth Overview — Wallet-Based Authentication for DERO"
+description: "DeroAuth enables 'Sign in with your DERO wallet' — privacy-preserving authentication using Schnorr signatures on BN256."
+---
+
+import { Callout } from 'nextra/components';
+
+# DeroAuth Overview
+
+**Sign in with your DERO wallet.** No email. No password. Just cryptographic proof of wallet ownership.
+
+`dero-auth` is a TypeScript library that provides wallet-based authentication for DERO. It works like "Sign in with Ethereum" (SIWE), but for DERO's privacy chain.
+
+<Callout emoji="🔒">
+  **Privacy advantage**: Unlike Ethereum auth (which exposes your full transaction history), authenticating with DERO reveals *nothing* about your on-chain activity. All transactions are encrypted.
+</Callout>
+
+## Features
+
+- **Pure TypeScript** signature verification (Schnorr on BN256) — no wallet needed server-side
+- **React components** — drop-in `<SignInWithDero />` button and `useDeroAuth()` hook
+- **Next.js integration** — ready-made API route handlers and auth middleware
+- **XSWD client** — connects to DERO wallets (Engram, CLI) via WebSocket
+- **SIWE-style message format** — human-readable, domain-bound, replay-protected
+- **JWT sessions** — standard token-based session management
+- **Zero personal data** — just a cryptographic address
+
+## How It Works
+
+1. Server generates a **challenge** (human-readable message with domain, nonce, expiry)
+2. User's wallet **signs** the challenge via XSWD (WebSocket to local wallet)
+3. Server **verifies** the Schnorr signature purely in TypeScript — no RPC call to a node
+4. **JWT session** is issued
+
+The entire verification is mathematical — no blockchain query needed.
+
+## Why Not Just Use Ethereum Auth?
+
+| | Ethereum (SIWE) | DERO Auth |
+|---|---|---|
+| **Transaction privacy** | All transactions visible on-chain | Transactions encrypted, invisible to verifier |
+| **Wallet extension** | MetaMask required | Connects to local wallet via WebSocket |
+| **Personal data exposed** | Address links to full history | Address reveals nothing about activity |
+| **Verification** | Pure JS (ecrecover) | Pure JS (Schnorr on BN256) |
+
+## Wallet Compatibility
+
+| Wallet | Connection | Status |
+|---|---|---|
+| Engram (desktop) | XSWD (`ws://localhost:44326`) | Supported |
+| DERO CLI wallet | XSWD (`ws://localhost:10103`) | Supported |
+
+## Package Exports
+
+| Import | Purpose |
+|---|---|
+| `dero-auth` | Core types and message format |
+| `dero-auth/crypto` | Pure crypto: Schnorr verify, BN256, address parsing |
+| `dero-auth/server` | Challenge generation, verification, JWT sessions |
+| `dero-auth/client` | Browser SDK: XSWD wallet connection, signing flow |
+| `dero-auth/react` | `<SignInWithDero />` button, provider, hooks |
+| `dero-auth/next` | Next.js API route handlers, auth middleware |
+
+## Next Steps
+
+- [Quick Start](/dero-auth/quick-start) — Add wallet login to your app
+- [Authentication Flow](/dero-auth/auth-flow) — Detailed flow walkthrough
+- [Cryptography](/dero-auth/cryptography) — Schnorr, BN256, and DERO's unique curve

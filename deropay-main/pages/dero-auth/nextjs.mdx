@@ -1,0 +1,125 @@
+---
+title: "Next.js Integration — DeroAuth Route Handlers & Middleware"
+description: "Set up DeroAuth in a Next.js 14/15 App Router project with API route handlers and auth middleware."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Next.js Integration
+
+DeroAuth provides ready-made API route handlers and auth middleware for Next.js 14+ App Router.
+
+## Setup
+
+<Steps>
+
+### Create Shared Config
+
+```ts
+// lib/dero-auth.ts
+import { createAuthHandlers } from "dero-auth/next";
+
+export const {
+  challengeHandler,    // POST handler for challenge route
+  verifyHandler,       // POST handler for verify route
+  challengeServer,     // Underlying challenge server (for custom usage)
+  sessionManager,      // Underlying session manager (for custom usage)
+} = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+  statement: "Sign in to My App", // optional message shown to user
+  expirationTime: 300,            // optional: challenge expiry in seconds (default: 300)
+});
+```
+
+### Wire Up API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+import { challengeHandler } from "@/lib/dero-auth";
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+import { verifyHandler } from "@/lib/dero-auth";
+export const POST = verifyHandler;
+```
+
+### Environment Variables
+
+```env
+# .env.local
+JWT_SECRET=your-jwt-secret-at-least-32-bytes
+```
+
+</Steps>
+
+## Protecting Routes with Middleware
+
+DeroAuth includes a middleware that protects pages and API routes:
+
+```ts
+// middleware.ts
+import { createDeroAuthMiddleware } from "dero-auth/next";
+
+export const middleware = createDeroAuthMiddleware({
+  jwtSecret: process.env.JWT_SECRET!,
+  protectedPaths: ["/dashboard", "/api/protected"],
+  loginPath: "/login",
+});
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/api/protected/:path*"],
+};
+```
+
+Unauthenticated users hitting `/dashboard` are redirected to `/login`. Unauthenticated API requests get a `401` response.
+
+## Reading the Auth Address
+
+In protected API routes or server components:
+
+```ts
+import { getAuthAddress } from "dero-auth/next";
+
+export async function GET(request: Request) {
+  const address = await getAuthAddress(request);
+
+  if (!address) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  // address is the verified DERO address
+  return Response.json({ address });
+}
+```
+
+## Full Example: Protected Dashboard
+
+```tsx
+// app/dashboard/page.tsx (Server Component)
+import { getAuthAddress } from "dero-auth/next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const address = await getAuthAddress(headers());
+
+  if (!address) {
+    redirect("/login");
+  }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Connected wallet: {address}</p>
+    </div>
+  );
+}
+```
+
+<Callout type="info">
+  The middleware approach is recommended for protecting multiple routes. Use `getAuthAddress` for fine-grained checks within individual routes or server components.
+</Callout>

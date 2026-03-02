@@ -1,21 +1,24 @@
 {
   "name": "dero-docs-monorepo",
   "version": "1.0.0",
-  "description": "Monorepo for DERO and TELA documentation sites",
+  "description": "Monorepo for DERO, TELA, and DeroPay documentation sites",
   "private": true,
   "workspaces": [
     "derod-main",
-    "tela-main"
+    "tela-main",
+    "deropay-main"
   ],
   "scripts": {
     "dev:derod": "cd derod-main && npm run dev",
     "dev:tela": "cd tela-main && npm run dev",
+    "dev:deropay": "cd deropay-main && npm run dev",
     "build:derod": "cd derod-main && npm run build",
     "build:tela": "cd tela-main && npm run build",
-    "build:all": "npm run build:derod && npm run build:tela",
-    "install:all": "cd derod-main && npm install && cd ../tela-main && npm install",
-    "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out",
-    "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules node_modules"
+    "build:deropay": "cd deropay-main && npm run build",
+    "build:all": "npm run build:derod && npm run build:tela && npm run build:deropay",
+    "install:all": "cd derod-main && npm install && cd ../tela-main && npm install && cd ../deropay-main && npm install",
+    "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out deropay-main/.next deropay-main/out",
+    "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules deropay-main/node_modules node_modules"
   },
   "repository": {
     "type": "git",

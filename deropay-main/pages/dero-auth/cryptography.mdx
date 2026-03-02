@@ -1,0 +1,116 @@
+---
+title: "Cryptography — Schnorr Signatures on BN256"
+description: "How DeroAuth verifies DERO wallet signatures: Schnorr on BN256, custom generator point, Keccak-256 hashing, and Bech32 address encoding."
+---
+
+import { Callout } from 'nextra/components';
+
+# Cryptography
+
+DeroAuth performs signature verification using DERO's native cryptographic primitives — entirely in TypeScript.
+
+## Schnorr Signatures on BN256
+
+DERO uses **Schnorr signatures** on the **BN256** (Barreto-Naehrig 254-bit) elliptic curve. This is fundamentally different from Bitcoin/Ethereum which use ECDSA on secp256k1.
+
+### Signature Scheme
+
+A Schnorr signature consists of `(s, e)` where:
+- `e = H(R || P || M)` — hash of the nonce point, public key, and message
+- `s = r - e * x` — the scalar response (where `x` is the private key, `r` is the nonce)
+
+Verification checks: `s*G + e*P == R`
+
+### Hash Function
+
+DERO uses **Keccak-256** (not SHA-256) for signature hashing. The hash output is **reduced modulo the curve order** to produce a scalar.
+
+```ts
+import { reducedHash } from "dero-auth/crypto";
+
+// Keccak-256 of the input, reduced mod curve order
+const scalar = reducedHash(messageBytes);
+```
+
+## DERO's Custom Generator Point
+
+<Callout type="warning">
+  **Critical detail**: DERO does **not** use the standard BN256 generator point `(1, 2)`. It uses a custom generator derived from hashing. This was a critical discovery during development — using the standard generator produces invalid verification results.
+</Callout>
+
+The custom generator is defined in `dero-auth/crypto` and was reverse-engineered from the DERO Go source code. This is the single most important implementation detail for anyone attempting DERO signature verification.
+
+## Address Format
+
+DERO addresses use **Bech32 encoding** with a 33-byte compressed G1 public key:
+
+```
+dero1qy[...rest of bech32...]
+```
+
+The `dero-auth/crypto` module provides encoding and decoding:
+
+```ts
+import { decodeAddress, encodeAddress, isValidAddress } from "dero-auth/crypto";
+
+// Decode address to get the public key bytes
+const publicKeyBytes = decodeAddress("dero1qy...");
+// Returns: Uint8Array (33 bytes, compressed G1 point)
+
+// Encode a public key back to an address
+const address = encodeAddress(publicKeyBytes);
+
+// Validate format
+const isValid = isValidAddress("dero1qy...");
+```
+
+## PEM Signature Format
+
+DERO wallets produce signatures in **PEM format** — a base64-encoded block wrapped in header/footer lines:
+
+```
+-----BEGIN DERO SIGNED MESSAGE-----
+[base64 encoded signature data]
+-----END DERO SIGNED MESSAGE-----
+```
+
+```ts
+import { parsePEM } from "dero-auth/crypto";
+
+const { signature, publicKey } = parsePEM(pemString);
+```
+
+## Verification Pipeline
+
+The full verification process:
+
+```ts
+import { verifySignature } from "dero-auth/crypto";
+
+const result = verifySignature({
+  message: challengeMessage,
+  signature: pemSignature,
+  address: "dero1qy...",
+});
+
+if (result.valid) {
+  // Signature is mathematically valid
+  // result.address contains the verified DERO address
+}
+```
+
+Under the hood:
+1. Parse PEM to extract raw signature bytes
+2. Decode the DERO address to a compressed G1 public key
+3. Decompress the public key to a full curve point
+4. Hash the message with Keccak-256, reduce mod curve order
+5. Verify the Schnorr equation: `s*G + e*P == R`
+
+## Dependencies
+
+All cryptographic operations use audited libraries:
+
+- **`@noble/curves`** — BN256 curve operations (audited by Cure53)
+- **`@noble/hashes`** — Keccak-256 hashing (audited by Cure53)
+
+No custom cryptographic implementations.

@@ -1,0 +1,131 @@
+---
+title: "DeroPay Quick Start — Accept DERO Payments"
+description: "Get started with DeroPay in under 5 minutes. Create invoices, monitor payments, and handle webhooks."
+---
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components';
+
+# Quick Start
+
+Accept your first DERO payment in under 5 minutes.
+
+## Install
+
+<Tabs items={['bun', 'npm', 'pnpm']}>
+  <Tab>
+    ```bash
+    bun add dero-pay
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install dero-pay
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    pnpm add dero-pay
+    ```
+  </Tab>
+</Tabs>
+
+## Server-Side Usage
+
+<Steps>
+
+### Create an Invoice Engine
+
+```ts
+import { InvoiceEngine } from "dero-pay/server";
+import { deroToAtomic } from "dero-pay";
+
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+  defaultTtlSeconds: 900,            // 15 min invoice window
+  defaultRequiredConfirmations: 3,   // blocks to wait
+});
+
+await engine.start();
+```
+
+### Create an Invoice
+
+```ts
+const invoice = await engine.createInvoice({
+  name: "Widget Pro",
+  description: "Premium widget subscription",
+  amount: deroToAtomic("5.0"), // 5 DERO (5_000_000_000_000 atomic units)
+});
+
+console.log(invoice.integratedAddress); // Customer sends DERO here
+console.log(invoice.id);               // Track status with this ID
+```
+
+### Listen for Payment Events
+
+```ts
+engine.on("invoiceStatusChanged", (invoice, previousStatus) => {
+  console.log(`Invoice ${invoice.id}: ${previousStatus} → ${invoice.status}`);
+
+  if (invoice.status === "completed") {
+    // Fulfill the order
+  }
+});
+```
+
+</Steps>
+
+## Next.js App Router
+
+DeroPay provides ready-made route handlers for Next.js:
+
+```ts
+// app/api/pay/create/route.ts
+import { createPaymentHandlers } from "dero-pay/next";
+
+const { createInvoiceHandler, statusHandler } = createPaymentHandlers({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+export const GET = statusHandler;
+```
+
+## React Components
+
+Drop-in components for your payment UI:
+
+```tsx
+import { DeroPayProvider, InvoiceView, PayWithDero } from "dero-pay/react";
+
+function PaymentPage({ invoiceId }: { invoiceId: string }) {
+  return (
+    <DeroPayProvider appName="My Store" statusEndpoint="/api/pay/status">
+      <InvoiceView
+        invoiceId={invoiceId}
+        onCompleted={() => console.log("Paid!")}
+      />
+      <PayWithDero invoiceId={invoiceId} />
+    </DeroPayProvider>
+  );
+}
+```
+
+<Callout type="info">
+  The `<PayWithDero>` button connects to the customer's local DERO wallet via XSWD, letting them pay directly from their wallet with one click.
+</Callout>
+
+## What's Next
+
+- [Invoice Engine](/dero-pay/invoice-engine) — Full engine configuration and lifecycle
+- [Webhooks](/dero-pay/webhooks) — HMAC-signed webhook verification
+- [React Components](/dero-pay/react) — All available components and props
+- [Next.js Integration](/dero-pay/nextjs) — Complete Next.js setup guide

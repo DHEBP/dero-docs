@@ -1,0 +1,100 @@
+---
+title: "Escrow TypeScript SDK — EscrowContract & EscrowManager"
+description: "Use the dero-pay/escrow module to create, fund, release, refund, and arbitrate escrow transactions programmatically."
+---
+
+import { Callout } from 'nextra/components';
+
+# Escrow TypeScript SDK
+
+The `dero-pay/escrow` module provides two levels of abstraction for working with escrow:
+
+```ts
+import { EscrowContract, EscrowManager } from "dero-pay/escrow";
+```
+
+## EscrowManager (High-Level)
+
+The recommended way to work with escrow. Manages the full lifecycle:
+
+```ts
+import { EscrowManager } from "dero-pay/escrow";
+
+const escrow = new EscrowManager({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Create a new escrow
+const escrowId = await escrow.create({
+  buyerAddress: "dero1qy...",
+  sellerAddress: "dero1qx...",
+  amount: 5_000_000_000_000, // 5 DERO in atomic units (10^12 per DERO)
+  expirySeconds: 86400,     // 24 hours
+  platformFeeBps: 250,      // 2.5% platform fee
+  arbitratorAddress: "dero1qz...", // optional
+});
+
+// Buyer deposits
+await escrow.deposit(escrowId);
+
+// Seller releases (after delivery)
+await escrow.release(escrowId);
+
+// Or: buyer requests refund
+await escrow.refund(escrowId);
+
+// Or: either party disputes
+await escrow.dispute(escrowId);
+
+// Arbitrator resolves (sends to buyer or seller)
+await escrow.arbitrate(escrowId, { releaseTo: "seller" });
+
+// Check status
+const status = await escrow.getStatus(escrowId);
+```
+
+## EscrowContract (Low-Level)
+
+Direct wrapper around the smart contract's RPC functions:
+
+```ts
+import { EscrowContract } from "dero-pay/escrow";
+import { WalletRPC } from "dero-pay/rpc";
+
+const wallet = new WalletRPC("http://127.0.0.1:10103/json_rpc");
+const contract = new EscrowContract(wallet, contractAddress);
+
+// Call contract functions directly
+await contract.deposit(amount);
+await contract.release();
+await contract.refund();
+await contract.claimExpired();
+await contract.dispute();
+await contract.arbitrate(recipientAddress);
+
+// Read contract state
+const status = await contract.getStatus();
+const balance = await contract.getBalance();
+```
+
+## Status Types
+
+```ts
+import { EscrowStatusCode, statusCodeToString } from "dero-pay/escrow";
+
+// EscrowStatusCode constants:
+// AWAITING_DEPOSIT: 0
+// FUNDED: 1
+// RELEASED: 2
+// REFUNDED: 3
+// EXPIRED_CLAIMED: 4
+// DISPUTED: 5
+// ARBITRATED: 6
+
+statusCodeToString(2); // "released"
+```
+
+<Callout type="info">
+  The `EscrowManager` handles contract deployment, status tracking, and state validation. Use `EscrowContract` directly only if you need fine-grained control or are integrating with an existing contract deployment.
+</Callout>

@@ -1,0 +1,98 @@
+---
+title: "Webhooks — HMAC-Signed Payment Notifications"
+description: "DeroPay sends HMAC-SHA256 signed webhooks on payment state changes. Learn how to configure and verify them."
+---
+
+import { Callout } from 'nextra/components';
+
+# Webhooks
+
+DeroPay sends HMAC-SHA256 signed HTTP POST notifications when invoice states change. This lets your backend react to payments in real-time.
+
+## Configuration
+
+```ts
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+## Webhook Payload
+
+When an invoice status changes, DeroPay POSTs a JSON payload:
+
+```json
+{
+  "event": "invoice.completed",
+  "invoiceId": "inv_abc123",
+  "status": "completed",
+  "previousStatus": "confirming",
+  "amount": 5000000000000,
+  "paidAmount": 5000000000000,
+  "timestamp": "2026-02-16T12:00:00.000Z",
+  "metadata": { "orderId": "ORD-123" }
+}
+```
+
+## Signature Verification
+
+Every webhook includes an `X-DeroPay-Signature` header containing the HMAC-SHA256 signature of the request body.
+
+**Always verify webhooks before processing:**
+
+```ts
+import { verifyWebhookSignature } from "dero-pay/server";
+
+// In your webhook handler
+export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get("X-DeroPay-Signature")!;
+
+  const isValid = verifyWebhookSignature(
+    body,
+    signature,
+    process.env.WEBHOOK_SECRET!
+  );
+
+  if (!isValid) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+
+  switch (event.event) {
+    case "invoice.completed":
+      // Fulfill the order
+      break;
+    case "invoice.expired":
+      // Handle expiration
+      break;
+    case "invoice.partial":
+      // Handle underpayment
+      break;
+  }
+
+  return new Response("OK", { status: 200 });
+}
+```
+
+<Callout type="warning">
+  **Security**: Always verify the webhook signature. Without verification, an attacker could send fake payment confirmations to your endpoint.
+</Callout>
+
+## Webhook Events
+
+| Event | Trigger |
+|---|---|
+| `invoice.pending` | Invoice is awaiting payment |
+| `invoice.confirming` | Transaction detected, waiting for confirmations |
+| `invoice.completed` | Payment fully confirmed |
+| `invoice.expired` | Payment window closed |
+| `invoice.partial` | Underpayment detected |
+
+## Retry Behavior
+
+If your webhook endpoint returns a non-2xx status code, DeroPay will retry with exponential backoff. Failed webhooks are logged and can be inspected in the merchant dashboard.

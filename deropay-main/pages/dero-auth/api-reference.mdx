@@ -1,0 +1,229 @@
+---
+title: "DeroAuth API Reference"
+description: "Complete API reference for the dero-auth package — all exports, types, and interfaces."
+---
+
+# API Reference
+
+Complete reference for all `dero-auth` package exports.
+
+## Core (`dero-auth`)
+
+Message format, types, and validation utilities.
+
+```ts
+import {
+  serializeMessage,       // DeroAuthMessage → human-readable string
+  parseMessage,           // String → DeroAuthMessage
+  validateMessage,        // Check domain, nonce, expiry
+  generateNonce,          // Crypto-random nonce string
+
+  // Constants
+  PROTOCOL_VERSION,       // "1"
+
+  // Types
+  type DeroAuthMessage,
+  type DeroAuthConfig,
+  type DeroAuthSession,
+  type DeroAuthError,
+  type DeroChainId,       // "dero-mainnet" | "dero-testnet"
+  type AuthStatus,        // "idle" | "connecting" | "awaiting-signature" | "verifying" | "authenticated" | "error"
+  type WalletStatus,      // "disconnected" | "connecting" | "connected" | "error"
+} from "dero-auth";
+```
+
+## Crypto (`dero-auth/crypto`)
+
+Pure cryptographic operations — no network, no wallet.
+
+```ts
+import {
+  // Signature verification
+  verifySignature,        // Verify PEM signature → { address, message }
+  verifyParsedSignature,  // Verify already-parsed signature
+
+  // PEM format
+  parsePEM,               // Parse DERO PEM format → DeroSignature
+  encodePEM,              // DeroSignature → PEM string
+
+  // Address encoding
+  decodeAddress,          // DERO Bech32 address → DeroAddress
+  encodeAddress,          // G1 public key → DERO address string
+  isValidAddress,         // Validate DERO address format
+
+  // Hashing
+  reducedHash,            // Keccak-256 reduced mod curve order
+
+  // BN256 curve operations
+  decompressG1,           // 33 bytes → G1 curve point
+  compressG1,             // G1 curve point → 33 bytes
+  g1FromAffine,           // (x, y) → G1 point
+  g1Multiply,             // Scalar multiplication
+  g1Add,                  // Point addition
+  g1Negate,               // Point negation
+
+  // Bech32
+  bech32Decode,           // Bech32 string → { hrp, data }
+  bech32Encode,           // (hrp, data) → Bech32 string
+  convertBits,            // Bit-width conversion for Bech32
+
+  // Constants
+  G1_BASE,                // Standard BN256 generator
+  DERO_G,                 // DERO's custom generator point
+  G1_ZERO,                // Identity point
+  FIELD_MODULUS,
+  GROUP_ORDER,
+
+  // Types
+  type G1Point,
+  type DeroSignature,
+  type DeroAddress,
+} from "dero-auth/crypto";
+```
+
+### Key Crypto Details
+
+- **Signature scheme**: Schnorr on BN256 (Barreto-Naehrig 254-bit)
+- **Hash function**: Keccak-256, reduced modulo curve order
+- **Address format**: Bech32 with 33-byte compressed G1 public key
+- **Generator**: `DERO_G = HashToPoint(Keccak256("DEROG"))` — DERO's custom generator
+- **Library**: `@noble/curves` (audited by Cure53)
+
+## Server (`dero-auth/server`)
+
+Challenge generation, signature verification, and JWT sessions.
+
+```ts
+import {
+  // Challenge server
+  createChallengeServer,  // Create challenge server with nonce management
+
+  // Verification
+  verifyAuth,             // Full verification pipeline
+
+  // Sessions
+  createSessionManager,   // JWT session manager (create + verify)
+
+  // Nonce stores
+  createInMemoryNonceStore,             // In-memory store (dev)
+  createRedisNonceStore,                // Redis store (custom executor)
+  createRedisNonceStoreFromNodeRedis,   // Redis store (node-redis client)
+  createRedisNonceStoreFromIORedis,     // Redis store (ioredis client)
+
+  // Types
+  type NonceStore,
+  type NonceRecord,
+  type ChallengeServerConfig,
+  type CreateChallengeOptions,
+  type ChallengeResult,
+  type VerifyOptions,
+  type VerifyResult,
+  type SessionConfig,
+  type DeroJWTPayload,
+  type InMemoryNonceStoreOptions,
+  type RedisNonceStoreOptions,
+  type RedisCommandExecutor,
+  type NodeRedisLike,
+  type IORedisLike,
+} from "dero-auth/server";
+```
+
+### createChallengeServer
+
+Returns an object with:
+- `createChallenge(options)` — Generate a challenge message with nonce
+- `consumeNonce(nonce)` — Mark a nonce as used (returns boolean)
+- `isNonceValid(nonce)` — Check if nonce exists and is unused
+
+### createSessionManager
+
+Returns an object with:
+- `createSession(payload)` — Create a JWT token
+- `verifySession(token)` — Verify and decode a JWT token
+
+## Client (`dero-auth/client`)
+
+Browser-side XSWD connection and signing flow.
+
+```ts
+import {
+  XSWDClient,           // Low-level XSWD WebSocket client (class)
+  createAuthClient,     // High-level auth flow client
+  generateAppId,        // Generate unique app identifier
+
+  type XSWDAppData,
+  type XSWDEvents,
+  type SignInOptions,
+} from "dero-auth/client";
+```
+
+### createAuthClient
+
+Returns an object with:
+- `xswd` — The underlying XSWDClient instance
+- `signIn(options?)` — Run the full auth flow (connect, challenge, sign, verify)
+- `disconnect()` — Close the wallet connection
+
+## React (`dero-auth/react`)
+
+```tsx
+import {
+  DeroAuthProvider,        // Context provider
+  SignInWithDero,          // Drop-in sign-in button
+  useDeroAuth,            // Standalone auth hook (no provider needed)
+  useDeroAuthContext,     // Context-dependent auth hook
+
+  type DeroAuthProviderProps,
+  type DeroAuthContextValue,
+  type SignInWithDeroProps,
+  type UseDeroAuthOptions,
+  type UseDeroAuthReturn,
+} from "dero-auth/react";
+```
+
+## Next.js (`dero-auth/next`)
+
+```ts
+import {
+  createAuthHandlers,          // API route handlers factory
+  createDeroAuthMiddleware,    // Auth middleware for route protection
+  getAuthAddress,              // Extract DERO address from request headers
+
+  type AuthHandlersConfig,
+  type DeroMiddlewareConfig,
+} from "dero-auth/next";
+```
+
+### createAuthHandlers Return Value
+
+```ts
+const {
+  challengeHandler,   // POST handler for /auth/challenge
+  verifyHandler,      // POST handler for /auth/verify
+  challengeServer,    // The underlying challenge server instance
+  sessionManager,     // The underlying session manager instance
+} = createAuthHandlers(config);
+```
+
+### AuthHandlersConfig
+
+```ts
+type AuthHandlersConfig = {
+  domain: string;              // Your domain (e.g., "myapp.com")
+  uri: string;                 // Your full URI (e.g., "https://myapp.com")
+  jwtSecret: string;           // Secret for JWT signing (min 32 bytes)
+  statement?: string;          // Optional message shown to user
+  expirationTime?: number;     // Challenge expiry in seconds (default: 300)
+  nonceStore?: NonceStore;     // Custom nonce store (default: in-memory)
+};
+```
+
+### DeroMiddlewareConfig
+
+```ts
+type DeroMiddlewareConfig = {
+  jwtSecret: string;           // Must match the handlers secret
+  protectedPaths: string[];    // Paths to protect
+  loginPath: string;           // Where to redirect unauthenticated users
+};
+```

@@ -1,0 +1,169 @@
+---
+title: "Guide: Accept DERO Payments in Next.js"
+description: "End-to-end guide for integrating DeroPay into a Next.js 15 App Router project."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Accept DERO Payments in Next.js
+
+A complete guide for integrating DeroPay into a Next.js 15 App Router project — from installation to webhook handling.
+
+## What You'll Build
+
+- API routes for creating invoices and checking status
+- A payment page with QR code and "Pay with DERO" button
+- A webhook endpoint for fulfilling orders
+- Server-side invoice creation from checkout
+
+<Steps>
+
+### Install Dependencies
+
+```bash
+bun add dero-pay
+```
+
+### Set Environment Variables
+
+```env
+# .env.local
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+WEBHOOK_SECRET=your-secret-here
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Create the Payment Engine
+
+```ts
+// lib/deropay.ts
+import { createPaymentHandlers } from "dero-pay/next";
+
+export const {
+  createInvoiceHandler,
+  statusHandler,
+  webhookHandler,
+  engine,
+} = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/dero`,
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+### Create API Routes
+
+```ts
+// app/api/pay/create/route.ts
+import { createInvoiceHandler } from "@/lib/deropay";
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+import { statusHandler } from "@/lib/deropay";
+export const GET = statusHandler;
+```
+
+```ts
+// app/api/webhooks/dero/route.ts
+import { verifyWebhookSignature } from "dero-pay/server";
+
+export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get("X-DeroPay-Signature")!;
+
+  if (!verifyWebhookSignature(body, signature, process.env.WEBHOOK_SECRET!)) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+
+  if (event.event === "invoice.completed") {
+    // Fulfill the order using event.metadata.orderId
+    console.log("Payment completed:", event.invoiceId);
+  }
+
+  return new Response("OK");
+}
+```
+
+### Create the Payment Page
+
+```tsx
+// app/pay/[invoiceId]/page.tsx
+"use client";
+
+import { DeroPayProvider, InvoiceView, PayWithDero } from "dero-pay/react";
+import { useRouter } from "next/navigation";
+
+export default function PayPage({
+  params,
+}: {
+  params: { invoiceId: string };
+}) {
+  const router = useRouter();
+
+  return (
+    <DeroPayProvider appName="My Store" statusEndpoint="/api/pay/status">
+      <div className="max-w-md mx-auto p-8">
+        <h1 className="text-2xl font-bold mb-6">Complete Payment</h1>
+        <InvoiceView
+          invoiceId={params.invoiceId}
+          onCompleted={() => router.push("/thank-you")}
+        />
+        <div className="mt-4">
+          <PayWithDero invoiceId={params.invoiceId} />
+        </div>
+      </div>
+    </DeroPayProvider>
+  );
+}
+```
+
+### Create the Checkout Flow
+
+```tsx
+// app/checkout/page.tsx
+import { engine } from "@/lib/deropay";
+import { deroToAtomic } from "dero-pay";
+import { redirect } from "next/navigation";
+
+export default function CheckoutPage() {
+  async function checkout(formData: FormData) {
+    "use server";
+
+    const invoice = await engine.createInvoice({
+      name: "Premium Plan",
+      description: "Monthly subscription",
+      amount: deroToAtomic("10.0"), // 10 DERO
+      metadata: { orderId: "ORD-" + Date.now() },
+    });
+
+    redirect(`/pay/${invoice.id}`);
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-4">Checkout</h1>
+      <p className="mb-6">Premium Plan — 10 DERO/month</p>
+      <form action={checkout}>
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium"
+        >
+          Pay with DERO
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+</Steps>
+
+<Callout type="info">
+  Make sure your DERO wallet and daemon are running before starting the dev server. See [Prerequisites](/guides/prerequisites) for setup instructions.
+</Callout>

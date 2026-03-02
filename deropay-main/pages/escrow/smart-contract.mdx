@@ -1,0 +1,64 @@
+---
+title: "Escrow Smart Contract — On-Chain DERO Contract"
+description: "The escrow.bas smart contract holds DERO funds in escrow with support for deposits, releases, refunds, disputes, and arbitration."
+---
+
+import { Callout } from 'nextra/components';
+
+# Escrow Smart Contract
+
+The escrow contract is written in DERO's BASIC-like smart contract language and deployed on-chain. It holds funds and enforces escrow rules without any trusted intermediary.
+
+## Contract Functions
+
+| Function | Who Can Call | Description |
+|---|---|---|
+| `Deposit` | Buyer | Send DERO into escrow |
+| `Release` | Seller | Confirm delivery, release funds to seller |
+| `Refund` | Buyer | Request refund (if allowed by state) |
+| `ClaimExpired` | Buyer | Claim funds after expiry time |
+| `Dispute` | Buyer or Seller | Raise a dispute |
+| `Arbitrate` | Arbitrator | Resolve dispute (send to buyer or seller) |
+
+## Roles
+
+- **Buyer** — Deposits DERO into escrow
+- **Seller** — Confirms delivery to trigger fund release
+- **Arbitrator** — Optional third party who resolves disputes
+
+All roles are identified by their DERO address, set at escrow creation time.
+
+## Platform Fees
+
+The contract supports an optional platform fee in **basis points** (1 basis point = 0.01%):
+
+- Set at escrow creation
+- Automatically deducted when funds are released
+- Sent to the platform address (the contract deployer)
+- Not deducted on refunds
+
+```
+Example: 250 basis points = 2.5% platform fee
+On a 100 DERO escrow: 2.5 DERO → platform, 97.5 DERO → seller
+```
+
+## State Transitions
+
+```
+Deposit()       → status 0 → 1 (awaiting_deposit → funded)
+Release()       → status 1 → 2 (funded → released)
+Refund()        → status 1 → 3 (funded → refunded)
+ClaimExpired()  → status 1 → 4 (funded → expired_claimed, only after expiry time)
+Dispute()       → status 1 → 5 (funded → disputed)
+Arbitrate()     → status 5 → 6 (disputed → arbitrated)
+```
+
+<Callout type="warning">
+  The contract is **immutable** once deployed. Each escrow transaction deploys a fresh instance of the contract, so there's no shared state between different escrows.
+</Callout>
+
+## Deployment
+
+The contract is deployed via the DERO wallet RPC when a new escrow is created through the SDK. You don't need to deploy it manually — the `EscrowManager` handles this.
+
+See [TypeScript SDK](/escrow/sdk) for the programmatic interface.

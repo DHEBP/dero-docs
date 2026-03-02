@@ -1,0 +1,112 @@
+---
+title: "Authentication Flow — Challenge, Sign, Verify"
+description: "Detailed walkthrough of the DeroAuth authentication flow: challenge generation, wallet signing, and server-side verification."
+---
+
+import { Callout } from 'nextra/components';
+
+# Authentication Flow
+
+DeroAuth uses a challenge-response pattern similar to SIWE (Sign-In With Ethereum), adapted for DERO's Schnorr signature scheme.
+
+## Flow Diagram
+
+```
+User                    Browser                   Server
+ |                         |                         |
+ | Click "Sign In"         |                         |
+ |------------------------>|                         |
+ |                         | POST /auth/challenge     |
+ |                         |   { address }            |
+ |                         |------------------------>|
+ |                         |   { messageText, nonce } |
+ |                         |<------------------------|
+ |                         |                         |
+ |  Wallet: "Sign this?"   | XSWD: SignData(message) |
+ |  [Approve] [Deny]       |                         |
+ |------------------------>|                         |
+ |  PEM signature           |                         |
+ |                         | POST /auth/verify        |
+ |                         |   { signature, nonce }   |
+ |                         |------------------------>|
+ |                         |     Verify Schnorr sig   |
+ |                         |     Check domain/nonce   |
+ |                         |   { session (JWT) }      |
+ |                         |<------------------------|
+ |  Authenticated!          |                         |
+```
+
+## Step by Step
+
+### 1. Challenge Generation
+
+The server creates a human-readable message for the user to sign:
+
+```
+myapp.com wants you to sign in with your DERO wallet:
+dero1qy...abc123
+
+Sign in to My App
+
+URI: https://myapp.com
+Version: 1
+Chain ID: dero-mainnet
+Nonce: k8j2m4n6p8q0
+Issued At: 2026-02-14T12:00:00.000Z
+Expiration Time: 2026-02-14T12:05:00.000Z
+```
+
+Key properties:
+- **Domain-bound** — Prevents phishing (the domain is displayed in the wallet)
+- **Nonce** — Crypto-random, single-use, prevents replay attacks
+- **Expiry** — Short window (default 5 minutes) limits exposure
+- **Human-readable** — Users can verify what they're signing
+
+### 2. Wallet Signing (XSWD)
+
+The browser connects to the user's local DERO wallet via the **XSWD protocol** (WebSocket):
+
+- **Engram desktop wallet**: `ws://localhost:44326`
+- **DERO CLI wallet**: `ws://localhost:10103`
+
+The XSWD client sends a `SignData` request with the challenge message. The wallet displays the message and asks the user to approve or deny.
+
+If approved, the wallet returns a **PEM-encoded Schnorr signature**.
+
+### 3. Server Verification
+
+The server verifies the signature without needing a DERO node:
+
+1. **Parse** the PEM signature format
+2. **Decode** the DERO address to extract the BN256 public key
+3. **Hash** the message with Keccak-256, reduced modulo the curve order
+4. **Verify** the Schnorr signature against the public key
+5. **Check** domain, nonce, and expiry
+6. **Consume** the nonce (prevents replay)
+7. **Issue** a JWT session token
+
+<Callout type="info">
+  The entire verification is **mathematical** — it uses `@noble/curves` to verify the Schnorr signature on the BN256 curve. No RPC call to a DERO node is needed. This means your auth server doesn't need to run a DERO daemon.
+</Callout>
+
+### 4. Session
+
+A standard JWT is issued containing the DERO address. Use it like any other session token:
+
+```ts
+// Server: verify the session
+import { createSessionManager } from "dero-auth/server";
+
+const sessions = createSessionManager({ secret: process.env.JWT_SECRET! });
+const payload = await sessions.verify(token);
+// { address: "dero1qy...", iat: ..., exp: ... }
+```
+
+## Replay Protection
+
+Nonces are single-use and stored server-side:
+
+- **Development**: In-memory store (default)
+- **Production**: Redis store with atomic consume (recommended for multi-instance)
+
+A nonce can only be used once — if an attacker captures a signed message, they can't replay it.

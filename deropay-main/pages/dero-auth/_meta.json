@@ -1,0 +1,9 @@
+{
+  "overview": "Overview",
+  "quick-start": "Quick Start",
+  "auth-flow": "Authentication Flow",
+  "cryptography": "Cryptography",
+  "react": "React Components",
+  "nextjs": "Next.js Integration",
+  "api-reference": "API Reference"
+}

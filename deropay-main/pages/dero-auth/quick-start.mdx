@@ -1,0 +1,158 @@
+---
+title: "DeroAuth Quick Start — Add Wallet Login"
+description: "Add DERO wallet-based authentication to your app in minutes with dero-auth."
+---
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components';
+
+# Quick Start
+
+Add wallet-based login to your app.
+
+## Install
+
+<Tabs items={['bun', 'npm', 'pnpm']}>
+  <Tab>
+    ```bash
+    bun add dero-auth
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install dero-auth
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    pnpm add dero-auth
+    ```
+  </Tab>
+</Tabs>
+
+## Set a JWT Secret
+
+```bash
+export JWT_SECRET="$(openssl rand -base64 32)"
+```
+
+## Next.js App Router
+
+<Steps>
+
+### Create API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+import { createAuthHandlers } from "dero-auth/next";
+
+const { challengeHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+});
+
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+import { createAuthHandlers } from "dero-auth/next";
+
+const { verifyHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+});
+
+export const POST = verifyHandler;
+```
+
+### Add the Provider and Button
+
+```tsx
+// app/layout.tsx
+import { DeroAuthProvider } from "dero-auth/react";
+
+export default function Layout({ children }) {
+  return (
+    <DeroAuthProvider appName="My App">
+      {children}
+    </DeroAuthProvider>
+  );
+}
+```
+
+```tsx
+// app/login/page.tsx
+import { SignInWithDero } from "dero-auth/react";
+
+export default function LoginPage() {
+  return <SignInWithDero />;
+}
+```
+
+</Steps>
+
+That's it. The button handles the full flow: wallet connection, challenge signing, and verification.
+
+## Custom Hook (Alternative)
+
+If you don't want the provider pattern:
+
+```tsx
+"use client";
+import { useDeroAuth } from "dero-auth/react";
+
+export default function LoginPage() {
+  const { signIn, signOut, isAuthenticated, address, isLoading } = useDeroAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div>
+        <p>Signed in as {address}</p>
+        <button onClick={signOut}>Sign Out</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={signIn} disabled={isLoading}>
+      {isLoading ? "Connecting..." : "Sign In with DERO"}
+    </button>
+  );
+}
+```
+
+## Production: Redis Nonce Store
+
+For production deployments with multiple instances, use a shared nonce store:
+
+```ts
+import { createClient } from "redis";
+import { createAuthHandlers } from "dero-auth/next";
+import { createRedisNonceStoreFromNodeRedis } from "dero-auth/server";
+
+const redis = createClient({ url: process.env.REDIS_URL! });
+await redis.connect();
+
+const nonceStore = createRedisNonceStoreFromNodeRedis(redis, {
+  keyPrefix: "myapp:auth:nonce:",
+});
+
+const { challengeHandler, verifyHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+  nonceStore,
+});
+```
+
+<Callout type="info">
+  The default nonce store is in-memory and works for single-instance deployments. For multi-instance setups (e.g., behind a load balancer), use Redis to ensure replay protection works across all instances.
+</Callout>
+
+## What's Next
+
+- [Authentication Flow](/dero-auth/auth-flow) — Understand the full flow
+- [Cryptography](/dero-auth/cryptography) — How Schnorr verification works on DERO
+- [Next.js Integration](/dero-auth/nextjs) — Route protection and middleware

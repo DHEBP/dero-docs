@@ -1,0 +1,55 @@
+---
+title: "Payment Monitor — Transaction Polling & Confirmation Tracking"
+description: "The PaymentMonitor polls the DERO wallet for incoming transactions and tracks confirmations until invoices are complete."
+---
+
+import { Callout } from 'nextra/components';
+
+# Payment Monitor
+
+The `PaymentMonitor` is the component that watches for incoming DERO payments by polling the wallet RPC.
+
+## How It Works
+
+1. The monitor runs on a configurable interval (default: 5 seconds)
+2. Each poll calls `GetTransfers` on the wallet RPC
+3. Incoming transfers are matched against pending invoices by **payment ID**
+4. When a match is found, the invoice transitions from `pending` → `confirming`
+5. The monitor continues tracking until the required number of confirmations is reached
+6. Once confirmed, the invoice moves to `completed`
+
+## Configuration
+
+The payment monitor is managed by the `InvoiceEngine` — you typically don't create one directly. Configuration is passed through the engine:
+
+```ts
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+
+  // Monitor-specific options
+  pollInterval: 5000,          // How often to check (ms)
+  confirmationsRequired: 1,    // Blocks to wait after detection
+});
+```
+
+## Confirmations
+
+DERO's DAG-based block structure means confirmations work differently than linear blockchains:
+
+- **1 confirmation** (default) — The transaction is included in a block
+- **Higher values** — More blocks have been mined since inclusion
+
+<Callout type="info">
+  For most use cases, 1 confirmation is sufficient on DERO. The encrypted transaction model and DAG structure make double-spend attacks significantly harder than on transparent chains.
+</Callout>
+
+## Partial Payments
+
+If a customer sends less DERO than the invoice amount:
+
+- The invoice transitions to `partial` status
+- The received amount is tracked
+- The monitor continues watching for additional payments
+- If the total reaches the invoice amount, it moves to `confirming` → `completed`
+- If the expiry window closes first, it moves to `expired` (with the partial amount recorded)

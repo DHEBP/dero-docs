@@ -1,0 +1,121 @@
+---
+title: "Invoice Engine — Core Payment Orchestrator"
+description: "The InvoiceEngine is the central component of DeroPay, coordinating invoice creation, payment monitoring, storage, and webhook dispatch."
+---
+
+import { Callout } from 'nextra/components';
+
+# Invoice Engine
+
+The `InvoiceEngine` is the core orchestrator of DeroPay. It coordinates invoice creation, payment monitoring, storage, and webhook dispatch.
+
+## Configuration
+
+```ts
+import { InvoiceEngine, SqliteInvoiceStore } from "dero-pay/server";
+
+const engine = new InvoiceEngine({
+  // Required: DERO wallet RPC endpoint
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+
+  // Required: DERO daemon RPC endpoint
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+
+  // Optional: RPC authentication
+  rpcAuth: { username: "", password: "" },
+
+  // Optional: webhook configuration
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+  webhookMaxRetries: 3,
+
+  // Optional: storage backend (defaults to MemoryInvoiceStore)
+  store: new SqliteInvoiceStore({ path: "./invoices.db" }),
+
+  // Optional: polling interval in ms (default: 5000)
+  pollIntervalMs: 5000,
+
+  // Optional: confirmations required (default: 3)
+  defaultRequiredConfirmations: 3,
+
+  // Optional: invoice expiry in seconds (default: 900 — 15 minutes)
+  defaultTtlSeconds: 900,
+
+  // Optional: escrow settings
+  enableEscrow: true,
+  escrowFeeBasisPoints: 250,     // 2.5% platform fee
+  escrowBlockExpiration: 60,     // blocks until expiry
+});
+```
+
+## Lifecycle
+
+```ts
+// Start the engine (begins payment monitoring)
+await engine.start();
+
+// Create invoices
+const invoice = await engine.createInvoice({
+  name: "Product Name",
+  description: "Product description",
+  amount: 500000, // atomic units (5 DERO)
+  metadata: { orderId: "ORD-123" }, // optional custom data
+});
+
+// Query invoice status
+const status = await engine.getInvoice(invoice.id);
+
+// Stop the engine
+await engine.stop();
+```
+
+## Events
+
+The engine emits events you can listen to:
+
+```ts
+engine.on("invoiceStatusChanged", (invoice, previousStatus) => {
+  // Fires on every status transition
+});
+
+engine.on("paymentDetected", (invoice, payment) => {
+  // Fires when a matching transaction is found (before full confirmation)
+});
+
+engine.on("paymentConfirmed", (invoice, payment) => {
+  // Fires when payment reaches required confirmation depth
+});
+
+engine.on("error", (error) => {
+  // Fires on engine errors (RPC failures, etc.)
+});
+```
+
+## How Payment Detection Works
+
+1. When an invoice is created, DeroPay generates a **unique payment ID** and combines it with the merchant's DERO address into an **integrated address**
+2. The `PaymentMonitor` polls the wallet RPC for incoming transfers
+3. Each transfer is checked for a matching payment ID
+4. When found, the amount is verified and confirmations are tracked
+5. Once the required confirmations are reached, the invoice is marked `completed`
+
+<Callout type="info">
+  **Integrated addresses** are a DERO feature where a payment ID is embedded directly in the address. This means each invoice has a unique address, making payment matching deterministic.
+</Callout>
+
+## Pricing Utilities
+
+DeroPay includes helpers for converting between DERO and atomic units:
+
+```ts
+import { deroToAtomic, atomicToDero, formatDero, ATOMIC_UNITS_PER_DERO } from "dero-pay";
+
+deroToAtomic("5.0");     // 5_000_000_000_000n (BigInt)
+deroToAtomic("0.001");   // 1_000_000_000n
+atomicToDero(5_000_000_000_000n);   // "5.0"
+formatDero(5_000_000_000_000n);     // "5.000000000000 DERO"
+```
+
+<Callout type="warning">
+  DERO uses **12 decimal places** (1 DERO = 10^12 atomic units). This is different from Ethereum's 18 decimals or Bitcoin's 8.
+</Callout>

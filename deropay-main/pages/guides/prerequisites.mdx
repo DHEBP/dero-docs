@@ -1,0 +1,108 @@
+---
+title: "Prerequisites — DERO Wallet & Environment Setup"
+description: "Set up a DERO wallet and development environment for DeroPay and DeroAuth."
+---
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components';
+
+# Prerequisites
+
+Before using DeroPay or DeroAuth, you need a running DERO wallet and a Node.js environment.
+
+## Requirements
+
+- **Node.js** >= 20.0.0
+- **DERO wallet** — Engram (desktop) or DERO CLI wallet
+- **DERO daemon** — synced to mainnet or testnet
+
+## DERO Wallet Setup
+
+<Tabs items={['Engram (Desktop)', 'CLI Wallet']}>
+  <Tab>
+    **Engram** is the official desktop wallet for DERO with built-in XSWD support.
+
+    1. Download from [dero.io](https://dero.io)
+    2. Create or restore a wallet
+    3. XSWD is enabled automatically on `ws://localhost:44326`
+
+    <Callout type="info">
+      Engram is recommended for development — it provides the best XSWD experience for both auth and payments.
+    </Callout>
+  </Tab>
+  <Tab>
+    The CLI wallet requires the `--rpc-server` flag to enable RPC access:
+
+    ```bash
+    # Mainnet
+    dero-wallet-cli \
+      --wallet-file wallet.db \
+      --rpc-server \
+      --rpc-bind=127.0.0.1:10103
+
+    # Testnet
+    dero-wallet-cli \
+      --wallet-file wallet.db \
+      --rpc-server \
+      --rpc-bind=127.0.0.1:40403 \
+      --testnet
+    ```
+  </Tab>
+</Tabs>
+
+## DERO Daemon
+
+The daemon must be running and synced for payment monitoring:
+
+```bash
+# Mainnet
+derod --rpc-bind=127.0.0.1:10102
+
+# Testnet
+derod --rpc-bind=127.0.0.1:40402 --testnet
+```
+
+## Default Ports
+
+| Service | Mainnet | Testnet |
+|---|---|---|
+| Wallet RPC | `127.0.0.1:10103` | `127.0.0.1:40403` |
+| Daemon RPC | `127.0.0.1:10102` | `127.0.0.1:40402` |
+| Engram XSWD | `ws://localhost:44326` | `ws://localhost:44326` |
+
+## Install the SDKs
+
+<Tabs items={['bun', 'npm', 'pnpm']}>
+  <Tab>
+    ```bash
+    # Payments
+    bun add dero-pay
+
+    # Authentication
+    bun add dero-auth
+
+    # Both
+    bun add dero-pay dero-auth
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install dero-pay
+    npm install dero-auth
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    pnpm add dero-pay
+    pnpm add dero-auth
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="warning">
+  Both packages are **ESM-only** (`"type": "module"`). Make sure your project supports ES modules.
+</Callout>
+
+## Next Steps
+
+- [DeroPay Quick Start](/dero-pay/quick-start) — Accept your first payment
+- [DeroAuth Quick Start](/dero-auth/quick-start) — Add wallet login

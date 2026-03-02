@@ -1,0 +1,105 @@
+---
+title: "RPC Clients — DERO Wallet & Daemon Communication"
+description: "DeroPay provides typed JSON-RPC clients for the DERO wallet and daemon, handling all low-level communication."
+---
+
+import { Callout } from 'nextra/components';
+
+# RPC Clients
+
+DeroPay provides typed JSON-RPC clients for communicating with the DERO wallet and daemon.
+
+```ts
+import { WalletRpcClient, DaemonRpcClient } from "dero-pay/rpc";
+```
+
+## Wallet RPC Client
+
+The wallet client handles payment-related operations:
+
+```ts
+const wallet = new WalletRpcClient({
+  url: "http://127.0.0.1:10103/json_rpc",
+  // Optional: auth: { username: "", password: "" }
+});
+
+// Get wallet address
+const address = await wallet.getAddress();
+
+// Get balance
+const balance = await wallet.getBalance();
+
+// Get incoming transfers
+const transfers = await wallet.getTransfers({
+  in: true,
+  minHeight: 1000000,
+});
+
+// Make an integrated address (with embedded payment ID)
+const integrated = await wallet.makeIntegratedAddress({
+  paymentId: "abc123...",
+});
+
+// Split an integrated address back to base address + payment ID
+const { address, paymentId } = await wallet.splitIntegratedAddress({
+  integratedAddress: "deri1q...",
+});
+
+// Send DERO
+const result = await wallet.transfer({
+  destinations: [{ address: "dero1q...", amount: 5_000_000_000_000n }],
+});
+```
+
+## Daemon RPC Client
+
+The daemon client handles blockchain queries:
+
+```ts
+const daemon = new DaemonRpcClient({
+  url: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Get daemon info (height, version, network)
+const info = await daemon.getInfo();
+
+// Get transaction details
+const tx = await daemon.getTransaction({ txid: "..." });
+
+// Get smart contract state
+const sc = await daemon.getSC({ scid: "...", code: true });
+
+// Install a smart contract
+const result = await daemon.installSC({ code: "..." });
+
+// Invoke a smart contract function
+const invokeResult = await daemon.invokeSC({
+  scid: "...",
+  sc_rpc: [{ name: "entrypoint", datatype: "S", value: "Release" }],
+});
+```
+
+## Configuration Types
+
+```ts
+import type { WalletRpcConfig, DaemonRpcConfig } from "dero-pay/rpc";
+
+// Both accept:
+// { url: string; auth?: { username: string; password: string } }
+```
+
+<Callout type="info">
+  The `InvoiceEngine` uses these clients internally — you typically don't need to use them directly unless you're building custom payment flows or need direct access to the DERO node.
+</Callout>
+
+## Connection
+
+Both clients communicate over HTTP JSON-RPC 2.0. Make sure the wallet and daemon are running with their RPC servers enabled:
+
+```bash
+# Wallet (mainnet)
+dero-wallet-cli --rpc-server --rpc-bind=127.0.0.1:10103
+
+# Daemon (mainnet)
+derod --rpc-bind=127.0.0.1:10102
+```

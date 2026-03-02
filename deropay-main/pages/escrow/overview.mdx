@@ -1,0 +1,61 @@
+---
+title: "Escrow System — Trustless On-Chain Payments"
+description: "DeroPay includes a full escrow system with an on-chain smart contract and TypeScript SDK for trustless buyer-seller transactions."
+---
+
+import { Callout } from 'nextra/components';
+
+# Escrow System
+
+DeroPay includes a full on-chain escrow system for trustless buyer-seller transactions. Funds are held in a DERO smart contract and released based on predefined conditions.
+
+## Why Escrow?
+
+Standard invoices work for trusted merchants, but many scenarios require a neutral third party:
+
+- **Marketplaces** — Buyer pays, seller ships, funds release on confirmation
+- **Freelance work** — Client deposits, freelancer delivers, funds release on approval
+- **P2P trades** — Neither party trusts the other; contract holds funds until both agree
+- **Dispute resolution** — An arbitrator can intervene if buyer and seller disagree
+
+## How It Works
+
+```mermaid
+stateDiagram-v2
+    [*] --> AwaitingDeposit: Create escrow
+    AwaitingDeposit --> Funded: Buyer deposits
+    Funded --> Released: Seller confirmed, funds released
+    Funded --> Refunded: Buyer requests refund (before expiry)
+    Funded --> Expired: Time limit reached
+    Funded --> Disputed: Either party disputes
+    Disputed --> Arbitrated: Arbitrator resolves
+```
+
+## Status Codes
+
+| Code | Status | Description |
+|---|---|---|
+| 0 | `awaiting_deposit` | Escrow created, waiting for buyer's DERO |
+| 1 | `funded` | Buyer has deposited, awaiting seller action |
+| 2 | `released` | Funds sent to seller |
+| 3 | `refunded` | Funds returned to buyer |
+| 4 | `expired_claimed` | Time limit reached, seller claimed funds |
+| 5 | `disputed` | Dispute raised, awaiting arbitrator |
+| 6 | `arbitrated` | Arbitrator has resolved the dispute |
+
+## Components
+
+### Smart Contract (`escrow.bas`)
+
+A DERO smart contract written in BASIC that holds funds and enforces escrow rules. See [Smart Contract](/escrow/smart-contract).
+
+### TypeScript SDK
+
+- **`EscrowContract`** — Low-level wrapper around the contract's RPC functions
+- **`EscrowManager`** — High-level lifecycle manager that handles the full escrow flow
+
+See [TypeScript SDK](/escrow/sdk).
+
+<Callout type="info">
+  The escrow contract supports **platform fees** (in basis points), so marketplaces can take a cut of each transaction automatically at the contract level.
+</Callout>
