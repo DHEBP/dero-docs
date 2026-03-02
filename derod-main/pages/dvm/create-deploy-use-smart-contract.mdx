@@ -1,0 +1,404 @@
+---
+title: "Create, Deploy & Use a Smart Contract on DERO | Step-by-Step Tutorial"
+description: "End-to-end tutorial: write a DVM-BASIC smart contract, deploy it to the DERO blockchain, interact with its functions, and query its state — all from the command line."
+keywords: ["DERO smart contract tutorial", "deploy smart contract DERO", "DVM-BASIC tutorial", "DERO development", "scinvoke", "installSc", "getsc", "DERO contract deployment", "blockchain development tutorial"]
+date: "2026-03-02"
+lastUpdated: "2026-03-02"
+authors: ["DHEBP"]
+slug: "create-deploy-use-smart-contract"
+canonicalUrl: "https://derod.org/dvm/create-deploy-use-smart-contract"
+tags: ["dvm", "smart-contracts", "tutorial", "deployment", "development"]
+---
+
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Create, Deploy & Use a Smart Contract
+
+This is a hands-on tutorial that takes you from a blank file to a working smart contract on the DERO blockchain. By the end, you will have written a contract, deployed it, called its functions, and queried its state — all from the command line.
+
+<Callout type="info">
+**New to DERO contracts?** Read [Smart Contract Fundamentals](/dvm/smart-contract-fundamentals) first for the concepts behind everything in this tutorial.
+</Callout>
+
+---
+
+## Prerequisites
+
+You need three things running:
+
+| Component | Purpose | Default Port |
+|-----------|---------|-------------|
+| **DERO Daemon** (`derod`) | Connects to the blockchain | `10102` (mainnet) |
+| **DERO Wallet CLI** | Signs and broadcasts transactions | `10103` (mainnet) |
+| **Some DERO** | Gas fees for deployment and calls | ~0.01 DERO minimum |
+
+<Tabs items={['Mainnet', 'Testnet (Simulator)']}>
+<Tabs.Tab>
+```bash
+# Terminal 1: Start the daemon
+./derod-darwin  # or derod-linux, derod-windows.exe
+
+# Terminal 2: Start the wallet with RPC enabled
+./dero-wallet-cli --rpc-server --rpc-bind=127.0.0.1:10103 --wallet-file=your_wallet.db
+```
+</Tabs.Tab>
+<Tabs.Tab>
+```bash
+# The simulator bundles daemon + wallet in one process
+./simulator-darwin  # Wallet RPC on port 30000, Daemon RPC on port 20000
+```
+</Tabs.Tab>
+</Tabs>
+
+Verify everything is running:
+
+```bash
+# Check daemon
+curl -s http://127.0.0.1:10102/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | python3 -m json.tool | grep topoheight
+
+# Check wallet
+curl -s http://127.0.0.1:10103/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":"1","method":"GetAddress"}' | python3 -m json.tool | grep address
+```
+
+---
+
+## Step 1: Write the Contract
+
+Create a file called `tipjar.bas` with this content:
+
+```basic
+Function Initialize() Uint64
+  10 IF EXISTS("owner") THEN GOTO 100
+  20 STORE("owner", SIGNER())
+  30 STORE("totalTips", 0)
+  40 STORE("tipCount", 0)
+  50 RETURN 0
+  100 RETURN 1
+End Function
+
+Function Tip() Uint64
+  10 IF DEROVALUE() == 0 THEN GOTO 100
+  20 STORE("totalTips", LOAD("totalTips") + DEROVALUE())
+  30 STORE("tipCount", LOAD("tipCount") + 1)
+  40 STORE("lastTipper", SIGNER())
+  50 RETURN 0
+  100 RETURN 1
+End Function
+
+Function Withdraw(amount Uint64) Uint64
+  10 IF SIGNER() != LOAD("owner") THEN GOTO 100
+  20 SEND_DERO_TO_ADDRESS(SIGNER(), amount)
+  30 RETURN 0
+  100 RETURN 1
+End Function
+
+Function GetStats() Uint64
+  10 RETURN LOAD("tipCount")
+End Function
+```
+
+**What each function does:**
+
+| Function | Who Can Call | What Happens |
+|----------|-------------|-------------|
+| `Initialize` | Deployer (once) | Sets the deployer as owner, initializes counters |
+| `Tip` | Anyone | Accepts DERO, increments counters, records last tipper |
+| `Withdraw` | Owner only | Sends DERO from the contract to the owner |
+| `GetStats` | Anyone | Returns the tip count |
+
+<Callout type="warning">
+**`RETURN 0` = success, `RETURN 1` = failure.** If a function returns 1, all state changes revert and any DERO sent is returned to the caller.
+</Callout>
+
+---
+
+## Step 2: Deploy the Contract
+
+Deployment uses the wallet's `transfer` RPC method with the contract source in the `sc` field. The wallet accepts the code as **base64**.
+
+```bash
+# Base64-encode the contract
+SC_CODE=$(base64 < tipjar.bas)
+
+# Deploy
+curl -s http://127.0.0.1:10103/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"transfer\",
+    \"params\": {
+      \"sc\": \"$SC_CODE\",
+      \"ringsize\": 2
+    }
+  }"
+```
+
+The response contains the **TXID**, which is also the **SCID** (Smart Contract ID):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "1",
+  "result": {
+    "txid": "a1b2c3d4e5f6..."
+  }
+}
+```
+
+Save this TXID — it's the permanent address of your contract on the blockchain.
+
+<Callout type="info">
+**SCID = TXID.** On DERO, the smart contract's unique identifier is the hash of the deployment transaction. There is no separate "contract address" concept.
+</Callout>
+
+### Deploy with Initialize Parameters
+
+If your `Initialize` function accepts parameters, pass them via `sc_rpc`:
+
+```bash
+curl -s http://127.0.0.1:10103/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"transfer\",
+    \"params\": {
+      \"sc\": \"$SC_CODE\",
+      \"sc_rpc\": [
+        {\"name\": \"someParam\", \"datatype\": \"S\", \"value\": \"hello\"},
+        {\"name\": \"someNumber\", \"datatype\": \"U\", \"value\": 42}
+      ],
+      \"ringsize\": 2
+    }
+  }"
+```
+
+Data types: `"S"` = String, `"U"` = Uint64, `"H"` = Hash.
+
+---
+
+## Step 3: Wait for Confirmation
+
+DERO blocks are produced roughly every 18 seconds. Wait at least one block before interacting with the contract:
+
+```bash
+sleep 20
+```
+
+<Callout type="warning">
+**One TX at a time.** DERO's encrypted balance system only allows one pending (unconfirmed) transaction per wallet. Always wait for a transaction to confirm before sending the next one. Attempting concurrent transactions will cause the second one to be silently dropped.
+</Callout>
+
+---
+
+## Step 4: Verify Deployment
+
+Query the contract's state using the daemon's `getsc` method:
+
+```bash
+SCID="your_txid_here"
+
+curl -s http://127.0.0.1:10102/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"DERO.GetSC\",
+    \"params\": {
+      \"scid\": \"$SCID\",
+      \"code\": true,
+      \"variables\": true
+    }
+  }" | python3 -m json.tool
+```
+
+A successful deployment returns the contract's stored variables:
+
+```json
+{
+  "result": {
+    "stringkeys": {
+      "C": "46756e6374696f6e20496e69...",
+      "owner": "2f5388721e5efad8...",
+      "totalTips": 0,
+      "tipCount": 0
+    },
+    "balance": 0,
+    "status": "OK"
+  }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `stringkeys.C` | The contract source code (hex-encoded) |
+| `stringkeys.owner` | The raw address of the deployer |
+| `stringkeys.totalTips` | Current total tips (0 after deploy) |
+| `balance` | DERO held by the contract |
+
+If `stringkeys` is missing or empty, the deployment failed — likely a syntax error in the contract or an `Initialize` that returned 1.
+
+### Query Specific Variables
+
+Instead of fetching all variables, you can request specific keys:
+
+```bash
+curl -s http://127.0.0.1:10102/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"DERO.GetSC\",
+    \"params\": {
+      \"scid\": \"$SCID\",
+      \"keysstring\": [\"totalTips\", \"tipCount\"]
+    }
+  }" | python3 -m json.tool
+```
+
+This returns `valuesstring` with the values in the same order as the requested keys.
+
+---
+
+## Step 5: Call a Function (Send a Tip)
+
+Use the `scinvoke` method to call contract functions. To send a tip, call `Tip` with some DERO attached:
+
+```bash
+curl -s http://127.0.0.1:10103/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"scinvoke\",
+    \"params\": {
+      \"scid\": \"$SCID\",
+      \"sc_rpc\": [
+        {\"name\": \"entrypoint\", \"datatype\": \"S\", \"value\": \"Tip\"}
+      ],
+      \"sc_dero_deposit\": 10000,
+      \"ringsize\": 2
+    }
+  }"
+```
+
+| Parameter | Purpose |
+|-----------|---------|
+| `scid` | The contract to call |
+| `sc_rpc[0].value` | The function name (`"Tip"`) |
+| `sc_dero_deposit` | DERO to send (in atomic units: 10000 = 0.1 DERO) |
+| `ringsize` | Must be 2 for functions that use `SIGNER()` |
+
+<Callout type="info">
+**Atomic units:** 1 DERO = 100,000 atomic units. So `10000` = 0.1 DERO, `100000` = 1 DERO.
+</Callout>
+
+### Call a Function with Arguments
+
+For functions that take parameters (like `Withdraw`), add them to `sc_rpc`:
+
+```bash
+curl -s http://127.0.0.1:10103/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"scinvoke\",
+    \"params\": {
+      \"scid\": \"$SCID\",
+      \"sc_rpc\": [
+        {\"name\": \"entrypoint\", \"datatype\": \"S\", \"value\": \"Withdraw\"},
+        {\"name\": \"amount\", \"datatype\": \"U\", \"value\": 5000}
+      ],
+      \"ringsize\": 2
+    }
+  }"
+```
+
+---
+
+## Step 6: Verify the State Changed
+
+After waiting for confirmation (~20 seconds), query the state again:
+
+```bash
+sleep 20
+
+curl -s http://127.0.0.1:10102/json_rpc \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": \"1\",
+    \"method\": \"DERO.GetSC\",
+    \"params\": {
+      \"scid\": \"$SCID\",
+      \"variables\": true
+    }
+  }" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+keys = data['result'].get('stringkeys', {})
+print('tipCount:', keys.get('tipCount', '?'))
+print('totalTips:', keys.get('totalTips', '?'))
+print('balance:', data['result'].get('balance', 0))
+"
+```
+
+Expected output after one 0.1 DERO tip:
+
+```
+tipCount: 1
+totalTips: 10000
+balance: 10000
+```
+
+---
+
+## Complete Workflow Summary
+
+<Steps>
+### Write the contract
+Create a `.bas` file with `Initialize` and your business logic functions.
+
+### Deploy
+Base64-encode the source and send it via the wallet's `transfer` method with the `sc` field.
+
+### Wait for confirmation
+At least one block (~18 seconds). Always wait between transactions.
+
+### Verify deployment
+Query with `DERO.GetSC` — check that `stringkeys` contains your stored variables.
+
+### Interact
+Call functions with `scinvoke`. Attach DERO with `sc_dero_deposit`. Pass arguments in `sc_rpc`.
+
+### Query state
+Use `DERO.GetSC` with `variables: true` or targeted `keysstring` queries.
+</Steps>
+
+---
+
+## Common Mistakes
+
+| Mistake | Symptom | Fix |
+|---------|---------|-----|
+| Putting SC_CODE in `sc_rpc` instead of the `sc` field | Contract deploys but has no state (empty `stringkeys`) | Use the top-level `"sc"` parameter — the wallet auto-decodes base64 from this field only |
+| Sending two transactions without waiting | Second TX silently dropped (TXID returned but never mined) | Wait ≥20 seconds between transactions |
+| Using ringsize > 2 with `SIGNER()` | Function returns 1 (access check fails) | Use `ringsize: 2` for any function that checks `SIGNER()` |
+| Forgetting `DEROVALUE()` check | Contract accepts 0-value calls as deposits | Always guard with `IF DEROVALUE() == 0 THEN GOTO [fail]` |
+| Not checking `stringkeys` after deploy | Assuming deploy succeeded when Initialize actually failed | Always verify with `GetSC` — if `stringkeys` is empty, the contract has no state |
+
+---
+
+## What's Next
+
+- [DVM-BASIC Language Reference](/dvm/dvm-basic) — Full syntax, types, and built-in functions
+- [DVM Function Reference](/dvm/dero-virtual-machine) — Complete function list with gas costs
+- [Token Contract](/smartContracts/token) — Deploy a private fungible token
+- [Wallet RPC API](/rpc-api/wallet-rpc-api) — Full reference for `transfer`, `scinvoke`, and more
+- [Daemon RPC API](/rpc-api/daemon-rpc-api) — Full reference for `GetSC`, `GetTransaction`, and more
