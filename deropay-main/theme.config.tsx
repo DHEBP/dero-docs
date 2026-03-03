@@ -5,46 +5,34 @@ import { useConfig } from 'nextra-theme-docs'
 import seoConfig from './seo.config'
 
 const logo = (
-  <div className="flex items-center gap-2">
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
     <svg
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      height="22"
+      width="22"
+      viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0 }}
     >
-      <path d="M12 2L2 7l10 5 10-5-10-5z" />
-      <path d="M2 17l10 5 10-5" />
-      <path d="M2 12l10 5 10-5" />
+      <path
+        d="M50,.3L7,25.2v49.7l43,24.8,43-24.8V25.2L50,.3ZM77,65.6l-27,15.6-27-15.6v-31.1l27-15.6,27,15.6v31.1Z"
+        fill="#10B981"
+      />
+      <path
+        d="M26.8,36.6v26.8l13.3,7.7c0-.4,1.6-10.3,1.8-11.7l-4.1-2.4v-14.1l12.2-7,12.2,7v14.1l-4.2,2.4c.2,1.4,1.7,11.2,1.8,11.7l13.4-7.7v-26.8l-23.2-13.4-23.2,13.4Z"
+        fill="#10B981"
+      />
+      <path
+        d="M58.3,54.8v-9.6l-8.3-4.8-8.3,4.8v9.6l4.6,2.7c-.2,1.4-2.3,15-2.4,15.8l6.1,3.5,6.2-3.6c-.1-.7-2.2-14.4-2.4-15.8l4.5-2.6Z"
+        fill="#10B981"
+      />
     </svg>
-    <span className="font-bold text-lg">DeroPay</span>
-    <style jsx>{`
-      div {
-        mask-image: linear-gradient(
-          60deg,
-          black 25%,
-          rgba(0, 0, 0, 0.2) 50%,
-          black 75%
-        );
-        mask-size: 400%;
-        mask-position: 0%;
-      }
-      div:hover {
-        mask-position: 100%;
-        transition:
-          mask-position 1s ease,
-          -webkit-mask-position 1s ease;
-      }
-    `}</style>
-  </div>
+    <span style={{ fontWeight: 700, fontSize: '18px', whiteSpace: 'nowrap' }}>DeroPay</span>
+  </span>
 )
 
 const config: DocsThemeConfig = {
-  primaryHue: { dark: 142, light: 142 },
-  primarySaturation: { dark: 60, light: 60 },
+  primaryHue: { dark: 160, light: 160 },
+  primarySaturation: { dark: 84, light: 84 },
   project: {
     link: 'https://github.com/DHEBP/DeroPay'
   },
