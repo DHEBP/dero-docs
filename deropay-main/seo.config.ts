@@ -13,7 +13,7 @@ const seoConfig = defineMetadata({
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    images: '/assets/og-deropay.png',
+    images: '/assets/og-image.png',
     url: 'https://deropay.derod.org',
     siteName: 'DeroPay Documentation',
     description: 'DeroPay and DeroAuth documentation. Accept DERO payments with invoices, escrow, and webhooks. Authenticate users with privacy-preserving wallet signatures.'
@@ -29,7 +29,7 @@ const seoConfig = defineMetadata({
     creator: '@dero_bro',
     title: 'DeroPay - Payment Processing & Authentication for DERO',
     description: 'Accept DERO payments with invoices, escrow, and webhooks. Authenticate users with privacy-preserving wallet signatures.',
-    images: '/assets/og-deropay.png'
+    images: '/assets/og-image.png'
   },
   keywords: 'DeroPay, DeroAuth, DERO, payments, cryptocurrency, invoices, escrow, authentication, wallet, privacy, blockchain, SDK, TypeScript'
 })
