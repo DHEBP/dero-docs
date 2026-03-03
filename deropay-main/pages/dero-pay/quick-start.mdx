@@ -57,7 +57,7 @@ await engine.start();
 const invoice = await engine.createInvoice({
   name: "Widget Pro",
   description: "Premium widget subscription",
-  amount: deroToAtomic("5.0"), // 5 DERO (5_000_000_000_000 atomic units)
+  amount: deroToAtomic("5.0"), // 5 DERO (500,000 atomic units)
 });
 
 console.log(invoice.integratedAddress); // Customer sends DERO here

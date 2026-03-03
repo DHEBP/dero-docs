@@ -29,9 +29,9 @@ const escrow = new EscrowManager({
 const escrowId = await escrow.create({
   buyerAddress: "dero1qy...",
   sellerAddress: "dero1qx...",
-  amount: 5_000_000_000_000, // 5 DERO in atomic units (10^12 per DERO)
+  amount: 500_000,          // 5 DERO in atomic units (100,000 per DERO)
   expirySeconds: 86400,     // 24 hours
-  platformFeeBps: 250,      // 2.5% platform fee
+  platformFeeBps: 0,        // No platform fee (set 250 for 2.5%)
   arbitratorAddress: "dero1qz...", // optional
 });
 

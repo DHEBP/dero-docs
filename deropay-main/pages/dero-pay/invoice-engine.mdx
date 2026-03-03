@@ -43,7 +43,7 @@ const engine = new InvoiceEngine({
 
   // Optional: escrow settings
   enableEscrow: true,
-  escrowFeeBasisPoints: 250,     // 2.5% platform fee
+  escrowFeeBasisPoints: 0,       // No platform fee (default; set 250 for 2.5%)
   escrowBlockExpiration: 60,     // blocks until expiry
 });
 ```
@@ -110,12 +110,12 @@ DeroPay includes helpers for converting between DERO and atomic units:
 ```ts
 import { deroToAtomic, atomicToDero, formatDero, ATOMIC_UNITS_PER_DERO } from "dero-pay";
 
-deroToAtomic("5.0");     // 5_000_000_000_000n (BigInt)
-deroToAtomic("0.001");   // 1_000_000_000n
-atomicToDero(5_000_000_000_000n);   // "5.0"
-formatDero(5_000_000_000_000n);     // "5.000000000000 DERO"
+deroToAtomic("5.0");     // 500_000n (BigInt)
+deroToAtomic("0.001");   // 100n
+atomicToDero(500_000n);  // "5.0"
+formatDero(500_000n);    // "5.00000 DERO"
 ```
 
 <Callout type="warning">
-  DERO uses **12 decimal places** (1 DERO = 10^12 atomic units). This is different from Ethereum's 18 decimals or Bitcoin's 8.
+  DERO uses **5 decimal places** (1 DERO = 100,000 atomic units). Always use `deroToAtomic()` for conversions.
 </Callout>

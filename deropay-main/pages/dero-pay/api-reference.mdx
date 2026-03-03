@@ -26,8 +26,8 @@ import {
   isValidPaymentId,          // Validate payment ID format
 
   // Constants
-  ATOMIC_UNITS_PER_DERO,     // 1_000_000_000_000n (10^12)
-  DERO_DECIMALS,             // 12
+  ATOMIC_UNITS_PER_DERO,     // 100_000n (10^5)
+  DERO_DECIMALS,             // 5
 
   // Types
   type Invoice,
@@ -211,5 +211,5 @@ See the [Escrow documentation](/escrow/overview) for full escrow API details.
 | `webhookMaxRetries` | `number` | `3` | Max delivery attempts |
 | `store` | `InvoiceStore` | `MemoryInvoiceStore` | Storage backend |
 | `enableEscrow` | `boolean` | `false` | Enable escrow subsystem |
-| `escrowFeeBasisPoints` | `number` | `250` | Default escrow fee (2.5%) |
+| `escrowFeeBasisPoints` | `number` | `0` | Escrow platform fee in basis points (0 = no fee, 250 = 2.5%) |
 | `escrowBlockExpiration` | `number` | `60` | Escrow block expiry |
