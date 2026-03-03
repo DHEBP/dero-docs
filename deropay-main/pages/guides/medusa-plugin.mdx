@@ -1,0 +1,116 @@
+---
+title: "Guide: Medusa.js Payment Plugin"
+description: "Accept DERO payments in your Medusa.js v2 store with the DeroPay payment provider plugin."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Medusa.js Payment Plugin
+
+The `medusa-payment-deropay` package is a Medusa v2 payment module provider that connects your Medusa store to a DeroPay gateway server. Customers can pay with DERO at checkout.
+
+## Prerequisites
+
+- A running [DeroPay gateway server](/guides/gateway-server)
+- A Medusa.js v2 store
+
+<Steps>
+
+### Install the Plugin
+
+```bash
+bun add medusa-payment-deropay
+```
+
+### Configure in `medusa-config.ts`
+
+```typescript
+module.exports = defineConfig({
+  // ...
+  modules: [
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "medusa-payment-deropay",
+            id: "deropay",
+            options: {
+              gatewayUrl: "https://your-gateway:3080",
+              apiKey: "your-api-key",
+              webhookSecret: "your-webhook-secret",
+            },
+          },
+        ],
+      },
+    },
+  ],
+});
+```
+
+### Enable in a Region
+
+In the Medusa Admin, go to **Settings → Regions** and enable the "deropay" payment provider for the regions where you want to accept DERO.
+
+### Configure Webhooks
+
+Set your DeroPay gateway to send webhooks to your Medusa instance:
+
+```
+Webhook URL: https://your-medusa-store.com/hooks/payment/deropay_deropay
+```
+
+</Steps>
+
+## Configuration Options
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `gatewayUrl` | Yes | Base URL of your DeroPay gateway server |
+| `apiKey` | Yes | API key for the gateway |
+| `webhookSecret` | No | HMAC-SHA256 secret for webhook verification |
+
+## How It Works
+
+### Payment Flow
+
+1. **Customer selects DERO** at checkout → Medusa calls `initiatePayment`
+2. Plugin creates an invoice on your gateway via `POST /invoices`
+3. Invoice data (address, QR, amount) is stored in the payment session
+4. **Your storefront** displays the payment details to the customer
+5. Customer sends DERO from their wallet
+6. Gateway detects payment → sends webhook → Medusa auto-completes the order
+
+### Fiat Conversion
+
+If your Medusa store prices products in USD/EUR/etc., the plugin automatically sends the fiat amount and currency to the gateway, which converts to DERO at the current market rate.
+
+### Capture Behavior
+
+DERO payments settle on-chain instantly — there's no separate "capture" step. When the gateway confirms the payment, it's done. The plugin's `capturePayment` method is a no-op.
+
+### Refunds
+
+<Callout type="warning">
+  On-chain DERO payments cannot be automatically refunded. The plugin logs a warning and returns success — process refunds manually by sending DERO back to the customer's address.
+</Callout>
+
+## Storefront Integration
+
+On your storefront, retrieve the payment session data to display the DERO payment interface:
+
+```typescript
+// After initiating payment, the session data contains:
+const sessionData = paymentSession.data;
+
+// Display these to the customer:
+sessionData.integratedAddress  // DERO address to send to
+sessionData.amount             // Amount in atomic units
+sessionData.expiresAt          // Invoice expiry timestamp
+```
+
+You can use the [embeddable widget](/guides/embeddable-widget) or build a custom payment UI using this data.
+
+## Self-Hosted, Non-Custodial
+
+Both the Medusa store and the DeroPay gateway run on your infrastructure. No third-party payment service is involved. Funds go directly from the customer's wallet to yours.

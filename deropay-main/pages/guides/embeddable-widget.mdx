@@ -1,0 +1,137 @@
+---
+title: "Guide: Embeddable Payment Widget"
+description: "Add a 'Pay with DERO' button to any website with a single script tag. No framework required."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Embeddable Payment Widget
+
+Drop a single `<script>` tag on any website to get a "Pay with DERO" button. No framework, no build step, no dependencies.
+
+The widget is a 13KB JavaScript file that creates a button, and when clicked, opens a payment modal with QR code, address, amount, and live status polling — all inside a Shadow DOM so it won't conflict with your site's styles.
+
+## Quick Start
+
+<Steps>
+
+### Add the Script Tag
+
+```html
+<script src="https://cdn.deropay.com/widget.js"></script>
+```
+
+Or self-host it:
+
+```html
+<script src="/js/widget.global.js"></script>
+```
+
+### Add a Payment Button
+
+```html
+<div id="deropay-button"
+  data-gateway="https://your-gateway:3080"
+  data-api-key="your-api-key"
+  data-amount="150000"
+  data-name="Dero Hoodie"
+></div>
+```
+
+That's it. A styled "Pay with DERO" button appears, and clicking it creates an invoice and opens the payment modal.
+
+</Steps>
+
+## Fiat Pricing
+
+Price in USD, EUR, or any supported currency — the gateway converts to DERO automatically:
+
+```html
+<div id="deropay-button"
+  data-gateway="https://your-gateway:3080"
+  data-api-key="your-api-key"
+  data-fiat-amount="29.99"
+  data-currency="usd"
+  data-name="T-Shirt"
+></div>
+```
+
+## Configuration
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `data-gateway` | Yes | Base URL of your DeroPay gateway server |
+| `data-api-key` | Yes | API key for invoice creation |
+| `data-amount` | * | Amount in DERO atomic units (100,000 = 1 DERO) |
+| `data-fiat-amount` | * | Amount in fiat (requires `data-currency`) |
+| `data-currency` | * | Fiat currency code (`usd`, `eur`, `gbp`, etc.) |
+| `data-name` | No | Invoice name / item description |
+| `data-callback-url` | No | URL to POST when payment completes |
+
+\* Provide either `data-amount` OR `data-fiat-amount` + `data-currency`.
+
+## Listening for Payment Completion
+
+The widget fires a custom event when payment is confirmed:
+
+```javascript
+document.getElementById("deropay-button")
+  .addEventListener("deropay:completed", (event) => {
+    console.log("Payment complete!", event.detail);
+    // { invoiceId: "inv_abc123", amount: "150000" }
+
+    // Redirect to thank-you page, update UI, etc.
+    window.location.href = "/thank-you";
+  });
+```
+
+## Multiple Buttons on One Page
+
+Use the class `deropay-button` or the `data-deropay` attribute for multiple buttons:
+
+```html
+<div class="deropay-button"
+  data-gateway="https://gw.example.com"
+  data-api-key="pk_..."
+  data-amount="150000"
+  data-name="Hoodie"
+></div>
+
+<div class="deropay-button"
+  data-gateway="https://gw.example.com"
+  data-api-key="pk_..."
+  data-amount="25000"
+  data-name="Sticker Pack"
+></div>
+```
+
+Each button operates independently — separate invoices, separate modals.
+
+## How It Works Under the Hood
+
+1. Widget reads configuration from `data-*` attributes
+2. On click, creates an invoice via `POST /invoices` on your gateway
+3. Opens a modal (inside Shadow DOM) with QR code, address, amount, countdown
+4. Polls the gateway's `/status` endpoint every 4 seconds
+5. On confirmation, shows success state and fires `deropay:completed` event
+
+## Technical Details
+
+- **13KB** minified IIFE bundle — zero external dependencies
+- **Shadow DOM** isolates all styles from the host page
+- **QR code** generated client-side (no external service)
+- Works in all modern browsers
+- Self-hostable — serve `widget.global.js` from your own domain
+
+<Callout type="warning">
+  The widget uses your API key client-side to create invoices. Use a **public/restricted API key** that can only create invoices, not read payment data. The gateway's API key auth is designed for this — invoice creation is the only write operation the widget performs.
+</Callout>
+
+## Building from Source
+
+```bash
+cd packages/deropay-widget
+bun install
+bun run build
+# Output: dist/widget.global.js
+```

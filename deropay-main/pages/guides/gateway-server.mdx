@@ -1,0 +1,190 @@
+---
+title: "Guide: DeroPay Gateway Server"
+description: "Deploy the standalone DeroPay gateway server — the foundation for all ecommerce plugins, widgets, and payment links."
+---
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components';
+
+# DeroPay Gateway Server
+
+The gateway server is a standalone HTTP server that wraps the `dero-pay` SDK into a clean REST API. It connects to your DERO wallet, creates invoices, monitors payments, fires webhooks, and manages escrow — all accessible via standard HTTP endpoints.
+
+This is the same architecture as BTCPay Server: the gateway is the engine, and everything else (plugins, widgets, payment links) is a thin client.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           YOUR INFRASTRUCTURE            │
+│                                          │
+│  ┌──────────┐    ┌──────────┐           │
+│  │ DERO     │    │ DERO     │           │
+│  │ Daemon   │    │ Wallet   │           │
+│  │ :10102   │    │ :10103   │           │
+│  └────┬─────┘    └────┬─────┘           │
+│       └──────┬────────┘                  │
+│              │                           │
+│       ┌──────▼──────┐                    │
+│       │  DeroPay    │                    │
+│       │  Gateway    │ ← your API key     │
+│       │  :3080      │                    │
+│       └──────┬──────┘                    │
+│              │                           │
+└──────────────┼───────────────────────────┘
+               │ REST API
+    ┌──────────┼──────────────┐
+    │          │              │
+┌───▼───┐ ┌───▼────┐ ┌──────▼─────┐
+│Widget │ │WooCom  │ │Payment     │
+│       │ │Plugin  │ │Links       │
+└───────┘ └────────┘ └────────────┘
+```
+
+Everything runs on your own infrastructure. You control the wallet, the daemon, the gateway, and the data.
+
+<Steps>
+
+### Install and Configure
+
+```bash
+git clone https://github.com/DHEBP/DeroPay.git
+cd DeroPay/apps/gateway
+cp .env.example .env
+```
+
+Edit `.env` with your wallet details:
+
+```env
+DEROPAY_WALLET_RPC_URL=http://127.0.0.1:10103/json_rpc
+DEROPAY_DAEMON_RPC_URL=http://127.0.0.1:10102/json_rpc
+DEROPAY_API_KEY=your-secret-api-key
+DEROPAY_WEBHOOK_URL=https://yourstore.com/webhook
+DEROPAY_WEBHOOK_SECRET=your-webhook-secret
+```
+
+### Generate an API Key
+
+```bash
+bun run src/generate-key.ts
+```
+
+### Start the Server
+
+<Tabs items={['Bun', 'Docker']}>
+  <Tab>
+```bash
+bun install
+bun run start
+```
+  </Tab>
+  <Tab>
+```bash
+docker compose up -d
+```
+
+The Docker Compose file includes the gateway, DERO daemon, and DERO wallet — a complete stack.
+  </Tab>
+</Tabs>
+
+### Verify It's Running
+
+```bash
+curl http://localhost:3080/health
+```
+
+```json
+{
+  "status": "ok",
+  "wallet": "connected",
+  "balance": "125.00000"
+}
+```
+
+</Steps>
+
+## API Endpoints
+
+### Public (no API key)
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `GET` | `/health` | Wallet connectivity + balance |
+| `GET` | `/status?invoiceId=x` | Invoice status (for checkout widgets) |
+| `GET` | `/price` | Current DERO price (USD, BTC) |
+| `GET` | `/convert?amount=9.99&currency=usd` | Fiat → DERO conversion |
+
+### Authenticated (requires `x-api-key` header)
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `POST` | `/invoices` | Create an invoice |
+| `GET` | `/invoices/:id` | Get invoice details |
+| `GET` | `/invoices` | List/filter invoices |
+| `GET` | `/stats` | Aggregate payment stats |
+| `POST` | `/escrow/:id/:action` | Escrow operations |
+| `GET` | `/escrows` | List escrow invoices |
+
+### Creating an Invoice
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Order #1234",
+    "amount": 150000,
+    "ttl": 900
+  }'
+```
+
+With fiat pricing (auto-converts to DERO):
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "T-Shirt",
+    "fiatAmount": 29.99,
+    "currency": "usd"
+  }'
+```
+
+<Callout type="info">
+  The gateway fetches live DERO prices from CoinGecko and TradeOgre (with fallback). Merchants price products in fiat; the gateway converts at checkout time.
+</Callout>
+
+## Webhooks
+
+The gateway sends HMAC-SHA256 signed HTTP POST notifications on every invoice state change:
+
+```json
+{
+  "invoiceId": "inv_abc123",
+  "status": "completed",
+  "amount": "150000",
+  "amountReceived": "150000",
+  "payments": [{ "txHash": "...", "amount": "150000" }]
+}
+```
+
+Verify the signature:
+
+```typescript
+import { verifyWebhookSignature } from "dero-pay/server";
+
+const isValid = verifyWebhookSignature(
+  rawBody,
+  request.headers["x-deropay-signature"],
+  process.env.WEBHOOK_SECRET
+);
+```
+
+## What's Next
+
+The gateway is the foundation. Connect it to:
+
+- [**Payment Links**](/guides/payment-links) — share a checkout URL, no website needed
+- [**Embeddable Widget**](/guides/embeddable-widget) — drop a script tag on any website
+- [**Medusa.js Plugin**](/guides/medusa-plugin) — integrate with Medusa ecommerce
+- [**WooCommerce Plugin**](/guides/woocommerce) — integrate with WordPress/WooCommerce

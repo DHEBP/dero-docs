@@ -1,0 +1,108 @@
+---
+title: "Guide: Payment Links & Hosted Checkout"
+description: "Create shareable payment links for DERO — no website needed. Works via email, social media, QR posters, or messaging."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Payment Links & Hosted Checkout
+
+Payment links let **any merchant** accept DERO — even without a website. Create an invoice, get a link, share it anywhere.
+
+## How It Works
+
+1. You create an invoice on your gateway (via API, dashboard, or CLI)
+2. You get a checkout URL
+3. You share it — email, social media, QR code on a poster, text message
+4. Customer opens the link, sees the payment page, sends DERO
+5. Page auto-updates to "Payment Confirmed"
+
+## The Checkout Page
+
+The hosted checkout page (`apps/checkout/`) is a static site that displays a payment interface for any invoice. It shows:
+
+- DERO amount
+- QR code (scannable by any DERO wallet)
+- Integrated address (with copy button)
+- Countdown timer
+- Live status updates (polling every 4 seconds)
+- Success animation on confirmation
+
+The page is mobile-optimized — designed for links shared via messaging apps where customers open on their phone.
+
+<Steps>
+
+### Create an Invoice
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Consulting Session",
+    "fiatAmount": 50.00,
+    "currency": "usd"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "inv_abc123",
+  "amount": "250000",
+  "integratedAddress": "deto1q...",
+  "expiresAt": "2026-03-03T12:15:00Z"
+}
+```
+
+### Build the Checkout URL
+
+```
+https://checkout.yoursite.com/?gateway=https://gateway.yoursite.com&invoiceId=inv_abc123
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `gateway` | Yes | Base URL of your DeroPay gateway |
+| `invoiceId` | Yes | Invoice ID from step 1 |
+
+### Share the Link
+
+Send it however you want:
+- **Email**: "Click here to pay for your consulting session"
+- **QR poster**: Print a QR code that encodes the checkout URL
+- **Social media**: Post the link with a description
+- **Invoice PDF**: Include the link in a traditional invoice document
+- **Point of sale**: Display the QR on a tablet at your counter
+
+</Steps>
+
+## Self-Hosting the Checkout Page
+
+The checkout page is a static site — deploy it anywhere:
+
+```bash
+cd apps/checkout
+bun install
+bun run build
+# Output: dist/ — deploy to Vercel, Netlify, S3, or serve alongside your gateway
+```
+
+<Callout type="info">
+  The checkout page only uses the **public** `/status` endpoint on your gateway. No API key is exposed to customers. The merchant creates the invoice server-side (with their API key) and only shares the resulting URL.
+</Callout>
+
+## Use Cases
+
+| Scenario | How |
+|----------|-----|
+| **Freelancer** | Send a payment link after completing work |
+| **Market vendor** | Print a QR code poster at your booth |
+| **Online service** | Email a payment link with the order confirmation |
+| **Donation** | Post a "Support with DERO" link on your website or social |
+| **Invoice** | Include a "Pay Now" link in a PDF invoice |
+
+## Design
+
+The checkout page follows the DeroPay design system — emerald green accents on a dark theme, mobile-first layout, and clean typography. It's branded but minimal, keeping the focus on the payment.

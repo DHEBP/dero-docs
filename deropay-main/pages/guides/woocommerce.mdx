@@ -1,0 +1,91 @@
+---
+title: "Guide: WooCommerce Plugin"
+description: "Accept DERO payments on your WordPress/WooCommerce store with the DeroPay payment gateway plugin."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# WooCommerce Plugin
+
+The DeroPay for WooCommerce plugin adds DERO as a payment method in your WooCommerce store. It's a thin PHP adapter that connects to your DeroPay gateway server.
+
+## Prerequisites
+
+- WordPress with WooCommerce installed
+- A running [DeroPay gateway server](/guides/gateway-server)
+
+<Steps>
+
+### Install the Plugin
+
+1. Download the `deropay-for-woocommerce` folder from `plugins/woocommerce/` in the DeroPay repository
+2. Upload it to `wp-content/plugins/` on your WordPress site
+3. Activate the plugin in **WordPress Admin → Plugins**
+
+### Configure the Gateway
+
+Go to **WooCommerce → Settings → Payments → DeroPay** and enter:
+
+| Setting | Value |
+|---------|-------|
+| **Enable** | Yes |
+| **Gateway URL** | `https://your-gateway:3080` |
+| **API Key** | Your gateway API key |
+| **Webhook Secret** | Your webhook secret (must match gateway config) |
+
+### Test a Payment
+
+1. Add a product to your cart
+2. Go to checkout
+3. Select "Pay with DERO"
+4. You'll see the DERO amount, QR code, and integrated address
+5. Send DERO from your wallet
+6. Order status updates automatically via webhook
+
+</Steps>
+
+## How It Works
+
+```
+Customer → WooCommerce → DeroPay Plugin → Gateway Server → DERO Wallet
+                                              ↓
+                                         Webhook back
+                                              ↓
+                                    Order marked "Processing"
+```
+
+1. Customer selects "Pay with DERO" at checkout
+2. Plugin calls `POST /invoices` on your gateway with the order total
+3. Gateway creates an invoice and returns the payment details
+4. Plugin displays QR code and address on the "Order Received" page
+5. Gateway monitors the wallet for incoming payment
+6. On confirmation, gateway sends a webhook to WooCommerce
+7. Plugin verifies the HMAC signature and marks the order as "Processing"
+
+## Fiat Pricing
+
+WooCommerce stores typically price products in USD, EUR, etc. The plugin sends the fiat amount and currency to the gateway, which converts to DERO at the current market rate. The customer sees both the fiat price and the DERO equivalent.
+
+## Webhook Endpoint
+
+The plugin registers a webhook endpoint at:
+
+```
+https://yourstore.com/?wc-api=deropay_webhook
+```
+
+Configure your DeroPay gateway to send webhooks to this URL.
+
+<Callout type="info">
+  The webhook handler verifies the HMAC-SHA256 signature before processing. Make sure the webhook secret matches between your gateway and WooCommerce settings.
+</Callout>
+
+## Plugin Files
+
+| File | Purpose |
+|------|---------|
+| `deropay-for-woocommerce.php` | Main plugin file, registers gateway + webhook |
+| `includes/class-deropay-gateway.php` | `WC_Payment_Gateway` implementation |
+| `includes/class-deropay-api-client.php` | HTTP client for the gateway REST API |
+| `includes/class-deropay-webhook-handler.php` | HMAC-verified webhook handler |
+| `assets/dero-icon.svg` | Payment method icon |

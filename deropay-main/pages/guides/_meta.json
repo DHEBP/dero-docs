@@ -1,5 +1,10 @@
 {
   "prerequisites": "Prerequisites",
+  "gateway-server": "Gateway Server",
+  "payment-links": "Payment Links",
+  "embeddable-widget": "Embeddable Widget",
+  "woocommerce": "WooCommerce",
+  "medusa-plugin": "Medusa.js",
   "nextjs-payments": "Next.js + Payments",
   "nextjs-auth": "Next.js + Auth",
   "merchant-dashboard": "Merchant Dashboard"
