@@ -79,6 +79,10 @@ The [telaHost API](/telahost-api) is a native JavaScript API available to all TE
 - No XSWD WebSocket complexity
 - Zero configuration required
 
+### Sign In with DERO (HOLOGRAM-Exclusive)
+
+[HTTPS-compatible wallet authentication](/dero-auth) using an OAuth-style redirect flow. Websites can let visitors sign in with their DERO address — HOLOGRAM is the only wallet that supports this because it exposes local HTTP auth endpoints that bypass browser mixed content restrictions. Other wallets rely on WebSocket-only (`ws://`) which browsers block on HTTPS pages.
+
 ### Version Control System
 
 Git-like version control for TELA applications:

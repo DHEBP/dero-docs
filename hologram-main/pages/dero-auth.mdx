@@ -1,0 +1,133 @@
+---
+title: "Sign In with DERO"
+description: "HOLOGRAM-exclusive: authenticate on any HTTPS website using your DERO wallet address — no extensions, no passwords, no seed phrases in the browser."
+---
+
+import { Callout } from 'nextra/components'
+
+# Sign In with DERO
+
+HOLOGRAM is the only DERO wallet that supports **wallet-based authentication on HTTPS websites**. Any website using the [DeroAuth](https://github.com/DHEBP/DeroAuth) SDK can let visitors sign in with their DERO wallet address — no browser extension, no seed phrase, no password.
+
+<Callout type="success">
+  **HOLOGRAM-exclusive feature.** This cannot be done with Engram, CyberDeck, or any other DERO wallet. HOLOGRAM is the only wallet that exposes the HTTP auth endpoints required for HTTPS-compatible sign-in.
+</Callout>
+
+## Why HOLOGRAM Only?
+
+Browsers enforce **mixed content restrictions**: an HTTPS page cannot open a `ws://` WebSocket connection to localhost. Every other DERO wallet communicates exclusively via the XSWD WebSocket protocol (`ws://127.0.0.1:44326/xswd`), which means they are unreachable from any production HTTPS website.
+
+HOLOGRAM solves this with a local **HTTP redirect endpoint** — the same pattern used by OAuth, Auth0, and SAML. No WebSocket required.
+
+| Wallet | Transport | Works on HTTPS? |
+|--------|-----------|-----------------|
+| **HOLOGRAM** | HTTP redirect (localhost) | **Yes** |
+| Engram | WebSocket only (`ws://`) | No — blocked by browser |
+| CyberDeck | WebSocket only (`ws://`) | No — blocked by browser |
+
+## How It Works
+
+The flow follows the same OAuth-style redirect pattern used by "Sign in with Google/GitHub":
+
+```
+Website                        HOLOGRAM (localhost)
+───────                        ────────────────────
+1. User clicks "Sign In with DERO"
+2. Browser redirects to ──────→  GET /auth?callback=...&nonce=...&domain=...
+                                 3. HOLOGRAM shows wallet approval modal
+                                 4. User clicks "Approve"
+                                 5. HOLOGRAM signs the challenge
+6. Browser redirects back ←────  302 → callback?signature=...&nonce=...
+7. Server verifies signature
+8. Session created — user is signed in
+```
+
+### Step by Step
+
+1. **Website redirects** — The site generates a nonce and redirects the browser to `http://127.0.0.1:44326/auth` with `callback`, `nonce`, and `domain` parameters.
+2. **HOLOGRAM receives the request** — The local HTTP server serves a lightweight page that triggers the wallet approval flow.
+3. **User approves** — HOLOGRAM's slide-in wallet modal shows the requesting domain and asks for approval. One click — no password entry, no seed phrase.
+4. **HOLOGRAM signs** — Upon approval, HOLOGRAM constructs a [DeroAuth challenge message](/wallet#sign--verify-messages) containing the wallet address, domain, nonce, and timestamps, then signs it with the wallet's private key.
+5. **Redirect back** — The browser redirects to the callback URL with the signature and nonce as query parameters.
+6. **Server verifies** — The website's backend verifies the Schnorr signature against the DERO address. If valid, a session is created.
+
+## What the User Sees
+
+1. Click "Sign In with DERO" on any website
+2. Browser briefly redirects to HOLOGRAM
+3. HOLOGRAM's wallet modal slides in: *"deropay.com wants to verify your identity"*
+4. Click **Approve**
+5. Automatically redirected back to the website, now signed in
+
+The entire flow takes about 2–3 seconds.
+
+## Security Properties
+
+| Property | Detail |
+|----------|--------|
+| **No secrets in the browser** | Private keys never leave HOLOGRAM. The website only receives a signature. |
+| **Replay protection** | Single-use nonce with server-side storage and expiration. |
+| **Domain binding** | The challenge message includes the requesting domain — signatures cannot be reused across sites. |
+| **Time-bounded** | Challenge includes `Issued At` and `Expiration Time` timestamps. |
+| **No tracking** | No third-party services, no analytics, no cookies until the user explicitly signs in. |
+
+## For Website Developers
+
+Integrate "Sign In with DERO" using the [DeroAuth SDK](https://github.com/DHEBP/DeroAuth):
+
+```typescript
+import { DeroAuthSigner } from 'dero-auth/client';
+
+const auth = new DeroAuthSigner({
+  hologramPort: 44326,
+});
+
+// Redirects the browser to HOLOGRAM
+auth.signInViaRedirect();
+```
+
+Server-side (Next.js example):
+
+```typescript
+import { createDeroAuth } from 'dero-auth/next';
+
+const { signinHandler, callbackHandler, sessionHandler, signoutHandler } =
+  createDeroAuth({ secret: process.env.DERO_AUTH_SECRET });
+```
+
+See the full [DeroAuth documentation](https://deropay.derod.org/dero-auth/overview) for setup instructions.
+
+## For Other Wallet Developers
+
+The redirect auth protocol is **open and wallet-agnostic**. Any DERO wallet can support it by implementing two HTTP endpoints:
+
+### `GET /auth`
+
+Accept query parameters: `callback` (URL), `nonce` (string), `domain` (string). Serve a page or UI that triggers user approval.
+
+### `POST /auth/complete`
+
+Accept JSON body: `{ nonce, domain, uri }`. On user approval:
+
+1. Construct the DeroAuth challenge message:
+   ```
+   {domain} wants you to sign in with your DERO wallet:
+   {address}
+
+   Sign in to {domain}
+
+   URI: {uri}
+   Version: 1
+   Chain ID: dero-mainnet
+   Nonce: {nonce}
+   Issued At: {timestamp}
+   Expiration Time: {timestamp}
+   ```
+2. Sign the message with the wallet's private key.
+3. Return `{ signature, address, nonce }` as JSON.
+
+The auth page then redirects the browser to `{callback}?signature={sig}&nonce={nonce}`.
+
+<Callout type="info">
+  If you're a wallet developer and want to add DeroAuth support, the protocol spec and reference implementation are available in the [HOLOGRAM source code](https://github.com/DHEBP/HOLOGRAM) (`xswd_server.go`).
+</Callout>
