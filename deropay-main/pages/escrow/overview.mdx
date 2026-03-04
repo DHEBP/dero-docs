@@ -59,3 +59,7 @@ See [TypeScript SDK](/escrow/sdk).
 <Callout type="info">
   The escrow contract supports **platform fees** (in basis points), so marketplaces can take a cut of each transaction automatically at the contract level.
 </Callout>
+
+<Callout type="warning">
+  Escrow deploys a **fresh contract for each transaction**. If you need fast, single-transaction payments without buyer protection, see the [Payment Router](/payment-router/overview) instead. For a full comparison, see [Escrow vs. Router](/payment-router/escrow-vs-router).
+</Callout>

@@ -1,0 +1,153 @@
+---
+title: "Payment Router TypeScript SDK — RouterContract & RouterManager"
+description: "Use the dero-pay/router module to deploy payment routers, send payments, and query on-chain state programmatically."
+---
+
+import { Callout } from 'nextra/components';
+
+# Payment Router TypeScript SDK
+
+The `dero-pay/router` module provides two levels of abstraction for working with payment routers:
+
+```ts
+import { RouterContract, RouterManager } from "dero-pay/router";
+```
+
+## RouterManager (High-Level)
+
+The recommended way to work with payment routers. Manages deployment, payments, and state queries:
+
+```ts
+import { RouterManager } from "dero-pay/router";
+
+const manager = new RouterManager({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Deploy a router with no fee (merchant keeps 100%)
+const router = await manager.deployRouter();
+console.log("SCID:", router.scid);
+
+// Deploy a router with 2.5% fee to a partner
+const router = await manager.deployRouter({
+  feeRecipientAddress: "dero1qy...partner-address",
+  feeBasisPoints: 250,
+});
+
+// Send a payment through the router
+const txid = await manager.pay(router.scid, "inv_abc123", 50_000n);
+
+// Query on-chain state
+const state = await manager.getOnChainState(router.scid);
+console.log("Payments:", state.paymentCount);
+console.log("Total:", state.totalProcessed);
+
+// Pause/resume
+await manager.pause(router.scid);
+await manager.resume(router.scid);
+
+// Update merchant address
+await manager.updateMerchant(router.scid, "dero1qy...new-address");
+
+// Withdraw trapped funds
+await manager.withdrawTrapped(router.scid, 1000n);
+```
+
+### Events
+
+```ts
+manager.on("routerDeployed", (router) => {
+  console.log("Deployed:", router.scid);
+});
+
+manager.on("routerDeployFailed", (router, error) => {
+  console.error("Failed:", error.message);
+});
+
+manager.on("paymentProcessed", (scid, invoiceId, txid) => {
+  console.log("Payment:", invoiceId, "TXID:", txid);
+});
+
+manager.on("error", (error) => {
+  console.error("Error:", error.message);
+});
+```
+
+### Import Existing Routers
+
+If you persist router records (e.g. in a database), you can re-import them on restart:
+
+```ts
+manager.importRouter({
+  id: "local-uuid",
+  scid: "abc123...",
+  deployTxid: "abc123...",
+  status: "active",
+  feeRecipientAddress: "dero1qy...",
+  feeBasisPoints: 250,
+  createdAt: "2026-03-03T00:00:00Z",
+  metadata: {},
+});
+```
+
+## RouterContract (Low-Level)
+
+Direct wrapper around the smart contract's RPC functions:
+
+```ts
+import { RouterContract } from "dero-pay/router";
+import { WalletRpcClient, DaemonRpcClient } from "dero-pay/rpc";
+
+const wallet = new WalletRpcClient({ url: "http://127.0.0.1:10103/json_rpc" });
+const daemon = new DaemonRpcClient({ url: "http://127.0.0.1:10102/json_rpc" });
+const contract = new RouterContract(wallet, daemon);
+
+// Deploy
+const scid = await contract.deploy({ feeBasisPoints: 0 });
+
+// Pay
+const txid = await contract.pay(scid, "inv_001", 100_000n);
+
+// Admin
+await contract.updateMerchant(scid, "dero1qy...");
+await contract.pause(scid);
+await contract.resume(scid);
+await contract.withdrawTrapped(scid, 5000n);
+
+// Query state
+const state = await contract.getState(scid);
+
+// Check existence
+const exists = await contract.exists(scid);
+```
+
+## On-Chain State Type
+
+```ts
+type RouterOnChainState = {
+  scid: string;
+  merchant: string;
+  feeRecipient: string;
+  feeBasisPoints: number;
+  totalProcessed: bigint;
+  totalFees: bigint;
+  paymentCount: number;
+  paused: boolean;
+  scBalance: number;
+};
+```
+
+## Key Constants
+
+- **DERO decimals:** 5 (1 DERO = 100,000 atomic units)
+- **Basis points:** 10,000 = 100%. Use 250 for 2.5%, 100 for 1%, 0 for no fee.
+- **Settlement time:** ~18 seconds (one DERO block)
+
+<Callout type="info">
+  The `RouterManager` handles deployment and event tracking. Use `RouterContract` directly only if you need fine-grained control or are building a custom integration.
+</Callout>
+
+<Callout type="warning">
+  After deploying a router, wait at least **45 seconds** before sending the first payment. DERO's encrypted balances require the deploy transaction to fully confirm before subsequent transactions can be broadcast. See [Prerequisites](/guides/prerequisites) for more on DERO transaction timing.
+</Callout>

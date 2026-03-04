@@ -1,0 +1,78 @@
+---
+title: "Payment Router — Instant On-Chain Payments"
+description: "A reusable per-merchant smart contract for fast, single-transaction DERO payments with optional fee splitting."
+---
+
+import { Callout } from 'nextra/components';
+
+# Payment Router
+
+The payment router is a reusable smart contract that a merchant deploys once and uses for unlimited payments. Customers call `Pay()` with DERO attached, and the contract instantly forwards the funds to the merchant — with an optional fee split to a configurable recipient.
+
+## Why a Payment Router?
+
+Standard DeroPay invoices use the wallet's integrated addresses to match payments. That works well, but the payment router adds on-chain settlement:
+
+- **Single transaction** — Customer sends DERO, merchant receives it in the same block (~18 seconds)
+- **On-chain fee splitting** — Optional automatic split between merchant and a fee recipient (partner, referral, platform)
+- **Reusable** — One contract handles every payment. No per-transaction deployment
+- **Verifiable** — Anyone can read the contract source and fee structure on-chain
+- **Pausable** — Merchant can pause and resume the router at any time
+
+## How It Works
+
+```
+Customer calls Pay("inv_123") with 10 DERO attached
+         │
+         ▼
+┌─────────────────────────┐
+│   Payment Router SC     │
+│                         │
+│  feeBasisPoints: 250    │  (2.5%)
+│  merchant: dero1q...    │
+│  feeRecipient: dero1q...│
+└─────────┬───────────────┘
+          │
+    ┌─────┴─────┐
+    │           │
+    ▼           ▼
+ 9.75 DERO   0.25 DERO
+ → merchant  → feeRecipient
+```
+
+Everything happens atomically in a single on-chain transaction.
+
+## On-Chain State
+
+The contract tracks aggregate statistics:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `merchant` | Address | Deployer's address — receives payouts |
+| `feeRecipient` | Address | Receives the fee split |
+| `feeBasisPoints` | Uint64 | Fee rate (100 = 1%, 250 = 2.5%, 0 = no fee) |
+| `totalProcessed` | Uint64 | Cumulative DERO processed (atomic units) |
+| `totalFees` | Uint64 | Cumulative fees collected (atomic units) |
+| `paymentCount` | Uint64 | Number of payments processed |
+| `paused` | Uint64 | 0 = active, 1 = paused |
+
+## Components
+
+### Smart Contract (`payment-router.bas`)
+
+A DERO smart contract written in DVM-BASIC that handles payment splitting and tracks statistics. See [Smart Contract](/payment-router/smart-contract).
+
+### TypeScript SDK
+
+- **`RouterContract`** — Low-level wrapper around the contract's RPC functions
+- **`RouterManager`** — High-level lifecycle manager that handles deployment, payments, and state queries
+
+See [TypeScript SDK](/payment-router/sdk).
+
+<Callout type="info">
+  The payment router is **deployed once per merchant** and reused for every payment. This is fundamentally different from the [escrow system](/escrow/overview), which deploys a fresh contract for each transaction. See [Escrow vs. Router](/payment-router/escrow-vs-router) for a detailed comparison.
+</Callout>
+
+<Callout type="warning">
+  The fee structure is **immutable** once deployed. The merchant verifies the contract source and fee rate before deploying. This prevents anyone from changing the terms after the fact.
+</Callout>

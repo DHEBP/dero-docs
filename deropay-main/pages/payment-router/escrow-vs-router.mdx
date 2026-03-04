@@ -1,0 +1,105 @@
+---
+title: "Escrow vs. Payment Router — Which Smart Contract to Use"
+description: "A comparison of DeroPay's two smart contracts: escrow for buyer-protected transactions and payment router for instant merchant payments."
+---
+
+import { Callout } from 'nextra/components';
+
+# Escrow vs. Payment Router
+
+DeroPay includes two smart contracts for on-chain payments. They serve different use cases and have fundamentally different deployment models.
+
+## At a Glance
+
+| | Escrow | Payment Router |
+|---|---|---|
+| **Deployment model** | One contract per transaction | One contract per merchant (reusable) |
+| **Transactions per payment** | 3 (deploy + deposit + confirm) | 1 (pay) |
+| **Settlement time** | ~54 seconds minimum | ~18 seconds (one block) |
+| **Buyer protection** | Yes — refunds, disputes, arbitration | No |
+| **Fee recipient** | Contract deployer (platform) | Configurable by merchant |
+| **Dispute resolution** | Yes (arbitrator role) | No |
+| **Pausable** | No | Yes (merchant can pause/resume) |
+| **On-chain state** | Per-transaction (amount, status, addresses) | Aggregate (total processed, count, fees) |
+| **SCID persistence** | Ephemeral — new SCID for each escrow | Persistent — same SCID for all payments |
+
+## When to Use Escrow
+
+Use escrow when the buyer needs protection or the transaction requires trust:
+
+- **Marketplaces** — Buyer pays, seller ships, funds release on confirmation
+- **Freelance contracts** — Client deposits, freelancer delivers, funds release on approval
+- **P2P trades** — Neither party trusts the other
+- **High-value purchases** — Where the buyer wants the ability to dispute or get a refund
+- **Any transaction where delivery isn't instant**
+
+The escrow contract deploys a **fresh instance for each transaction**. Each escrow has its own SCID, its own state, and its own lifecycle (funded → released/refunded/disputed). There is no shared state between different escrows.
+
+```ts
+import { EscrowManager } from "dero-pay/escrow";
+
+const escrow = await manager.create({
+  seller: "dero1qy...seller",
+  amount: 500_000,       // 5 DERO
+  expirySeconds: 86400,  // 24 hours
+});
+// escrow.scid is unique to this transaction
+```
+
+## When to Use the Payment Router
+
+Use the payment router when the merchant just needs to get paid:
+
+- **Retail / e-commerce** — Customer pays, product ships immediately
+- **Subscriptions** — Recurring payments to the same merchant
+- **Donations** — One-time or recurring contributions
+- **Digital goods** — Instant delivery, no buyer protection needed
+- **Any "pay and go" transaction**
+
+The payment router is deployed **once** by the merchant and handles **every subsequent payment** through the same contract. The SCID is permanent and can be shared publicly.
+
+```ts
+import { RouterManager } from "dero-pay/router";
+
+// Deploy once
+const router = await manager.deployRouter({ feeBasisPoints: 0 });
+// router.scid is reused for every payment
+
+// Use for every payment
+await manager.pay(router.scid, "inv_001", 100_000n);
+await manager.pay(router.scid, "inv_002", 50_000n);
+await manager.pay(router.scid, "inv_003", 200_000n);
+// All through the same contract
+```
+
+## Cost Comparison
+
+| | Escrow (per transaction) | Payment Router (per transaction) |
+|---|---|---|
+| **Contract deployment** | 1 deploy TX (gas fee) | 0 (already deployed) |
+| **Payment** | 1 deposit TX + 1 release TX | 1 pay TX |
+| **Total on-chain TXs** | 3 | 1 |
+| **Total gas cost** | ~3× base fee | ~1× base fee |
+
+Over many payments, the router is significantly cheaper because the deployment cost is amortized across all payments.
+
+## Can I Use Both?
+
+Yes. A merchant can deploy a payment router for standard checkout and use escrow for high-value or trust-sensitive transactions. The two systems are independent — they use different contracts, different SDK modules, and different state.
+
+```ts
+import { RouterManager } from "dero-pay/router";
+import { EscrowManager } from "dero-pay/escrow";
+
+// Standard payments through the router
+const router = new RouterManager({ ... });
+await router.pay(scid, "inv_standard_001", 10_000n);
+
+// High-value escrow for a custom project
+const escrow = new EscrowManager({ ... });
+await escrow.create({ seller: "dero1q...", amount: 5_000_000 });
+```
+
+<Callout type="info">
+  **Rule of thumb:** If the customer receives what they paid for immediately (digital goods, retail), use the payment router. If there's a delay between payment and delivery (freelance work, shipped goods, services), use escrow.
+</Callout>

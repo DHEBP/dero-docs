@@ -25,6 +25,12 @@
   },
   "escrow": "Escrow System",
 
+  "-- PaymentRouter": {
+    "type": "separator",
+    "title": "Payment Router"
+  },
+  "payment-router": "Payment Router",
+
   "-- DeroAuth": {
     "type": "separator",
     "title": "DeroAuth SDK"
