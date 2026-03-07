@@ -205,34 +205,16 @@ All data stays on your machine:
 - No DNS leaks for TELA content
 - Optional Tor support (via daemon configuration)
 
-## Daemon Download Security
+## Daemon Setup
 
-When Hologram auto-downloads the DERO daemon (`derod`), it performs SHA256 checksum verification to ensure the binary hasn't been tampered with.
+Hologram requires a DERO daemon (`derod`) for blockchain access. You can either:
 
-### Checksum Verification
+1. **Connect to a remote node** — Enter the daemon address in Settings > Node
+2. **Run your own node** — Download derod from [GitHub Releases](https://github.com/deroproject/derohe/releases) and start it separately
+3. **Use Simulator Mode** — Hologram manages a local simulator daemon automatically (for development only)
 
-1. **Download checksum file** — Fetches `checksum.txt.signed` from GitHub releases
-2. **Parse signed message** — Extracts checksums from DERO-signed message format
-3. **Calculate local hash** — Computes SHA256 of downloaded archive
-4. **Compare** — Fails download if checksums don't match
-
-```go
-// Verification is mandatory for auto-downloads
-// If checksum fails, the downloaded file is deleted
-VerifyFileChecksum(filePath, expectedChecksum) -> error
-```
-
-### Privacy Setting
-
-If you prefer not to contact GitHub, you can disable auto-download:
-
-1. Go to **Settings > Privacy**
-2. Disable **Allow GitHub Check**
-3. Manually download derod from [GitHub Releases](https://github.com/deroproject/derohe/releases)
-4. Place the binary in `~/.dero/hologram/derod/`
-
-<Callout type="warning">
-  With GitHub check disabled, Hologram will show manual installation instructions instead of auto-downloading.
+<Callout type="info">
+  For production use, running your own local node provides the highest security and privacy. See the [DERO documentation](https://derod.org) for daemon setup instructions.
 </Callout>
 
 ## Wallet Security

@@ -53,22 +53,22 @@ View all running TELA servers with:
 
 ```go
 // List all running servers
-GetRunningServers() -> {
+ListActiveServers() -> {
     servers: [
-        { port: 8080, scid: "abc123...", uptime: "2h 15m" },
+        { name: "abc123...", port: 8080, uptime: "2h 15m" },
         ...
     ]
 }
 
-// Shutdown a specific server
-ShutdownServer(port int) -> { success: true }
+// Shutdown a specific server by name
+ShutdownServer(name string) -> { success: true }
 
 // Shutdown all servers
 ShutdownAllServers() -> { success: true, count: 3 }
 
 // Configure server limits
 SetMaxServers(count int) -> { success: true }
-SetPortStart(port int) -> { success: true }
+SetServerPortStart(port int) -> { success: true }
 ```
 
 <Callout type="info">
@@ -194,7 +194,7 @@ Filter out specific SCIDs from search results:
 
 Excluded content won't appear in:
 - OmniSearch results
-- Discover tab
+- Browser app discovery
 - App suggestions
 
 ### Min-Likes Filter
@@ -331,8 +331,8 @@ ws.onmessage = (event) => {
 | `GetSCIDsByTag` | Get SCIDs matching a tag |
 | `GetSCIDMetadata` | Get metadata for a specific SCID |
 | `GetTagStats` | Get tag distribution statistics |
-| `GetSCIDTimeline` | Get historical snapshots for an SC |
-| `GetSCIDStateAtHeight` | Get SC state at a specific height |
+| `GetSCChangeTimeline` | Get change timeline for an SC |
+| `GetSCStateAtHeight` | Get SC state at a specific height |
 | `GetDiscoveredApps` | List all indexed TELA apps |
 | `SearchApps` | Search apps by name/description |
 

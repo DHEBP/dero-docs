@@ -99,6 +99,13 @@ Add semantic labels to transactions for better organization:
 
 Labels are stored locally and help you track the purpose of transactions over time.
 
+```go
+SetTransactionLabel(txid string, label string) -> { success: true }
+GetTransactionLabel(txid string) -> { label: "Payment to Alice" }
+GetAllTransactionLabels() -> { labels: { "txid1": "label1", ... } }
+DeleteTransactionLabel(txid string) -> { success: true }
+```
+
 ## Sending DERO
 
 1. Click **Send** in the Wallet tab
@@ -131,15 +138,47 @@ Your wallet address is always visible in the Wallet tab. You can:
 - Generate a payment request with amount
 - Create an integrated address with payment ID
 
-### Payment Requests
+### Integrated Addresses
+
+Generate an integrated address with embedded payment data:
 
 ```go
-CreatePaymentRequest(amount uint64, comment string) -> {
-    integratedAddress: "deri1...",
-    paymentId: "abc123...",
-    qrCode: "base64..."
+GetIntegratedAddress(destinationPort uint64, comment string, amount uint64) -> {
+    success: true,
+    integratedAddress: "deroi1qy...",
+    baseAddress: "dero1qy...",
+    destinationPort: 12345,
+    comment: "Payment for order #123",
+    amount: 100000,
 }
 ```
+
+| Parameter | Description |
+|-----------|-------------|
+| `destinationPort` | Service port identifier (DERO's equivalent of payment ID) |
+| `comment` | Optional message embedded in the address |
+| `amount` | Requested amount in atomic units (1 DERO = 100,000) |
+
+### Decoding Integrated Addresses
+
+Extract embedded data from any DERO address:
+
+```go
+SplitIntegratedAddress(address string) -> {
+    success: true,
+    baseAddress: "dero1qy...",
+    isIntegrated: true,
+    isMainnet: true,
+    destinationPort: 12345,
+    comment: "Payment for order #123",
+    amount: 100000,
+    argumentCount: 3,
+}
+```
+
+<Callout type="info">
+  DERO doesn't use traditional "payment IDs" like Monero. Instead, it embeds `RPC_DESTINATION_PORT`, comments, and amounts directly in integrated addresses (`deroi...` on mainnet, `detoi...` on simulator).
+</Callout>
 
 ## Coinbase Transactions
 
@@ -293,20 +332,34 @@ Data stored in `datashards/settings/recent_wallets_info.json`
 View and manage all tokens in your wallet:
 
 ```go
-GetTokenPortfolio() -> {
+// Get all tracked tokens with balances
+GetTrackedTokens() -> {
+    success: true,
     tokens: [
-        { scid: "...", name: "TokenName", balance: 1000 },
+        { scid: "...", name: "TokenName", symbol: "TKN", balance: 1000 },
         ...
     ]
+}
+
+// Add a token to track
+AddTrackedToken(scid string, name string, symbol string) -> { success: true }
+
+// Remove a token from tracking
+RemoveTrackedToken(scid string) -> { success: true }
+
+// Send tokens to another address
+TransferToken(scid string, destination string, amount uint64, password string) -> {
+    success: true,
+    txid: "abc123..."
 }
 ```
 
 ### Token Management
 
 - **View balances**: See all tokens held by your wallet
-- **Add tokens**: Track new token SCIDs
+- **Add tokens**: Track new token SCIDs by entering the SCID, name, and symbol
 - **Remove tokens**: Hide tokens from your portfolio
-- **Send tokens**: Transfer tokens to other addresses
+- **Send tokens**: Transfer tokens to other addresses (uses `Burn` field internally)
 
 ## Address Book
 
@@ -331,16 +384,19 @@ Save frequently used addresses for quick access:
 // Get all contacts
 GetAddressBook() -> {
     contacts: [
-        { name: "Alice", address: "dero1qy...", notes: "Friend" },
+        { id: "...", label: "Alice", address: "dero1qy...", notes: "Friend" },
         ...
     ]
 }
 
 // Add a contact
-AddContact(name, address, notes string) -> { success: true }
+AddContact(label string, address string, notes string) -> { success: true }
+
+// Update an existing contact
+UpdateContact(id string, label string, address string, notes string) -> { success: true }
 
 // Delete a contact
-DeleteContact(address string) -> { success: true }
+DeleteContact(id string) -> { success: true }
 ```
 
 <Callout type="info">
@@ -360,7 +416,7 @@ Cryptographically sign messages to prove wallet ownership, or verify signatures 
 5. Copy the PEM-formatted signature
 
 ```go
-SignMessage(message, password string) -> {
+SignMessage(message string) -> {
     signature: "-----BEGIN DERO SIGNED MESSAGE-----\n...",
     address: "dero1qy...",
     message: "Hello, world!"
@@ -475,8 +531,9 @@ GetWalletKeys(password string) -> {
 
 ### Network Isolation
 
-- Mainnet and Testnet wallets are separate
-- Simulator wallets are isolated
+- Mainnet and Simulator wallets are separate
+- Simulator wallets use `deto1...` prefix (vs `dero1...` for mainnet)
+- Opening a wallet on the wrong network shows a warning
 - No cross-network contamination possible
 
 ### Seed Phrase Security
@@ -497,20 +554,122 @@ DisconnectXSWD()
 
 This enables using Hologram's browser with wallets that have additional features like hardware wallet support.
 
+## DERO Fundamentals
+
+### Atomic Units
+
+DERO uses **5 decimal places**:
+
+| Human | Atomic Units |
+|-------|-------------|
+| 1 DERO | 100,000 |
+| 0.5 DERO | 50,000 |
+| 0.00001 DERO | 1 |
+
+All API methods that accept or return amounts use atomic units.
+
+### Address Formats
+
+| Prefix | Type | Network |
+|--------|------|---------|
+| `dero1...` | Standard address | Mainnet |
+| `deto1...` | Standard address | Simulator |
+| `deroi1...` | Integrated address | Mainnet |
+| `detoi1...` | Integrated address | Simulator |
+
+Integrated addresses embed payment data (destination port, comment, amount) directly in the address string.
+
 ## API Reference
 
-### Wallet Methods
+### Wallet Lifecycle
 
 ```go
-OpenWallet(filePath, password string) map[string]interface{}
+OpenWallet(filePath string, password string) map[string]interface{}
 CloseWallet() map[string]interface{}
-CreateWallet(filePath, password string) map[string]interface{}
-RestoreWallet(filePath, password, seed string) map[string]interface{}
-SwitchWallet(filePath, password string) map[string]interface{}
+CreateWallet(filePath string, password string) map[string]interface{}
+RestoreWallet(filePath string, password string, seed string) map[string]interface{}
+SwitchWallet(filePath string, password string) map[string]interface{}
+IsWalletOpen() bool
 GetWalletStatus() map[string]interface{}
+GetCurrentWalletPath() map[string]interface{}
+SelectWalletFile() map[string]interface{}
+```
+
+### Balance & Sync
+
+```go
 GetBalance() map[string]interface{}
 GetAddress() map[string]interface{}
+SyncWallet() map[string]interface{}
+GetWalletSyncStatus() map[string]interface{}
+```
+
+### Transactions
+
+```go
+Transfer(destination string, amount uint64, paymentID string) map[string]interface{}
+TransferToken(scid string, destination string, amount uint64, password string) map[string]interface{}
 GetTransactionHistory(limit int) map[string]interface{}
 GetWalletMiningEarnings(limit int) map[string]interface{}
+GetMiningEarningsSummary() map[string]interface{}
+```
+
+### Integrated Addresses
+
+```go
+GetIntegratedAddress(destinationPort uint64, comment string, amount uint64) map[string]interface{}
+SplitIntegratedAddress(address string) map[string]interface{}
+```
+
+### Transaction Labels
+
+```go
+SetTransactionLabel(txid string, label string) map[string]interface{}
+GetTransactionLabel(txid string) map[string]interface{}
+GetAllTransactionLabels() map[string]interface{}
+DeleteTransactionLabel(txid string) map[string]interface{}
+```
+
+### Token Portfolio
+
+```go
+GetTrackedTokens() map[string]interface{}
+AddTrackedToken(scid string, name string, symbol string) map[string]interface{}
+RemoveTrackedToken(scid string) map[string]interface{}
+```
+
+### Address Book
+
+```go
+GetAddressBook() map[string]interface{}
+AddContact(label string, address string, notes string) map[string]interface{}
+UpdateContact(id string, label string, address string, notes string) map[string]interface{}
+DeleteContact(id string) map[string]interface{}
+```
+
+### Security
+
+```go
+GetSeedPhrase(password string) map[string]interface{}
+GetWalletKeys(password string) map[string]interface{}
+ChangeWalletPassword(currentPassword string, newPassword string) map[string]interface{}
+SignMessage(message string) map[string]interface{}
+VerifySignature(signedData string) map[string]interface{}
+```
+
+### Recent Wallets
+
+```go
+GetRecentWalletsWithInfo() map[string]interface{}
+RemoveRecentWallet(path string) map[string]interface{}
+ClearRecentWallets() map[string]interface{}
+```
+
+### External Wallet (XSWD)
+
+```go
+ConnectXSWD() map[string]interface{}
+DisconnectXSWD() map[string]interface{}
+GetXSWDStatus() map[string]interface{}
 ```
 

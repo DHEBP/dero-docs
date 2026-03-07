@@ -3,7 +3,7 @@ title: "DERO Privacy Suite: Complete Technical Guide | DERO Blockchain"
 description: "Deep dive into DERO's multi-layered privacy architecture including ring signatures, homomorphic encryption, bulletproofs, and transaction privacy mechanisms."
 keywords: ["DERO privacy", "ring signatures", "homomorphic encryption", "bulletproofs", "transaction privacy", "blockchain anonymity", "privacy technology", "cryptographic privacy", "sender privacy", "DERO security"]
 date: "2025-10-18"
-lastUpdated: "2025-11-01"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 slug: "privacy"
 canonicalUrl: "https://derod.org/privacy"
@@ -33,9 +33,9 @@ import { Callout } from 'nextra/components'
 
 | Technology | What It Protects | Key Benefit | Learn More |
 |------------|-----------------|-------------|------------|
-| **Ring Signatures** | Sender identity | Hide among 2-128 members (6.25% chance default) | [Explore →](/privacy/ring-signatures) |
+| **Ring Signatures** | Sender identity | Hide among 2-128 members (naive guess 1/N) | [Explore →](/privacy/ring-signatures) |
 | **Homomorphic Encryption** | Amounts, balances | Math on encrypted data (network never sees values) | [Explore →](/privacy/homomorphic-encryption) |
-| **Bulletproofs** | Amount validity | Zero-knowledge proofs (~2KB, 10× faster) | [Explore →](/privacy/bulletproofs) |
+| **Bulletproofs** | Amount validity | 128-bit combined range proofs (logarithmic size) | [Explore →](/privacy/bulletproofs) |
 | **Account-Based Privacy** | Transaction patterns | Account model + privacy (unique to DERO) | [Explore →](/privacy/account-based-privacy) |
 | **Payload Proofs** | Sender verification | Only YOU can prove you sent (third parties can't) | [Explore →](/privacy/payload-proofs) |
 
@@ -68,8 +68,8 @@ DERO's unique architectural achievement: account-based model with strong privacy
 **DERO's Unique Solution:**
 - Account-based model (simple, fast)
 - Private smart contracts (unique to DERO)
-- Instant confirmations (~18 seconds)
-- Lightweight wallets (seconds, not hours)
+- Target block time set by consensus parameters (BLOCK_TIME = 18s)
+- Lightweight wallets (no chain scanning required)
 
 **[Explore Account-Based Privacy →](/privacy/account-based-privacy)**
 
@@ -77,13 +77,12 @@ DERO's unique architectural achievement: account-based model with strong privacy
 
 ### Bulletproofs
 
-**10× faster verification. Zero-knowledge proofs that don't reveal amounts.**
+**Zero-knowledge proofs that don't reveal amounts.**
 
-Proves your transaction amount is valid (0 to 2^64) **without revealing what the amount is**. Cryptographically proven - impossible to forge without breaking elliptic curve discrete logarithm.
+Proves your transaction values are valid **without revealing what they are**. DERO uses a 128-bit combined range proof that validates both the transfer amount (lower 64 bits) and remaining balance (upper 64 bits) in a single proof. Cryptographically secured by the bn256 elliptic curve discrete logarithm problem.
 
-**Performance:**
-- Compact proof size (~2KB)
-- Fast verification (~10ms, 10× faster than alternatives)
+**Key properties:**
+- Logarithmic-size proof (7 rounds for 128-bit range)
 - Triple-layer defense against negative transfers
 
 Privacy + Security = Perfect.
@@ -94,13 +93,13 @@ Privacy + Security = Perfect.
 
 ### Ring Signatures
 
-**Hide among 16 members. Only 6.25% chance of identification.**
+**Hide among 2-128 members.**
 
-Your address is mixed with 2-128 others. Blockchain sees ONE of them sent the transaction, but can't determine which one.
+Your address is mixed with other members in a ring. The blockchain sees ONE of them sent the transaction, but cannot determine which one.
 
-**Privacy Levels:**
-- Default: 16 members (6.25% identification chance)
-- Maximum: 128 members (0.8% identification chance - near impossible)
+**Privacy Levels (naive guess):**
+- 1 in N chance if no additional information is available
+- Larger rings reduce the naive guess probability
 
 **Key Insight:** Ring members' encrypted balances change even as decoys - this is normal behavior, not a bug!
 
@@ -130,7 +129,7 @@ Privacy by design: Only YOU (with your private keys) can prove you sent a transa
 **Core Technologies:**
 - [Ring Signatures](/privacy/ring-signatures) - Sender anonymity (2-128 members)
 - [Homomorphic Encryption](/privacy/homomorphic-encryption) - Encrypted balances and operations
-- [Bulletproofs](/privacy/bulletproofs) - Zero-knowledge range proofs (~2KB, 10× faster)
+- [Bulletproofs](/privacy/bulletproofs) - 128-bit combined range proofs (logarithmic size)
 
 **Privacy in Action:**
 - [Transaction Privacy](/privacy/transaction-privacy) - Complete end-to-end flow

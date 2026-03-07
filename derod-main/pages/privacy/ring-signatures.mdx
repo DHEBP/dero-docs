@@ -3,7 +3,7 @@ title: "Ring Signatures: DERO's Sender Privacy Mechanism | DERO Blockchain"
 description: "How DERO's ring signatures hide sender identity among groups of 2-128 members, providing plausible deniability through proven cryptographic techniques."
 keywords: ["ring signatures", "DERO privacy", "sender anonymity", "cryptographic signatures", "plausible deniability", "DERO ring members", "sender hiding", "privacy technology"]
 date: "2025-10-18"
-lastUpdated: "2025-10-19"
+lastUpdated: "2026-01-26"
 authors: ["DHEBP"]
 image: "/assets/ring-signatures.jpeg"
 slug: "ring-signatures"
@@ -38,7 +38,7 @@ graph TB
     
     S --> BC[Blockchain<br/>Cannot determine which]
     
-    BC --> P[Privacy: Alice hidden<br/>among 16 members]
+    BC --> P[Privacy: Alice hidden<br/>among N members]
 ```
 
 **Traditional signature:**
@@ -48,23 +48,27 @@ Alice signs → Everyone knows Alice sent it ❌
 
 **Ring signature:**
 ```
-[Alice + 15 others] sign → ONE of 16 sent it, which one? Unknown ✅
+[Alice + N-1 others] sign → ONE of N sent it, which one? Unknown ✅
 ```
 
 ---
 
 ## Ring Size Impact
 
-| Ring Size | Privacy Level | TX Size | Identification Chance |
-|-----------|---------------|---------|----------------------|
-| 2 | Minimal | 1.67 KB | 50% (1 in 2) |
-| 8 | Medium | 3.12 KB | 12.5% (1 in 8) |
-| **16** | **Good (Default)** | **4.50 KB** | **6.25% (1 in 16)** |
-| 32 | Strong | 6.94 KB | 3.1% (1 in 32) |
-| 64 | Very Strong | 11.5 KB | 1.6% (1 in 64) |
-| 128 | Maximum | 20.3 KB | 0.8% (1 in 128) |
+| Ring Size | Privacy Level | TX Size (bytes) | Naive Guess Probability |
+|-----------|---------------|----------------|-------------------------|
+| 2 | Minimal | 1553 | 1 in 2 |
+| 4 | Low | 2013 | 1 in 4 |
+| 8 | Medium | 2605 | 1 in 8 |
+| 16 | Good | 3461 | 1 in 16 |
+| 32 | Strong | 4825 | 1 in 32 |
+| 64 | Very Strong | 7285 | 1 in 64 |
+| 128 | Maximum | 11839 | 1 in 128 |
 
-**Source:** `config/config.go:58-59`
+**Sources:**
+- Ring size limits: `config/config.go:58-59`
+- Transaction sizes: `README.md` (Transactions Sizes table)
+
 ```go
 const MIN_RINGSIZE = 2
 const MAX_RINGSIZE = 128
@@ -91,7 +95,7 @@ ONE sent 200,000 DERO
 Which one? HIDDEN
 ```
 
-**Blockchain shows:**
+**Blockchain shows (for this example ring):**
 - ✓ 16 possible senders
 - ✗ Amount (encrypted)
 - ✗ Cannot determine real sender
@@ -117,8 +121,8 @@ for i := 0; i < 100; i++ {
     candidates = append(candidates, address)
 }
 
-// Returns ~140 candidates
-// Wallet picks 15 for ring (+ sender = 16)
+// Returns up to ~140 candidates
+// Wallet selects ringsize-1 decoys for the ring
 ```
 
 **Why unchanged balances?**
@@ -211,14 +215,14 @@ C[7] = (200000 × G) + addr_7  ← Same 200000!
 - Run own node
 
 **For Balanced Privacy (Recommended):**
-- Ring size: 16 (default)
+- Ring size: 16
 - Standard network
 - Trusted or own node
 
 **For Developers:**
 ```javascript
 // Let users choose
-transfer({ ringsize: 16 })  // Default
+transfer({ ringsize: 16 })  // Example
 transfer({ ringsize: 64 })  // High privacy
 transfer({ ringsize: 128 }) // Maximum
 ```

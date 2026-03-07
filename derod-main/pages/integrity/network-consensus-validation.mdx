@@ -1,0 +1,445 @@
+---
+title: "Network Consensus Validation: Distributed Security | DERO Blockchain"
+description: "How DERO's distributed network validates transactions through consensus - every node verifies independently, creating Byzantine fault tolerance and eliminating single points of failure."
+keywords: ["network consensus", "distributed validation", "DERO consensus", "Byzantine fault tolerance", "node validation", "blockchain consensus", "transaction finality"]
+date: "2025-01-20"
+lastUpdated: "2026-02-06"
+authors: ["DHEBP"]
+slug: "network-consensus-validation"
+canonicalUrl: "https://derod.org/integrity/network-consensus-validation"
+tags: ["security", "consensus", "network", "validation", "technical"]
+---
+
+import { Callout } from 'nextra/components'
+import { Tabs } from 'nextra/components'
+
+# Network Consensus Validation
+
+<Callout type="success" emoji="🌐">
+**Distributed Security:** Every DERO node independently validates every transaction. There's no central authority - security comes from the mathematical certainty that all nodes will reach the same conclusion when given the same data.
+</Callout>
+
+## The Consensus Model
+
+### Distributed Validation
+
+```mermaid
+flowchart TD
+    Transaction["Transaction Submitted"] --> N1["Node 1"]
+    Transaction --> N2["Node 2"]
+    Transaction --> N3["Node 3"]
+    Transaction --> N4["Node N..."]
+    
+    N1 --> V1["Verify Proofs"]
+    N2 --> V2["Verify Proofs"]
+    N3 --> V3["Verify Proofs"]
+    N4 --> V4["Verify Proofs"]
+    
+    V1 --> R1{"Valid?"}
+    V2 --> R2{"Valid?"}
+    V3 --> R3{"Valid?"}
+    V4 --> R4{"Valid?"}
+    
+    R1 -->|Yes| A["Accept & Propagate"]
+    R2 -->|Yes| A
+    R3 -->|Yes| A
+    R4 -->|Yes| A
+    
+    R1 -->|No| X["Reject & Drop"]
+    R2 -->|No| X
+    R3 -->|No| X
+    R4 -->|No| X
+```
+
+### Why This Works
+
+**Deterministic Verification:**
+- Same transaction → Same verification result
+- Every honest node reaches the same conclusion
+- No coordination required between nodes
+- Mathematical certainty, not voting
+
+---
+
+## Transaction Lifecycle
+
+### Phase 1: Submission
+
+```mermaid
+sequenceDiagram
+    participant W as Wallet
+    participant N as First Node
+    
+    W->>W: Create transaction
+    W->>W: Generate all proofs
+    W->>N: Submit via RPC
+    N->>N: Basic format check
+    
+    alt Format OK
+        N->>N: Queue for full verification
+    else Format Bad
+        N-->>W: Immediate rejection
+    end
+```
+
+### Phase 2: Full Verification
+
+**Each node performs complete verification.**
+
+The core verification logic lives in `cryptography/crypto/proof_verify.go` in the `Verify()` function. Each node independently runs through the same sequence:
+
+1. **Overflow check** -- Reject if `fees + extra_value` overflows (`proof_verify.go:108-110`)
+2. **Parity check** -- Verify the secret parity is well-formed (`proof_verify.go:136-141`)
+3. **Polynomial recovery** -- Verify B^w × A recovery (`proof_verify.go:177-179`)
+4. **Challenge hash** -- Recompute and compare challenge `c` from all six sigma proof components (`proof_verify.go:410-425`)
+5. **Inner product** -- Final cryptographic consistency check (`proof_verify.go:457-459`)
+
+If any step fails, `Verify()` returns `false` and the transaction is rejected.
+
+### Phase 3: Propagation
+
+```mermaid
+sequenceDiagram
+    participant N1 as Node 1
+    participant N2 as Node 2
+    participant N3 as Node 3
+    participant NX as Other Nodes
+    
+    N1->>N1: Verify transaction (✓)
+    N1->>N2: Propagate transaction
+    N1->>N3: Propagate transaction
+    
+    N2->>N2: Verify transaction (✓)
+    N2->>NX: Propagate transaction
+    
+    N3->>N3: Verify transaction (✓)
+    N3->>NX: Propagate transaction
+    
+    Note over N1,NX: Invalid transaction is rejected<br/>and NOT propagated
+```
+
+**Key Principle:** Nodes only propagate transactions they've independently verified as valid.
+
+### Phase 4: Block Inclusion
+
+```mermaid
+sequenceDiagram
+    participant MP as Mempool
+    participant M as Miner
+    participant NET as Network
+    
+    MP->>M: Transactions available
+    M->>M: Select valid transactions
+    M->>M: Build block candidate
+    M->>M: Mine (AstroBWT)
+    
+    M->>NET: Announce block
+    NET->>NET: Verify block + ALL transactions
+    
+    alt All Valid
+        NET->>NET: Accept block
+        NET->>NET: Update chain state
+    else Any Invalid
+        NET->>NET: Reject block
+    end
+```
+
+---
+
+## What Gets Verified
+
+### Transaction-Level Checks
+
+| Check | What It Validates | Failure Means |
+|-------|------------------|---------------|
+| **6 sigma proofs** | A_y, A_D, A_b, A_X, A_t, A_u all valid (A_t includes range proof) | Forged transaction |
+| **Inner product** | Bulletproof verification (sub-component of A_t range proof) | Invalid amount / proof manipulation |
+| **Structure** | Valid format, sizes, parity | Malformed TX |
+| **Overflow** | Fee arithmetic doesn't overflow `uint64` | Arithmetic attack |
+| **Fee** | Sufficient fee included | Underpaid TX |
+
+### Block-Level Checks
+
+| Check | What It Validates | Failure Means |
+|-------|------------------|---------------|
+| **All TXs valid** | Every TX passes individual checks | Block contains invalid TX |
+| **Block header** | Valid previous hash, timestamp | Chain fork or manipulation |
+| **Mining proof** | Valid AstroBWT solution | Insufficient work |
+| **Size limits** | Block within size constraints | Oversized block |
+| **Merkle root** | TX hash tree correct | TX inclusion manipulation |
+
+---
+
+## Byzantine Fault Tolerance
+
+### The Byzantine Generals Problem
+
+**DERO's solution:**
+
+```mermaid
+flowchart TD
+    subgraph "Honest Nodes (Majority)"
+        H1["Honest Node 1<br/>Verifies: Transaction Valid"]
+        H2["Honest Node 2<br/>Verifies: Transaction Valid"]
+        H3["Honest Node 3<br/>Verifies: Transaction Valid"]
+    end
+    
+    subgraph "Malicious Nodes"
+        M1["Malicious Node<br/>Claims: Transaction Invalid"]
+    end
+    
+    H1 --> C["Consensus:<br/>Transaction is Valid"]
+    H2 --> C
+    H3 --> C
+    M1 --> |"Ignored"| C
+    
+    C --> R["Result: Honest nodes win"]
+```
+
+### Why Malicious Nodes Can't Win
+
+**The math is deterministic:**
+
+```
+Transaction TX with proofs P
+
+For every honest node N:
+  Verify(TX, P) → Same result
+
+If TX is valid:
+  ALL honest nodes accept
+  Malicious nodes saying "invalid" are simply ignored
+
+If TX is invalid:
+  ALL honest nodes reject
+  Malicious nodes cannot force acceptance
+```
+
+**Key insight:** Nodes don't "vote" on validity. They independently compute the same mathematical result. A malicious node lying about the result is just ignored.
+
+---
+
+## The Verification Timeline
+
+### Single Transaction
+
+When a transaction is submitted, it passes through these stages in order:
+
+1. **Basic format check** -- Structural validation (field counts, size limits, parity)
+2. **Full proof verification** -- All sigma proofs and inner product proof verified mathematically
+3. **Mempool admission** -- If valid, added to the node's mempool
+4. **Peer propagation** -- Forwarded to connected peers, who independently verify
+
+> **Note:** No official benchmarks exist for per-step verification times. Actual performance depends on hardware, network conditions, and ring size. The codebase does not include benchmark tests for proof verification.
+
+### Block Confirmation
+
+<Callout type="info" emoji="⏱️">
+**Block Time:** DERO's block time is **18 seconds** as defined in `config/config.go:34`. The README mentions "16s" but this appears to be outdated - the actual constant is `BLOCK_TIME = uint64(18)`.
+</Callout>
+
+```
+Block time: 18 seconds (from config/config.go)
+
+Time 0:      TX in mempool
+Time 18s:    Included in block
+Time 36s:    1 confirmation
+Time 54s:    2 confirmations
+Time ~5 min: ~17 confirmations (very secure)
+```
+
+**Source verification:**
+```go
+// config/config.go:34
+const BLOCK_TIME = uint64(18)
+const BLOCK_TIME_MILLISECS = BLOCK_TIME * 1000
+```
+
+---
+
+## Network Topology
+
+### P2P Architecture
+
+```mermaid
+graph TD
+    N1["Node 1"] --> N2["Node 2"]
+    N1 --> N3["Node 3"]
+    N2 --> N4["Node 4"]
+    N2 --> N5["Node 5"]
+    N3 --> N5
+    N3 --> N6["Node 6"]
+    N4 --> N7["Node 7"]
+    N5 --> N7
+    N6 --> N7
+```
+
+**Properties:**
+- No central coordinator
+- Multiple paths between nodes
+- Failure of one node doesn't affect others
+- Geographic distribution
+
+### TLS Encryption
+
+**All node communication is encrypted:**
+
+```go
+// From p2p/controller.go
+
+// Outgoing connections wrap in TLS
+conntls := tls.Client(conn, &tls.Config{InsecureSkipVerify: true})
+
+// Server generates random TLS certificate
+tlsconfig := &tls.Config{Certificates: []tls.Certificate{generate_random_tls_cert()}}
+```
+
+**Benefits:**
+- Prevents eavesdropping on transaction data
+- Encrypts all peer-to-peer traffic
+
+**Honest limitations:**
+- Uses `InsecureSkipVerify: true` -- peers are not authenticated via certificate validation
+- TLS provides transport encryption, not peer identity verification
+- Peer identity is established through the DERO handshake protocol, not TLS certificates
+
+---
+
+## Finality
+
+### When is a Transaction "Final"?
+
+<Tabs items={['How It Works', 'What We Can Say']}>
+  <Tabs.Tab>
+    **Probabilistic Finality:**
+    
+    Like all Proof-of-Work chains, DERO has probabilistic finality -- each additional block confirmation makes reversal exponentially harder. The general principle:
+    
+    - **1 confirmation** -- Transaction is in a block, but a competing chain could still overtake
+    - **More confirmations** -- Each subsequent block multiplies the computational cost of a reversal
+    - **Deep confirmations** -- Reversal becomes economically and computationally impractical
+    
+    The exact reversal probability for any given confirmation depth depends on the attacker's share of total network hashrate. No fixed percentages can be stated without knowing the current hashrate distribution.
+    
+    > **Note:** DERO uses AstroBWT proof-of-work and an 18-second block time (`config/config.go:34`). Specific finality guarantees depend on the live network's hashrate, which varies over time.
+  </Tabs.Tab>
+  
+  <Tabs.Tab>
+    **What the source code defines:**
+    
+    ```
+    Block time: 18 seconds (config/config.go:34)
+    ```
+    
+    **Confirmation timing** (simple arithmetic):
+    
+    | Confirmations | Time |
+    |--------------|------|
+    | 1 | ~18s |
+    | 3 | ~54s |
+    | 6 | ~108s (~2 min) |
+    | 10 | ~180s (~3 min) |
+    | 20 | ~360s (~6 min) |
+    
+    How many confirmations to wait is a risk decision for the application or service -- it depends on the transaction value and the current network hashrate, neither of which are protocol constants.
+  </Tabs.Tab>
+</Tabs>
+
+### Block Reorganization
+
+```mermaid
+graph LR
+    subgraph "Main Chain"
+        B1["Block 1000"]
+        B2["Block 1001"]
+        B3["Block 1002"]
+    end
+    
+    subgraph "Fork (Temporary)"
+        F1["Block 1001'"]
+        F2["Block 1002'"]
+    end
+    
+    B1 --> B2
+    B2 --> B3
+    B1 --> F1
+    F1 --> F2
+    
+    B3 --> |"Longer chain wins"| MAIN["Main chain continues"]
+    F2 --> |"Orphaned"| ORPHAN["Fork abandoned"]
+```
+
+**Reorg protection:** Deeper transactions are safer because reorganizing the chain becomes exponentially harder.
+
+---
+
+## Security Guarantees
+
+### What Consensus Provides
+
+| Guarantee | How It's Achieved |
+|-----------|------------------|
+| **No fake transactions** | Cryptographic proof verification |
+| **No transaction replay** | Nonce/height tracking and key image binding to tree state |
+| **No censorship** | Decentralized mining |
+| **Eventual finality** | Longest chain rule |
+| **Consistent state** | Deterministic verification |
+
+### What It Doesn't Provide
+
+| Non-Guarantee | Why |
+|---------------|-----|
+| **Instant finality** | Probabilistic confirmation |
+| **Privacy from nodes** | Nodes see encrypted TXs |
+| **51% attack immunity** | Theoretical possibility |
+
+---
+
+## Key Takeaways
+
+### The Consensus Guarantee
+
+```
+Valid transaction + Network propagation = Guaranteed acceptance
+
+Because:
+  1. All honest nodes compute same result
+  2. Honest nodes only propagate valid TXs
+  3. Invalid TXs die at first node they reach
+  4. Majority honest nodes = valid state
+```
+
+### Defense in Depth
+
+```mermaid
+flowchart TD
+    Transaction["Transaction"] --> W["Wallet: Generate proofs"]
+    W --> N1["Node 1: Verify"]
+    N1 --> N2["Node 2: Verify"]
+    N2 --> N3["Node N: Verify"]
+    N3 --> M["Miner: Include in block"]
+    M --> NET["Network: Verify block"]
+    NET --> FINAL["Finality"]
+```
+
+**Multiple layers:**
+- Wallet creates valid proofs (or TX can't be created)
+- Each node verifies (or TX is dropped)
+- Miners include only valid TXs (or block is rejected)
+- Network verifies blocks (or block is orphaned)
+
+<Callout type="success" emoji="🌐">
+**No Single Point of Failure:** DERO's security doesn't depend on any single node, miner, or authority. It depends on the mathematical certainty that honest nodes, running honest code, will all reach the same conclusion about transaction validity.
+</Callout>
+
+---
+
+## Related Pages
+
+**Security Suite:**
+- [Transaction Proofs](/integrity/transaction-proofs) - What nodes verify
+- [Proof Verification Flow](/integrity/proof-verification-flow) - Detailed verification steps
+
+**Technical Reference:**
+- [Running a Node](/basics/running-a-node) - Participate in consensus
+- [Daemon RPC API](/rpc-api/daemon-rpc-api) - Submit transactions

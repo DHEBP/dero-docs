@@ -32,6 +32,8 @@ flowchart LR
     DETECT -->|"dero1..."| ADDR["Address Search"]
     DETECT -->|".tela"| DURL["dURL → Browser"]
     DETECT -->|"Text"| SEARCH["Full-Text Search"]
+    DETECT -->|"key: value: code:"| PREFIX["Gnomon Query"]
+    DETECT -->|"class: tag:"| CLASSIFY["Classification Query"]
     
     HASH --> SCID["Smart Contract"]
     HASH --> TX["Transaction"]
@@ -41,6 +43,8 @@ flowchart LR
     SCID --> RESULT
     TX --> RESULT
     SEARCH --> RESULT
+    PREFIX --> RESULT
+    CLASSIFY --> RESULT
     DURL --> BROWSER["TELA Browser"]
 ```
 
@@ -54,25 +58,33 @@ flowchart LR
 | **dURL** | `myapp.tela` | Navigate to Browser with app |
 | **Name** | `alice` | Resolve via NRS |
 | **Free text** | `voting app` | Search TELA apps by name/description |
+| **Prefix query** | `key:owner` | Advanced search (see below) |
 
-### Advanced Search Filters
+### Advanced Search Prefixes
 
-Power users can use special prefixes for targeted searches:
+Power users can use special prefixes for targeted searches. These query the Gnomon indexer directly.
 
 | Prefix | Example | Description |
 |--------|---------|-------------|
-| `key:` | `key:owner` | Search SC variables by key name |
-| `value:` | `value:TELA` | Search SC variables by value |
-| `code:` | `code:STORE` | Search SC code for patterns |
-| `author:` | `author:dero1qy...` | Find apps by deployer address |
+| `key:` | `key:owner` | Search SC state variables by key name |
+| `value:` | `value:TELA` | Search SC state variables by stored value |
+| `code:` | `code:STORE` | Search SC source code for patterns |
+| `class:` | `class:TELA-INDEX-1` | List all SCIDs in a specific class |
+| `tag:` | `tag:g45` | List all SCIDs matching a tag |
 
 ```
 // Examples
-key:owner           → Find all SCs with "owner" variable
-value:TELA-INDEX    → Find all TELA INDEX contracts
-code:STORE("votes"  → Find voting contracts
-author:dero1qy...   → Find all apps by this address
+key:owner           → Find all SCs with an "owner" variable
+value:TELA-INDEX    → Find all SCs storing "TELA-INDEX" in a value
+code:STORE("votes"  → Find SCs with voting logic in their code
+class:              → List all known SC classes (empty query)
+class:TELA-INDEX-1  → Find all TELA INDEX contracts
+tag:epoch           → Find all EPOCH-enabled apps
 ```
+
+<Callout type="info">
+  The `class:` prefix with no argument returns all known smart contract classes. The `tag:` prefix queries the tag classification system — see [TELA Browser > Tag-Based App Discovery](/browser#tag-based-app-discovery) for available tags.
+</Callout>
 
 <Callout type="info">
   Found a TELA app? Click the app icon to view it in the [TELA Browser](/browser), or use [Version History](#time-travel-state-viewer) to explore its deployment timeline.
@@ -643,19 +655,15 @@ Each timeline entry shows:
 ### Timeline API
 
 ```go
-// Get all recorded snapshots for an SC
-GetSCIDTimeline(scid) -> {
+// Get the change timeline for an SC
+GetSCChangeTimeline(scid) -> {
     success: bool,
-    timeline: []SnapshotInfo{
-        height: int64,
-        timestamp: int64,
-        varCount: int,
-    },
+    timeline: []SCStateDiff,
     count: int,
 }
 
 // Get SC state at a specific height
-GetSCIDStateAtHeight(scid, height) -> {
+GetSCStateAtHeight(scid, height) -> {
     success: bool,
     height: int64,
     variables: {
@@ -665,39 +673,19 @@ GetSCIDStateAtHeight(scid, height) -> {
 }
 
 // Compare state between two heights
-CompareSCIDHeights(scid, height1, height2) -> {
+CompareSCStateAtHeights(scid, from, to) -> {
     success: bool,
-    height1: int64,
-    height2: int64,
-    added: []VariableChange,
-    modified: []VariableChange,
-    removed: []VariableChange,
+    from: uint64,
+    to: uint64,
+    added: []SCStateChange,
+    modified: []SCStateChange,
+    removed: []SCStateChange,
+    codeChanged: bool,
 }
-```
-
-### History Management
-
-```go
-// Get storage statistics
-GetHistoryStats() -> {
-    success: bool,
-    totalSCIDs: int,
-    totalSnapshots: int,
-    maxSnapshots: int,
-}
-
-// Configure snapshot limits
-SetMaxSnapshots(max) -> { success: bool }
-
-// Clear history for specific SC
-ClearSCIDHistory(scid) -> { success: bool }
-
-// Clear all historical data
-ClearAllHistory() -> { success: bool }
 ```
 
 <Callout type="info">
-  Historical snapshots are stored locally and persist across sessions. The default limit is 100 snapshots per SC to manage storage.
+  Historical snapshots are stored locally and persist across sessions. Use the Watch feature to automatically capture snapshots when changes occur.
 </Callout>
 
 ## Network Statistics

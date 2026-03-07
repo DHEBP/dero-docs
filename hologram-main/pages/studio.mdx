@@ -461,6 +461,68 @@ DiffCommits(scid string, fromCommit int, toCommit int) -> {
 - **Semantic Labels** — Only generated for the last 5 commits to balance detail vs. performance
 - **Content Fetching** — File content is loaded on-demand when you select a commit
 
+## DocShards
+
+When a file exceeds TELA's 18KB size limit, you can split it into multiple DOC contracts called **shards**.
+
+### How DocShards Work
+
+1. **File is split** — Large file divided into sequential chunks that fit in DOCs
+2. **Shards deployed** — Each chunk becomes a separate TELA-DOC contract
+3. **Shard INDEX created** — A special INDEX (dURL ending in `.shards`) links all chunks in order
+4. **Automatic reconstruction** — When loading the app, Hologram concatenates all shards back into the original file
+
+### Creating DocShards
+
+```go
+// Split a file into shard-sized chunks
+ShardFile(filePath string, maxSize int) -> {
+    success: true,
+    shards: [
+        { index: 0, content: "...", size: 16384 },
+        { index: 1, content: "...", size: 12288 },
+    ],
+    totalShards: 2,
+    originalSize: 28672,
+}
+
+// Reconstruct a file from its shard INDEX
+ConstructFromShards(shardIndexSCID string) -> {
+    success: true,
+    content: "...",
+    originalSize: 28672,
+    shardsUsed: 2,
+}
+```
+
+### dURL Conventions
+
+| Suffix | Description |
+|--------|-------------|
+| `.shards` | A shard INDEX containing references to shard DOCs |
+| `.shard` | An individual shard DOC (part of a larger file) |
+| `.lib` | A library of reusable DOCs |
+| `.bootstrap` | A collection of TELA apps/content for bootstrapping |
+
+<Callout type="info">
+  DocShards are transparent to the end user—the Browser automatically reconstructs sharded files. Use them when compression alone isn't enough to fit under the 18KB limit.
+</Callout>
+
+## My Content Search
+
+The My Content tab includes search functionality for finding your deployed content:
+
+```go
+// Find all INDEXes owned by your wallet
+SearchMyINDEXes() -> { success: true, indexes: [...], count: int }
+
+// Find all DOCs owned by your wallet, optionally filtered by type
+SearchMyDOCs(docType string) -> { success: true, docs: [...], count: int }
+
+// Find all content (INDEXes + DOCs) owned by your wallet
+SearchMyContent() -> { success: true, content: [...], count: int }
+```
+
 ## Workflow Examples
 
 ### New App Development

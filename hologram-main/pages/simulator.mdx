@@ -58,41 +58,20 @@ StartSimulatorMode() -> {
 
 ## Simulator Wallet
 
-Auto-managed wallet for test coins:
+The simulator wallet is auto-managed during `StartSimulatorMode`:
 
 ```go
-// Automatic wallet handling
-CreateSimulatorWallet()        // Creates if not exists
-OpenSimulatorWallet()          // Opens with fixed password
-CloseSimulatorWallet()         // Closes wallet
-GetSimulatorWalletStatus()     // Balance, address, state
-```
-
-## Instant Block Mining
-
-Unlike mainnet, simulator blocks are mined instantly:
-
-```go
-// Mine N blocks instantly (no real PoW in simulator)
-MineSimulatorBlocks(count) -> {
-    blocksGenerated: 10,
-    requested: 10,
-    message: "Generated 10 of 10 requested blocks"
-}
-
-// Generate test DERO to target balance
-GenerateTestDERO(targetBalance) -> {
-    previousBalance: 0,
-    newBalance: 100000000000000,  // 100 DERO
-    targetBalance: 100000000000000
-}
-
-// Get mining stats
-GetSimulatorMiningStats() -> {
-    blocksMined: 50,
-    lastMineTime: "2025-12-10T..."
+// Check simulator wallet state
+GetSimulatorWalletStatus() -> {
+    address: "deto1...",
+    balance: 100000000000000,
+    open: true,
 }
 ```
+
+<Callout type="info">
+  Simulator Mode automatically creates/opens a wallet and mines initial blocks for test DERO during startup. No manual wallet or mining steps are needed.
+</Callout>
 
 ## Developer Deployment Tools
 
@@ -262,7 +241,7 @@ if (line.startsWith('*' + '/')) { ... }
 
 | Aspect | Simulator | Mainnet |
 |--------|-----------|---------|
-| Block time | Instant | ~16 seconds |
+| Block time | Instant | ~18 seconds |
 | Network | Local only | Global P2P |
 | Coins | Unlimited test DERO | Real value |
 | Persistence | Can be reset | Permanent |
@@ -354,7 +333,7 @@ OpenSimulatorTestWallet(walletId int) -> {
 ## Best Practices
 
 1. **Reset regularly**: Clear state between test sessions to avoid confusion
-2. **Test edge cases**: Use `GenerateTestDERO` to create specific balance scenarios
+2. **Test edge cases**: Use pre-seeded test wallets with various balances for different scenarios
 3. **Validate before mainnet**: Always test thoroughly in simulator before real deployment
 4. **Use realistic amounts**: Test with mainnet-like amounts to catch overflow issues
 5. **Use multiple test wallets**: Simulate real-world multi-user scenarios

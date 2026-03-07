@@ -1,0 +1,391 @@
+---
+title: "Transaction Proofs: DERO's Six Sigma Proof System | DERO Blockchain"
+description: "Technical deep dive into DERO's six interconnected transaction proofs - how they work together to guarantee transaction integrity through cryptographic binding."
+keywords: ["transaction proofs", "sigma proofs", "DERO proofs", "cryptographic proofs", "proof verification", "A_y proof", "A_D proof", "challenge hash"]
+date: "2025-01-20"
+lastUpdated: "2026-02-06"
+authors: ["DHEBP"]
+slug: "transaction-proofs"
+canonicalUrl: "https://derod.org/integrity/transaction-proofs"
+tags: ["security", "proofs", "cryptography", "technical"]
+---
+
+import { Callout } from 'nextra/components'
+import { Tabs } from 'nextra/components'
+
+# Transaction Proofs: The Six Sigma System
+
+<Callout type="success" emoji="🔐">
+**Core Principle:** Six interconnected proofs bound by a cryptographic hash. If you fake one proof, the hash changes, which invalidates all other proofs. This creates an all-or-nothing security model.
+</Callout>
+
+## What Problem Do Transaction Proofs Solve?
+
+**The Challenge:**
+```
+DERO needs to verify:
+  ✓ Sender owns the funds (has private key)
+  ✓ Balance update is mathematically correct
+  ✓ Amount is valid (not negative, not impossible)
+  ✓ Transaction is bound to sender's secret key (key image)
+  ✓ All protocol constraints satisfied
+  
+But WITHOUT revealing:
+  ✗ The sender's identity
+  ✗ The actual amounts
+  ✗ The balances
+```
+
+**The Solution: Six Sigma Proofs**
+- ✅ Each proof validates one aspect
+- ✅ All proofs bound together cryptographically
+- ✅ Cannot fake one without breaking all
+- ✅ Zero-knowledge (reveals nothing)
+
+---
+
+## The Six Proofs
+
+```mermaid
+flowchart TD
+    subgraph "Transaction Proofs"
+        A_y["A_y<br/>Secret Key Proof"]
+        A_D["A_D<br/>Balance Update"]
+        A_b["A_b<br/>Balance Commitment"]
+        A_X["A_X<br/>Constraints"]
+        A_t["A_t<br/>Range Proof"]
+        A_u["A_u<br/>Key Image"]
+    end
+    
+    A_y --> H["Challenge Hash (c)<br/>= hash(A_y || A_D || A_b || A_X || A_t || A_u || ...)"]
+    A_D --> H
+    A_b --> H
+    A_X --> H
+    A_t --> H
+    A_u --> H
+    
+    H --> V{"Verify All<br/>Against c"}
+    V -->|All Pass| ACC["Transaction Accepted"]
+    V -->|Any Fail| REJ["Transaction Rejected"]
+```
+
+### Proof Details
+
+| Proof | What It Validates | Why It's Needed |
+|-------|------------------|-----------------|
+| **A_y** | Sender possesses private key | Prevents unauthorized spending |
+| **A_D** | Encrypted balance update is correct | Ensures math is right |
+| **A_b** | Balance commitment is valid | Binding and hiding properties |
+| **A_X** | Additional protocol constraints | Protocol-specific rules |
+| **A_t** | Combined 128-bit value with 64-bit bounds | Prevents negative/overflow |
+| **A_u** | Key image (linking tag) is correctly derived | Binds transaction to sender's secret key |
+
+---
+
+## How They're Bound Together
+
+### The Challenge Hash
+
+**From Source Code** (`cryptography/crypto/proof_verify.go:410-425`):
+
+```go
+// All six sigma proof components contribute to the challenge hash
+var input []byte
+input = append(input, ConvertBigIntToByte(x)...)
+input = append(input, sigmasupport.A_y.Marshal()...)
+input = append(input, sigmasupport.A_D.Marshal()...)
+input = append(input, sigmasupport.A_b.Marshal()...)
+input = append(input, sigmasupport.A_X.Marshal()...)
+input = append(input, sigmasupport.A_t.Marshal()...)
+input = append(input, sigmasupport.A_u.Marshal()...)
+
+// Challenge 'c' must match - if any component was tampered, this fails
+if reducedhash(input).Text(16) != proof.c.Text(16) {
+    Logger.V(1).Info("C calculation failed")
+    return false
+}
+```
+
+**The Binding Effect:**
+
+```mermaid
+flowchart TD
+    subgraph "Proof Generation"
+        P1["Generate A_y"] --> H1["Add to hash"]
+        P2["Generate A_D"] --> H1
+        P3["Generate A_b"] --> H1
+        P4["Generate A_X"] --> H1
+        P5["Generate A_t"] --> H1
+        P6["Generate A_u"] --> H1
+        H1 --> C["Challenge c"]
+    end
+    
+    subgraph "Response Generation"
+        C --> R1["s_y = k_y + c×x_y"]
+        C --> R2["s_D = k_D + c×x_D"]
+        C --> R3["s_b = k_b + c×x_b"]
+    end
+```
+
+### Why This Prevents Forgery
+
+<Tabs items={['The Attack', 'Why It Fails']}>
+  <Tabs.Tab>
+    **Attacker's Goal:**
+    
+    ```
+    Attacker wants to:
+      1. Fake A_t (range proof) to allow negative amount
+      2. Keep other proofs valid
+      
+    Strategy:
+      1. Create fake A_t' (allows -1000 DERO)
+      2. Submit with real A_y, A_D, A_b, A_X, A_u
+    ```
+  </Tabs.Tab>
+  
+  <Tabs.Tab>
+    **Why It Fails:**
+    
+    ```
+    1. Fake A_t' is different from real A_t
+    
+    2. Challenge hash changes:
+       c' = hash(A_y || A_D || A_b || A_X || A_t' || A_u)
+       c' ≠ c (original)
+       
+    3. All responses were computed with c, not c':
+       s_y = k_y + c×x_y  (computed with c)
+       
+    4. Verification uses c' but responses use c:
+       verify(A_y, s_y, c') → FAILS
+       
+    5. ALL proofs fail verification, not just A_t
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+**Key Insight:** The challenge hash creates a **circular dependency**. You need all proofs to compute the hash, but you need the hash to create valid responses. Changing any proof changes the hash, which invalidates all responses.
+
+---
+
+## Each Proof Explained
+
+### A_y: Secret Key Proof
+
+**Purpose:** Proves sender possesses the private key without revealing it.
+
+**Mathematical Structure:**
+```
+Schnorr-style proof:
+  - Commitment: A_y = k×G (random k)
+  - Challenge: c (from hash)
+  - Response: s_y = k + c×private_key
+
+Verification:
+  s_y×G = A_y + c×PublicKey
+  
+If sender doesn't have private_key:
+  Cannot compute valid s_y
+  Proof fails
+```
+
+**Source:** `cryptography/crypto/proof_generate.go` - A_y generation
+
+### A_D: Balance Update Proof
+
+**Purpose:** Proves the encrypted balance update is mathematically correct.
+
+**What It Validates:**
+```
+Old encrypted balance: E(old_balance)
+Transfer amount:       E(amount)
+New encrypted balance: E(new_balance)
+
+Proves: E(old_balance) - E(amount) = E(new_balance)
+Without revealing: old_balance, amount, or new_balance
+```
+
+**Source:** `cryptography/crypto/proof_generate.go` - A_D generation
+
+### A_b: Balance Commitment Proof
+
+**Purpose:** Proves the balance commitment has proper binding and hiding properties.
+
+**Properties Ensured:**
+- **Binding:** Cannot change committed value later
+- **Hiding:** Cannot determine committed value from commitment
+
+**Mathematical Structure:**
+```
+Pedersen Commitment:
+  C = amount×G + blinding×H
+
+Properties:
+  - Cannot find different (amount', blinding') with same C (binding)
+  - Cannot determine amount from C without blinding (hiding)
+```
+
+**Source:** `cryptography/crypto/proof_generate.go` - A_b generation
+
+### A_X: Constraint Proof
+
+**Purpose:** Validates additional protocol-specific constraints.
+
+**What It Covers:**
+- Transaction format validity
+- Protocol rule compliance
+- Additional cryptographic constraints
+
+**Source:** `cryptography/crypto/proof_generate.go` - A_X generation
+
+### A_t: Range Proof
+
+**Purpose:** Proves the combined 128-bit value is valid (lower 64 bits = transfer, upper 64 bits = remaining balance) without revealing either value.
+
+**This is the bulletproof component:**
+- Uses bit decomposition (catches negatives)
+- Logarithmic proof size (7 rounds for 128-bit range)
+- Validates both transfer AND remaining balance simultaneously
+
+**[Detailed explanation →](/integrity/range-proof-integrity)**
+
+**Source:** `cryptography/crypto/proof_generate.go:473-487`
+
+### A_u: Key Image Proof
+
+**Purpose:** Proves the transaction's linking tag (`proof.u`) was correctly derived from the sender's secret key.
+
+**From Source Code** (`cryptography/crypto/proof_generate.go:1123-1136`):
+
+```go
+A_u := new(bn256.G1)
+// ... build input from transaction-specific data ...
+point := HashToPoint(HashtoNumber(input))
+A_u = new(bn256.G1).ScalarMult(point, k_sk)
+```
+
+**What this does:**
+- Computes a key image by scalar-multiplying a transaction-derived curve point by the secret key nonce
+- The verifier recovers A_u from `proof.s_sk` and `proof.u` (`proof_verify.go:399-400`)
+- Binds the proof to a specific (hidden) ring member without revealing which one
+
+> **Note on naming:** DERO uses an account model, not UTXO. There are no "outputs" to mark as spent. The A_u proof serves as a key image / linking tag that cryptographically ties the transaction to the sender's secret key within the ring signature framework.
+
+---
+
+## Verification Flow
+
+```mermaid
+sequenceDiagram
+    participant TX as Transaction
+    participant V as Verifier (Node)
+    participant BC as Blockchain
+    
+    TX->>V: Submit (proofs + responses)
+    
+    V->>V: Recompute challenge hash
+    Note over V: c' = hash(A_y || A_D || ...)
+    
+    V->>V: Verify A_y against c'
+    V->>V: Verify A_D against c'
+    V->>V: Verify A_b against c'
+    V->>V: Verify A_X against c'
+    V->>V: Verify A_t against c'
+    V->>V: Verify A_u against c'
+    
+    alt All proofs valid
+        V->>BC: Accept transaction
+        BC->>BC: Update state
+    else Any proof invalid
+        V->>TX: Reject transaction
+    end
+```
+
+**Verification flow** (see `cryptography/crypto/proof_verify.go`):
+
+The `Verify()` function performs all checks in sequence. The key checkpoints are:
+
+1. **Overflow check** (`line 108-110`) -- Reject if fees overflow
+2. **Parity check** (`line 136-141`) -- Verify the secret parity is well-formed
+3. **B^w × A recovery** (`line 177-179`) -- Verify polynomial commitment structure
+4. **Challenge hash** (`line 410-425`) -- Recompute `c` from all six sigma components and compare to `proof.c`
+5. **Inner product** (`line 457-459`) -- `proof.ip.Verify(hPrimes, u_x, P, o, gparams)`
+
+If any checkpoint returns `false`, the entire transaction is rejected. See [Proof Verification Flow](/integrity/proof-verification-flow) for the full walkthrough.
+
+---
+
+## Security Analysis
+
+### Attack Resistance
+
+| Attack | Why It Fails |
+|--------|-------------|
+| **Forge single proof** | Changes hash → all proofs invalid |
+| **Replay old transaction** | A_u key image is bound to Roothash (tree state) → stale proof fails; nonce/height prevents reuse |
+| **Spend without key** | A_y requires private key → fails |
+| **Negative amount** | A_t range proof → fails |
+| **Incorrect balance** | A_D validates math → fails |
+
+### Cryptographic Assumptions
+
+**Security relies on:**
+1. **Elliptic Curve Discrete Logarithm Problem (ECDLP)** on the bn256 (Barreto-Naehrig) curve -- a pairing-friendly curve also used by Ethereum's precompiles and early Zcash
+2. **Random Oracle Model** -- Hash functions behave as random oracles
+3. **Decisional Diffie-Hellman (DDH)** -- Underpins the ElGamal encryption used for balance confidentiality
+
+**Note on curve choice:** DERO uses bn256, a pairing-friendly curve. Bitcoin uses secp256k1, a non-pairing curve. Both rely on ECDLP hardness, but they are different curves with different security profiles. bn256 enables the pairing operations needed for DERO's proof system; its parameters are chosen so that both the curve ECDLP and the finite field DLP (via pairing reduction) remain computationally infeasible.
+
+**Breaking DERO's proofs would require:**
+- Solving ECDLP on bn256 (no known efficient algorithm exists for these parameters)
+- Or finding a flaw in the proof system itself (open source, auditable)
+
+---
+
+## Key Takeaways
+
+### What Transaction Proofs Provide
+
+| Feature | Benefit |
+|---------|---------|
+| **🔐 All-or-nothing security** | Cannot fake partial proofs |
+| **🔒 Zero-knowledge** | Reveals nothing about transaction |
+| **⚡ Efficient verification** | Logarithmic proof size (7 rounds for 128-bit range) enables fast verification |
+| **📐 Mathematical guarantee** | Based on proven cryptography |
+
+### The Circular Dependency
+
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│  Proofs ──────► Hash ──────► Responses          │
+│    ▲                            │               │
+│    │                            │               │
+│    └────────────────────────────┘               │
+│         (circular dependency)                   │
+│                                                 │
+│  Cannot create valid responses without          │
+│  knowing what the final hash will be.           │
+│  Cannot know final hash without all proofs.     │
+│  Cannot change proofs without breaking hash.    │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+<Callout type="info" emoji="🔗">
+**The Key Insight:** All six proofs are cryptographically entangled. This isn't just "checking six things" - it's a single interconnected proof system where the validity of each component depends on all others.
+</Callout>
+
+---
+
+## Related Pages
+
+**Security Suite:**
+- [Range Proof Integrity](/integrity/range-proof-integrity) - Deep dive into A_t
+- [Proof Verification Flow](/integrity/proof-verification-flow) - End-to-end flow
+- [Negative Transfer Protection](/integrity/negative-transfer-protection) - How A_t prevents negatives
+
+**Privacy Suite:**
+- [Bulletproofs](/privacy/bulletproofs) - Zero-knowledge range proofs
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) - Encrypted balance operations
