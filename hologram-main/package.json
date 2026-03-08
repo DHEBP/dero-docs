@@ -45,6 +45,9 @@
     "@types/node": "22.15.20",
     "typescript": "^5.8.3"
   },
-  "main": "next.config.js"
+  "main": "next.config.js",
+  "overrides": {
+    "next-mdx-remote": "^6.0.0"
+  }
 }
 
