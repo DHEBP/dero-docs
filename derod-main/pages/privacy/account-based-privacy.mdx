@@ -281,7 +281,7 @@ graph TB
     P --> U["Transaction Unlinkability"]
     P --> SC["Smart Contract Privacy"]
     
-    S --> S1["Ring Signatures: Hidden among 16 members"]
+    S --> S1["Ring Signatures: Hidden among 8 potential senders (ring size 16)"]
     A --> A1["Encrypted Balances: Homomorphic operations"]
     U --> U1["Different Rings: Encrypted amounts"]
     SC --> SC1["Encrypted State: Unique to DERO"]
@@ -289,7 +289,7 @@ graph TB
 
 | Privacy Aspect | DERO Account Privacy |
 |----------------|---------------------|
-| **Sender** | ✅ Ring signatures (hidden among 16 members) |
+| **Sender** | ✅ Ring signatures (hidden among 8 potential senders at ring size 16) |
 | **Amount** | ✅ Encrypted (homomorphic operations) |
 | **Unlinkability** | ✅ Different rings per transaction |
 | **Smart Contracts** | ✅ Encrypted state (unique!) |

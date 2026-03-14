@@ -79,7 +79,7 @@ Each encrypted balance stored as ElGamal:
 
 **Token transfers use DERO's full privacy stack:**
 
-1. **Ring Signatures** - Sender hidden among 2-128 members
+1. **Ring Signatures** - Sender hidden among ring_size/2 potential senders (rings split evenly)
 2. **Homomorphic Encryption** - Amounts encrypted
 3. **Bulletproofs** - Zero-knowledge validation
 4. **TLS Network** - Encrypted transmission

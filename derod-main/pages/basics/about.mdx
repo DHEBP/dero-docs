@@ -123,7 +123,7 @@ DERO combines **Bitcoin's security model** with **Ethereum's smart contracts** a
 | **Bulletproofs** | Zero-knowledge range proofs | Proves amounts without revealing them |
 | **AstroBWT** | Mining algorithm (CPU-optimized) | Fair distribution, ASIC-resistant |
 | **Homomorphic Encryption** | Encrypted balance operations | Add/subtract without decryption |
-| **Ring Signatures** | Transaction anonymity | Hide sender among 2-128 decoys |
+| **Ring Signatures** | Transaction anonymity | Hide sender among ring_size/2 potential senders (rings split evenly between senders and recipients) |
 | **Σ-blocks (Sigma)** | Fast consensus | 1-second miniblocks, 18-second settlement |
 
 **Source:** `cryptography/crypto/` - Cryptographic implementations

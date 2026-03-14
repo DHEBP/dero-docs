@@ -17,7 +17,7 @@ import { Tabs } from 'nextra/components'
 # Ring Signatures
 
 <Callout type="info">
-  **Core Concept:** Your address is mixed with 2-128 others. Blockchain sees ONE of them sent the transaction, but can't determine which one.
+  **Core Concept:** Your address is mixed with others in a ring of 2-128. Rings are split evenly between senders and recipients — only half are possible senders. The blockchain can't determine which one actually sent.
 </Callout>
 
 ## How It Works
@@ -38,7 +38,7 @@ graph TB
     
     S --> BC[Blockchain<br/>Cannot determine which]
     
-    BC --> P[Privacy: Alice hidden<br/>among N members]
+    BC --> P[Privacy: Alice hidden<br/>among N/2 potential senders]
 ```
 
 **Traditional signature:**
@@ -48,7 +48,7 @@ Alice signs → Everyone knows Alice sent it ❌
 
 **Ring signature:**
 ```
-[Alice + N-1 others] sign → ONE of N sent it, which one? Unknown ✅
+[Alice + N-1 others] sign → ONE of N/2 possible senders sent it, which one? Unknown ✅
 ```
 
 ---
@@ -57,13 +57,15 @@ Alice signs → Everyone knows Alice sent it ❌
 
 | Ring Size | Privacy Level | TX Size (bytes) | Naive Guess Probability |
 |-----------|---------------|----------------|-------------------------|
-| 2 | Minimal | 1553 | 1 in 2 |
-| 4 | Low | 2013 | 1 in 4 |
-| 8 | Medium | 2605 | 1 in 8 |
-| 16 | Good | 3461 | 1 in 16 |
-| 32 | Strong | 4825 | 1 in 32 |
-| 64 | Very Strong | 7285 | 1 in 64 |
-| 128 | Maximum | 11839 | 1 in 128 |
+| 2 | Minimal | 1553 | 1 in 1 (no sender privacy) |
+| 4 | Low | 2013 | 1 in 2 |
+| 8 | Medium | 2605 | 1 in 4 |
+| 16 | Good | 3461 | 1 in 8 |
+| 32 | Strong | 4825 | 1 in 16 |
+| 64 | Very Strong | 7285 | 1 in 32 |
+| 128 | Maximum | 11839 | 1 in 64 |
+
+**Note:** Rings are split evenly — half the members are potential senders, half are potential recipients. The naive guess probability is therefore 1/(ring_size/2), not 1/ring_size. Ring size 2 (1 sender slot, 1 recipient slot) provides no meaningful sender privacy.
 
 **Sources:**
 - Ring size limits: `config/config.go:58-59`
@@ -96,7 +98,7 @@ Which one? HIDDEN
 ```
 
 **Blockchain shows (for this example ring):**
-- ✓ 16 possible senders
+- ✓ 8 possible senders (half the ring)
 - ✗ Amount (encrypted)
 - ✗ Cannot determine real sender
 - ✗ Cannot link to other TXs
@@ -129,6 +131,98 @@ for i := 0; i < 100; i++ {
 - Better decoys (less likely to exclude)
 - Prevents timing attacks
 - More plausible anonymity
+
+---
+
+## The Parity Constraint: How the Ring Is Split
+
+The even/odd split between sender and recipient positions is not a convention — it is a hard constraint enforced at both the wallet layer and the cryptographic proof layer.
+
+### The Rule
+
+When the wallet shuffles ring positions, it keeps shuffling until the sender and receiver land on indices of **different parity** (one even, one odd).
+
+**From source code** (`walletapi/transaction_build.go:79-90`):
+
+```go
+for {
+    crand.Shuffle(len(witness_index), func(i, j int) {
+        witness_index[i], witness_index[j] = witness_index[j], witness_index[i]
+    })
+
+    // make sure sender and receiver are not both odd or both even
+    // sender will always be at  witness_index[0] and receiver will always be at witness_index[1]
+    if witness_index[0]%2 != witness_index[1]%2 {
+        break
+    }
+}
+```
+
+The comment in the source says it plainly: sender and receiver must not share parity. One occupies an even index; the other occupies an odd index.
+
+### Cryptographic Enforcement
+
+The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members. An observer cannot determine which parity the sender occupies.
+
+**From source code** (`cryptography/crypto/proof_generate.go:700-710`):
+
+```go
+for i := 0; i < N; i++ {
+    var poly [][]*big.Int
+    if i%2 == 0 {
+        poly = P   // Even indices: one role (sender or recipient)
+    } else {
+        poly = Q   // Odd indices: the other role
+    }
+    // ... poly[j][(witness.Index[0]+N-(i-i%2))%N] used for sender amounts
+    // ... poly[j][(witness.Index[1]+N-(i-i%2))%N] used for recipient amounts
+}
+```
+
+The witness index itself is encoded as an 8-bit string (for ring size 16, m=4 bits per role) that interleaves sender and receiver positions (`proof_generate.go:523`):
+
+```go
+witness_index := reverse(fmt.Sprintf("%0"+fmt.Sprintf("%db", m)+"%0"+fmt.Sprintf("%db", m), witness.Index[1], witness.Index[0]))
+```
+
+This structure means the proof system treats even and odd positions as fundamentally separate roles — an attacker cannot forge a valid proof by swapping one for the other.
+
+### Concrete Example: Ring Size 16
+
+```
+Ring positions:  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
+                 └── Sender candidates ──┘   └── Recipient candidates ──┘
+                     (8 even slots)               (8 odd slots)
+                                    (or vice versa — observer cannot tell which)
+```
+
+- **8 even indices** (0, 2, 4, 6, 8, 10, 12, 14) — one parity role
+- **8 odd indices** (1, 3, 5, 7, 9, 11, 13, 15) — the other parity role
+- The sender is one of the 8 members in their parity group → probability of correct identification: **1/8 = 12.5%**
+
+### Why Ring Size 2 Offers No Sender Privacy
+
+With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. An observer who knows which parity role is "sender" trivially identifies both parties. This is why ring size 2 is listed as "no sender privacy" in the table above.
+
+### Verify It Yourself
+
+| Protection | File | Lines |
+|------------|------|-------|
+| Parity constraint (wallet) | `walletapi/transaction_build.go` | 79-90 |
+| P/Q polynomial split (proof) | `cryptography/crypto/proof_generate.go` | 700-710 |
+| Witness index encoding | `cryptography/crypto/proof_generate.go` | 523 |
+| Ring size limits | `config/config.go` | 58-59 |
+
+```bash
+git clone https://github.com/deroproject/derohe.git
+cd derohe
+
+sed -n '79,90p' walletapi/transaction_build.go          # Parity constraint
+sed -n '700,710p' cryptography/crypto/proof_generate.go # P/Q polynomial split
+sed -n '523p' cryptography/crypto/proof_generate.go     # Witness index encoding
+grep "RINGSIZE" config/config.go                        # Ring size limits
+```
 
 ---
 
@@ -233,7 +327,7 @@ transfer({ ringsize: 128 }) // Maximum
 
 | Myth | Reality |
 |------|---------|
-| "Ring sigs = complete anonymity" | Strong privacy, not absolute. 1 in N chance |
+| "Ring sigs = complete anonymity" | Strong privacy, not absolute. 1 in (N/2) chance |
 | "Bigger always better" | Trade-off: Privacy vs TX size |
 | "Ring members know they're in ring" | No - passive selection, no notification |
 | "Decoys must be online" | No - only their public keys used |
@@ -244,7 +338,7 @@ transfer({ ringsize: 128 }) // Maximum
 ## Key Takeaways
 
 **What ring signatures provide:**
-- ✅ Sender identity hidden (1 in 2-128)
+- ✅ Sender identity hidden (1 in 1-64, i.e. 1 in ring_size/2)
 - ✅ Plausible deniability ("might be decoy")
 - ✅ Transaction unlinkability
 - ✅ No trusted setup needed

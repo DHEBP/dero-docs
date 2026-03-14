@@ -33,7 +33,7 @@ import { Callout } from 'nextra/components'
 
 | Technology | What It Protects | Key Benefit | Learn More |
 |------------|-----------------|-------------|------------|
-| **Ring Signatures** | Sender identity | Hide among 2-128 members (naive guess 1/N) | [Explore →](/privacy/ring-signatures) |
+| **Ring Signatures** | Sender identity | Hide among ring_size/2 potential senders (naive guess 1/(N/2)) | [Explore →](/privacy/ring-signatures) |
 | **Homomorphic Encryption** | Amounts, balances | Math on encrypted data (network never sees values) | [Explore →](/privacy/homomorphic-encryption) |
 | **Bulletproofs** | Amount validity | 128-bit combined range proofs (logarithmic size) | [Explore →](/privacy/bulletproofs) |
 | **Account-Based Privacy** | Transaction patterns | Account model + privacy (unique to DERO) | [Explore →](/privacy/account-based-privacy) |
@@ -93,12 +93,12 @@ Privacy + Security = Perfect.
 
 ### Ring Signatures
 
-**Hide among 2-128 members.**
+**Hide among ring_size/2 potential senders.**
 
-Your address is mixed with other members in a ring. The blockchain sees ONE of them sent the transaction, but cannot determine which one.
+Your address is mixed with other members in a ring. Rings are split evenly — half senders, half recipients. The blockchain sees ONE of the sender-half sent the transaction, but cannot determine which one.
 
 **Privacy Levels (naive guess):**
-- 1 in N chance if no additional information is available
+- 1 in (ring_size/2) chance if no additional information is available (e.g., 1/8 for ring size 16)
 - Larger rings reduce the naive guess probability
 
 **Key Insight:** Ring members' encrypted balances change even as decoys - this is normal behavior, not a bug!

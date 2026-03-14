@@ -40,7 +40,7 @@ flowchart TD
     C --> D["Create ring signature"]
     D --> E["ALL 16 encrypted balances<br/>participate in operation"]
     
-    E --> F["Blockchain sees:<br/>ONE of 16 sent it"]
+    E --> F["Blockchain sees:<br/>ONE of 8 possible senders sent it"]
     F --> G["Cannot determine which"]
 ```
 
@@ -130,7 +130,7 @@ flowchart TD
     
     subgraph "With Balance Change (DERO)"
         A2["Attacker sees:<br/>16 balances changed<br/>(encrypted)"]
-        A2 --> B2["Attacker knows:<br/>One of 16 is sender"]
+        A2 --> B2["Attacker knows:<br/>One of 8 possible senders is the real sender"]
         B2 --> C2["Privacy: ✅ PRESERVED"]
     end
 ```
@@ -140,7 +140,7 @@ flowchart TD
 ### Plausible Deniability
 
 <Callout type="success" emoji="🛡️">
-**Legal Protection:** If accused of sending a transaction, you can truthfully say: "My encrypted balance changed, but that only means I was in the ring. Any of the 16 members could be the real sender." This is cryptographically provable.
+**Legal Protection:** If accused of sending a transaction, you can truthfully say: "My encrypted balance changed, but that only means I was in the ring. Any of the 8 potential senders in this ring could be the real sender." This is cryptographically provable.
 </Callout>
 
 ---
@@ -216,8 +216,8 @@ for i := 0; i < 100; i++ {
 
 ```
 Transaction at block 1,081,893:
-  Ring size: 16 members
-  One of them sent 100 DERO
+  Ring size: 16 members (8 sender slots, 8 recipient slots)
+  One of the 8 possible senders sent 100 DERO
 ```
 
 ### What an Observer Sees
@@ -232,7 +232,7 @@ Address 7:  Encrypted balance changed  ← Could be sender
 Address 15: Encrypted balance changed
 
 ALL 16 encrypted balances changed.
-Which one is the sender? UNKNOWN.
+Which of the 8 possible senders is the real sender? UNKNOWN.
 ```
 
 ### What Each Owner Sees
@@ -324,7 +324,9 @@ Conclusion: Cannot determine sender from outside
 ### The Privacy Guarantee
 
 <Callout type="info" emoji="📐">
-**Mathematical Privacy:** The probability of correctly identifying the sender is exactly 1/ring_size (e.g., 6.25% for ring size 16). This is not "hard to guess" - it's mathematically guaranteed randomness.
+**Mathematical Privacy:** The probability of correctly identifying the sender is exactly 1/(ring_size/2) (e.g., 12.5% for ring size 16). Rings are split evenly — half are potential senders, half are potential recipients — so the anonymity set for the sender is ring_size/2. This is not "hard to guess" - it's mathematically guaranteed randomness.
+
+**Source:** This split is enforced by a parity constraint in `walletapi/transaction_build.go:79-90` and by the P/Q polynomial structure in `cryptography/crypto/proof_generate.go:700-710`. See [The Parity Constraint](/privacy/ring-signatures#the-parity-constraint) for the full source-code-verified breakdown.
 </Callout>
 
 ---
@@ -355,7 +357,7 @@ Result: Perfect plausible deniability
 
 - **Encrypted balance changes** indicate ring membership only
 - **Cannot determine** sender vs. decoy from encrypted data
-- **Statistical analysis** faces 1/ring_size probability barrier
+- **Statistical analysis** faces 1/(ring_size/2) probability barrier (e.g., 1/8 for ring size 16)
 - **Definitively proving** sender identity is cryptographically impossible
 
 ---

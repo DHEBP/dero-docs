@@ -158,7 +158,7 @@ graph LR
 ## Key Takeaways
 
 **What's Protected:**
-- Sender identity (hidden among 2-128 ring members; naive guess probability is 1/N)
+- Sender identity (hidden among ring_size/2 potential senders; naive guess probability is 1/(ring_size/2), e.g., 1/8 for ring size 16)
 - All amounts (encrypted with homomorphic encryption, never decrypted)
 - All balances (encrypted at all times)
 - Transaction linkage (unlinkable, independent rings per transaction)
