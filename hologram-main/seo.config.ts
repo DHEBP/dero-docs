@@ -13,7 +13,7 @@ const seoConfig = defineMetadata({
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    images: '/assets/og-image.png',
+    images: '/assets/og-image.jpg',
     url: 'https://hologram.derod.org',
     siteName: 'Hologram - DERO Decentralized Web Browser',
     description: 'Native desktop browser for DERO decentralized applications. Browse immutable content with zero tracking and complete privacy.'
@@ -31,7 +31,7 @@ const seoConfig = defineMetadata({
     creator: '@dero_bro',
     title: 'Hologram - DERO Decentralized Web Browser',
     description: 'Native desktop browser for DERO decentralized applications. Immutable content, zero tracking, complete privacy.',
-    images: '/assets/og-image.png'
+    images: '/assets/og-image.jpg'
   },
   keywords: 'Hologram, DERO browser, decentralized browser, TELA, blockchain browser, privacy browser, DERO wallet, dApps, Web3, decentralized web, XSWD, telaHost, offline-first, censorship resistant'
 })

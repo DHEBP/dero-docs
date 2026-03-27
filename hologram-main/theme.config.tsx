@@ -89,8 +89,10 @@ const config: DocsThemeConfig = {
           content={meta.description || seoConfig.description}
         />
         <meta property="og:image" content={imageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:url" content={`${seoConfig.openGraph.url}${pagePath}`} />
-        <meta property="og:type" content="article" />
+        <meta property="og:type" content={meta.ogType || (pagePath === '/' ? 'website' : 'article')} />
         
         {/* Twitter tags */}
         <meta name="twitter:card" content="summary_large_image" />
