@@ -50,6 +50,21 @@ Your wallet displays:
 - **Locked Balance**: Pending confirmations
 - **Total Balance**: Available + Locked
 
+### Privacy Toggles
+
+Hologram includes per-field privacy controls directly in the Wallet UI:
+
+- **Hide Balance** — Masks the visible DERO balance with dots
+- **Hide Address** — Masks the wallet address with dots
+
+These toggles appear as eye / eye-off buttons beside the balance and address fields. The preferences persist across sessions and also apply to related wallet surfaces such as:
+
+- the sidebar wallet summary
+- the wallet modal's current wallet display
+- recent activity and history amounts when balance hiding is enabled
+
+When **Hide Address** is enabled, address copy controls are hidden until the address is shown again.
+
 ```go
 // Get balance (mature + locked)
 mature, locked := wallet.Get_Balance()

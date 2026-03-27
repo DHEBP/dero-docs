@@ -31,16 +31,19 @@ hologram-main/
 │   ├── overview.mdx    # Architecture overview
 │   ├── installation.mdx
 │   ├── quick-start.mdx
+│   ├── explorer.mdx    # Block Explorer
 │   ├── browser.mdx     # TELA Browser
+│   ├── offline-first.mdx
 │   ├── studio.mdx      # Studio (DOC/INDEX + Version Control)
 │   ├── wallet.mdx      # Wallet Management
-│   ├── mining.mdx      # Developer Support (EPOCH)
-│   ├── explorer.mdx    # Block Explorer
+│   ├── dero-auth.mdx
+│   ├── developer-support.mdx # Developer Support (EPOCH)
 │   ├── telahost-api.mdx # Developer API
 │   ├── simulator.mdx   # Simulator Mode
 │   ├── local-dev-server.mdx
 │   ├── security.mdx    # Security Features
 │   ├── proof-validation.mdx
+│   ├── settings.mdx
 │   ├── api-reference.mdx
 │   └── _meta.json      # Navigation config
 ├── public/             # Static assets

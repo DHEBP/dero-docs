@@ -99,8 +99,8 @@ For developers building standalone smart contracts or testing backend logic, Hol
 ### Batch Deployment Process (TELA Apps)
 
 1. **Choose Directory** — Select your app folder
-2. **Configure** — Set name, description, dURL, and content type
-3. **Review** — See all files to be deployed
+2. **Configure** — Review or adjust the auto-filled name, description, dURL, icon, content type, compression, and MODs
+3. **Review** — Inspect the file list, preflight summary, and any oversized-file warnings
 4. **Deploy** — Watch progress as files are uploaded
 
 ### Configuration Options
@@ -112,7 +112,16 @@ For developers building standalone smart contracts or testing backend logic, Hol
 | **dURL** | Optional memorable URL (e.g., `myapp.tela`) |
 | **Icon URL** | Optional icon (HTTPS, HTTP, SCID, or IPFS) |
 | **Content Type** | Updateable (Ring 2) or Immutable (Ring > 2) |
+| **Compression** | Optional GZIP compression before deployment |
 | **MODs** | Optional smart contract functionality |
+
+When available, Hologram now auto-infers metadata from:
+
+- `package.json` — `displayName`, `name`, `description`, `icon`
+- `index.html` — `<title>`, `<meta name="description">`, `<link rel="icon">`
+- `README.md` / `README.txt` — first markdown heading as a description fallback
+
+If a name is inferred, Hologram also auto-generates a default dURL slug such as `my-app.tela`.
 
 ### Icon URL Validation
 
@@ -134,12 +143,12 @@ Hologram automatically detects special dURL suffixes and shows contextual descri
 
 | Suffix | Description |
 |--------|-------------|
-| `.lib` | Library — A collection of reusable DOCs that can be embedded in other apps |
-| `.shard` | DocShard — A shard DOC (part of a larger file split across multiple contracts) |
-| `.shards` | DocShards — An INDEX containing DocShards that require reconstruction |
-| `.bootstrap` | Bootstrap — A collection of TELA apps/content for bootstrapping |
+| `.tela.lib` | Library — A collection of reusable DOCs that can be embedded in other apps |
+| `.tela.shard` | DocShard — A shard DOC (part of a larger file split across multiple contracts) |
+| `.tela.shards` | DocShards — An INDEX containing DocShards that require reconstruction |
+| `.tela.bootstrap` | Bootstrap — A collection of TELA apps/content for bootstrapping |
 
-When you enter a dURL with one of these suffixes, Hologram displays a badge with the appropriate description.
+When you enter a dURL with one of these suffixes, Hologram displays a badge with the appropriate description. If the selected folder appears to contain shard output, Hologram also warns if the dURL does not end with `.tela.shards`.
 
 ### MODs (Modification Operations)
 
@@ -174,7 +183,7 @@ The selected MOD tags are included in the INDEX contract's `mods` field.
 
 ### Library Installation Flow
 
-When installing a library (dURL ending in `.lib`), Hologram provides an **"Embed in INDEX"** workflow:
+When installing a library (dURL ending in `.tela.lib`), Hologram provides an **"Embed in INDEX"** workflow:
 
 1. **View library contents** — See all DOCs in the library
 2. **Click "Embed in INDEX"** — Adds library DOC references to your INDEX
@@ -189,7 +198,7 @@ For mainnet deployments, Hologram shows a password confirmation modal with enhan
 - **Password required** — Must enter wallet password to proceed
 - **Acknowledgement checkbox** — Must confirm you understand this is a mainnet deployment
 - **Gas estimate display** — Shows estimated gas cost before deployment
-- **Network indicator** — Clearly shows "Mainnet" or "Testnet"
+- **Network indicator** — Clearly shows "Mainnet" or "Simulator"
 
 <Callout type="warning">
   Mainnet deployments are permanent and cost real DERO. Always test in Simulator Mode first.
@@ -210,33 +219,36 @@ For mainnet deployments, Hologram shows a password confirmation modal with enhan
 
 During deployment, Hologram:
 
-1. **Scans directory** — Finds all web files
-2. **Compresses large files** — Gzip for files over threshold
-3. **Deploys DOCs** — Each file becomes a TELA-DOC-1 contract
-4. **Creates INDEX** — Links all DOCs together
-5. **Registers dURL** — If specified
+1. **Scans directory** — Finds all supported files and detects DOC types
+2. **Infers metadata** — Reads `package.json`, `index.html`, and `README` when present
+3. **Builds a preflight summary** — Shows source files, expected DOC contract count, and oversized-file warnings
+4. **Optionally compresses files** — Applies GZIP only when the user enables compression
+5. **Deploys DOCs** — Each file becomes a TELA-DOC-1 contract
+6. **Creates INDEX** — Links all DOCs together
+7. **Registers dURL** — If specified
 
 ### File Size Limits
 
 | Limit | Value |
 |-------|-------|
 | Max file size | 18KB (TELA specification) |
-| Compression | Automatic gzip for large files |
-| DocShards | Available for files exceeding limit |
+| Compression | Optional GZIP toggle before deployment |
+| Preflight summary | Shows `Source Files -> DOC Contracts + 1 INDEX` before deploy |
+| DocShards | Use Studio > DocShards when a file still exceeds the limit |
 
 ### Deployment Result
 
 ```go
-DeployTELABatch(config) -> {
+DeployTELABatch(configJSON string) -> {
     success: true,
-    indexSCID: "abc123...",
+    indexScid: "abc123...",
     durl: "myapp.tela",
-    files: [
-        { name: "index.html", scid: "...", size: 4096 },
-        { name: "styles.css", scid: "...", size: 2048 },
+    deployedDocs: [
+        { name: "index.html", scid: "..." },
+        { name: "styles.css", scid: "..." },
         ...
     ],
-    gasCost: 150000  // or "FREE" in simulator
+    message: "Successfully deployed 2 DOCs and created INDEX"
 }
 ```
 
@@ -469,29 +481,38 @@ When a file exceeds TELA's 18KB size limit, you can split it into multiple DOC c
 
 1. **File is split** — Large file divided into sequential chunks that fit in DOCs
 2. **Shards deployed** — Each chunk becomes a separate TELA-DOC contract
-3. **Shard INDEX created** — A special INDEX (dURL ending in `.shards`) links all chunks in order
+3. **Shard INDEX created** — A special INDEX (dURL ending in `.tela.shards`) links all chunks in order
 4. **Automatic reconstruction** — When loading the app, Hologram concatenates all shards back into the original file
+
+### Using the DocShard Manager
+
+Hologram's **Studio > DocShards** tool now supports both picker-based and drag-and-drop workflows:
+
+- **Shard File** — Drop any file to split it into DOC-sized shards
+- **Reconstruct** — Drop a shard folder to rebuild the original file
+- **Compression toggle** — Optionally compress the file before sharding
+- **Result card** — Shows shard count, compression mode, and the actual output location
+
+Shard output is written next to the source file on your filesystem, not into a hidden app directory.
 
 ### Creating DocShards
 
 ```go
 // Split a file into shard-sized chunks
-ShardFile(filePath string, maxSize int) -> {
+ShardFile(filePath string, compress bool) -> {
     success: true,
-    shards: [
-        { index: 0, content: "...", size: 16384 },
-        { index: 1, content: "...", size: 12288 },
-    ],
-    totalShards: 2,
-    originalSize: 28672,
+    shardCount: 2,
+    outputDir: "/path/to/source/folder",
+    compressed: true,
+    message: "File sharded into 2 parts"
 }
 
-// Reconstruct a file from its shard INDEX
-ConstructFromShards(shardIndexSCID string) -> {
+// Reconstruct a file from local shard files
+ConstructFromShards(shardPath string) -> {
     success: true,
-    content: "...",
-    originalSize: 28672,
-    shardsUsed: 2,
+    outputPath: "/path/to/reconstructed/file",
+    size: 28672,
+    message: "File reconstructed successfully"
 }
 ```
 
@@ -499,13 +520,13 @@ ConstructFromShards(shardIndexSCID string) -> {
 
 | Suffix | Description |
 |--------|-------------|
-| `.shards` | A shard INDEX containing references to shard DOCs |
-| `.shard` | An individual shard DOC (part of a larger file) |
-| `.lib` | A library of reusable DOCs |
-| `.bootstrap` | A collection of TELA apps/content for bootstrapping |
+| `.tela.shards` | A shard INDEX containing references to shard DOCs |
+| `.tela.shard` | An individual shard DOC (part of a larger file) |
+| `.tela.lib` | A library of reusable DOCs |
+| `.tela.bootstrap` | A collection of TELA apps/content for bootstrapping |
 
 <Callout type="info">
-  DocShards are transparent to the end user—the Browser automatically reconstructs sharded files. Use them when compression alone isn't enough to fit under the 18KB limit.
+  DocShards are transparent to the end user when the INDEX uses a `.tela.shards` dURL. Use them when compression alone isn't enough to fit under the 18KB limit.
 </Callout>
 
 ## My Content Search

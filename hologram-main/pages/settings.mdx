@@ -28,6 +28,21 @@ Hologram's Settings page contains 14 configuration sections. This guide covers t
 | **Developer Support** | EPOCH passive hashing |
 | **About** | Version info and credits |
 
+## Wallet Privacy Display
+
+Hologram persists two wallet privacy preferences:
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `hide_balance` | `false` | Masks the visible balance and transaction amounts in wallet-facing UI |
+| `hide_address` | `false` | Masks the wallet address in the Wallet page, sidebar, and wallet modal |
+
+These settings are controlled from the **Wallet** page using the eye / eye-off toggle buttons beside the balance and address fields, but the values are stored as part of the application's persisted settings and survive restart.
+
+<Callout type="info">
+  These are display-privacy settings, not network-isolation settings. They complement Privacy Mode by reducing shoulder-surfing risk without changing blockchain or network behavior.
+</Callout>
+
 ## TELA Server Manager
 
 Manage TELA content servers running on your machine.

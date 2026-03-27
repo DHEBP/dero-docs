@@ -433,8 +433,8 @@ SearchMyDOCs(docType string) map[string]interface{}
 ## Studio - DocShards
 
 ```go
-ShardFile(filePath string, maxSize int) map[string]interface{}
-ConstructFromShards(shardIndexSCID string) map[string]interface{}
+ShardFile(filePath string, compress bool) map[string]interface{}
+ConstructFromShards(shardPath string) map[string]interface{}
 ```
 
 ## Studio - Libraries
@@ -572,6 +572,7 @@ SelectFolder() map[string]interface{}
 ListDirectory(path string) map[string]interface{}
 GetFileInfo(path string) map[string]interface{}
 ScanFolder(path string) map[string]interface{}
+GetMetadataFiles(folderPath string) map[string]interface{}
 GenerateSubDirs(basePath string, name string) map[string]interface{}
 MoveFile(source string, destination string) map[string]interface{}
 RemoveFile(path string) map[string]interface{}
