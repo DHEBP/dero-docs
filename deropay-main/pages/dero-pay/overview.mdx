@@ -19,6 +19,7 @@ import { Callout } from 'nextra/components';
 - **Payment Monitor** — Polls the DERO wallet for incoming transactions, tracks confirmations
 - **Webhook Dispatcher** — HMAC-signed HTTP POST notifications on payment state changes
 - **Pluggable Storage** — In-memory (dev) and SQLite (production) backends, or bring your own
+- **x402 Payment Guard** — Protect API routes with HTTP `402 Payment Required`; clients pay DERO and retry with a signed receipt
 - **Escrow System** — On-chain smart contract with full escrow lifecycle (deposit, release, refund, dispute, arbitration)
 - **React Components** — Drop-in `<PayWithDero>`, `<InvoiceView>`, `<PaymentStatus>` components
 - **Next.js Integration** — Ready-made API route handlers and middleware
@@ -96,4 +97,5 @@ dero-pay/
 
 - [Quick Start](/dero-pay/quick-start) — Accept your first payment
 - [Invoice Engine](/dero-pay/invoice-engine) — Deep dive into the core
+- [x402 Payment Guard](/dero-pay/x402) — Protect API routes with HTTP 402
 - [Escrow System](/escrow/overview) — On-chain escrow for trustless transactions

@@ -123,17 +123,9 @@ export default async function CheckoutPage() {
 }
 ```
 
-## x402 Payment Guard (How It Works)
+## x402 Payment Guard
 
-The x402 guard lets you charge for API access using standard HTTP `402 Payment Required` semantics.
-
-In practice, it works in three steps:
-
-1. A client requests a protected route.
-2. If no valid receipt is present, the server responds with a machine-readable `402` payment challenge.
-3. After payment is confirmed and a receipt is issued, the client retries with that receipt and gets the resource.
-
-### Minimal Setup
+The x402 guard lets you charge for API access using standard HTTP `402 Payment Required` semantics — no accounts, no API keys, no subscriptions.
 
 ```ts
 // lib/deropay.ts
@@ -167,43 +159,7 @@ export const GET = x402Guard(async () => {
 });
 ```
 
-### What the Client Sends on Retry
-
-After payment, retry with either:
-
-- `X-DeroPay-Receipt: <token>`
-- `Authorization: X402 proof="<token>"`
-
-Receipts are short-lived by default (`600` seconds) when issued via `issueReceiptHandler`, and you can override that with `ttlSeconds`.
-
-### Why This Is Fast and Safe
-
-The guard verifies signed receipts locally instead of doing chain verification on every protected request. It also supports:
-
-- short-lived receipt expiry
-- resource binding (`/report` receipt cannot unlock `/inference`)
-- optional single-use replay protection with `jti`
-- key rotation with `kid` + keyring verification
-- route-level quotas (`maxReceiptsPerDay`, `maxAtomicPerWindow`)
-- structured `x402Audit` events for monitoring
-
-For multi-instance deployments, use a shared persistent store so quota and replay checks stay consistent across instances.
-
-### Related Handlers
-
-Expose receipt issue/verify endpoints:
-
-```ts
-// app/api/pay/receipts/issue/route.ts
-import { paymentHandlers } from "@/lib/deropay";
-export const POST = paymentHandlers.issueReceiptHandler;
-```
-
-```ts
-// app/api/pay/receipts/verify/route.ts
-import { paymentHandlers } from "@/lib/deropay";
-export const POST = paymentHandlers.verifyReceiptHandler;
-```
+For the full feature set — dynamic pricing, quotas, replay protection, key rotation, and audit events — see the [x402 Payment Guard](/dero-pay/x402) reference.
 
 ## API Key Middleware
 

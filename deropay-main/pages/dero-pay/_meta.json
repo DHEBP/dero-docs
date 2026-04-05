@@ -8,5 +8,6 @@
   "rpc": "RPC Clients",
   "react": "React Components",
   "nextjs": "Next.js Integration",
+  "x402": "x402 Payment Guard",
   "api-reference": "API Reference"
 }
