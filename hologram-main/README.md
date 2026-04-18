@@ -4,7 +4,7 @@ Official documentation for Hologram - the DERO Decentralized Web Browser.
 
 ## About
 
-This is a [Nextra](https://nextra.site/) documentation site for [Hologram](https://github.com/DHEBP/HOLOGRAM-git), the native desktop application for browsing decentralized applications on the DERO blockchain.
+This is a [Nextra](https://nextra.site/) documentation site for [Hologram](https://github.com/DHEBP/HOLOGRAM), the native desktop application for browsing decentralized applications on the DERO blockchain.
 
 ## Development
 
@@ -58,7 +58,7 @@ hologram-main/
 
 ## Related Projects
 
-- [Hologram](https://github.com/DHEBP/HOLOGRAM-git) - The main application
+- [Hologram](https://github.com/DHEBP/HOLOGRAM) - The main application
 - [derod-main](../derod-main) - DERO daemon documentation
 - [tela-main](../tela-main) - TELA protocol documentation
 

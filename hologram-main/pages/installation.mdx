@@ -19,7 +19,11 @@ Hologram is available for macOS, Linux, and Windows.
 
 ## Download
 
-Download the latest release from the [GitHub Releases](https://github.com/DHEBP/HOLOGRAM-git/releases) page.
+<Callout type="warning">
+  **Pre-built binaries are rolling out gradually.** If a binary for your platform isn't listed on the [Releases page](https://github.com/DHEBP/HOLOGRAM/releases) yet, see [Building from Source](#building-from-source) below.
+</Callout>
+
+As binaries become available, download the latest release from the [GitHub Releases](https://github.com/DHEBP/HOLOGRAM/releases) page.
 
 | Platform | Architecture | File |
 |----------|--------------|------|
@@ -149,8 +153,8 @@ For developers who want to build from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/DHEBP/HOLOGRAM-git.git
-cd HOLOGRAM-git
+git clone https://github.com/DHEBP/HOLOGRAM.git
+cd HOLOGRAM
 
 # Install frontend dependencies
 cd frontend && npm install && cd ..
@@ -187,9 +191,9 @@ All binaries are placed in `build/bin/` alongside the Hologram executable.
 
 ### Build Requirements
 
-- Go 1.23+
+- Go 1.24.0+
 - Node.js 18+
-- Wails CLI v2
+- Wails CLI v2 (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
 - Platform-specific requirements (see Wails documentation)
 
 ### Linux Dependencies

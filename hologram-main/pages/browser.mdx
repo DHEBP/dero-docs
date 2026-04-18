@@ -285,7 +285,7 @@ Hologram provides full compatibility with complex TELA dApps, including those re
 | Feature | Description |
 |---------|-------------|
 | **Reverse Proxy System** | Strips `Content-Security-Policy` headers while maintaining security through iframe sandboxing and blockchain immutability. Provides XSWD bridge script and adds security headers. |
-| **XSWD WebSocket Bridge** | Intercepts `new WebSocket()` calls to XSWD ports (44326 mainnet, 44325 testnet), creating a proxy that routes connections through `window.parent.postMessage()`. |
+| **XSWD WebSocket Bridge** | Intercepts `new WebSocket()` calls to the XSWD port (44326), creating a proxy that routes connections through `window.parent.postMessage()`. |
 | **Smart RPC Routing** | Automatically routes `DERO.*` methods to daemon when internal XSWD server is running, optimizing performance while maintaining backward compatibility. |
 | **WKWebView Compatibility** | Custom workarounds for WKWebView's strict property enforcement, ensuring compatibility with JavaScriptCore engine on macOS. |
 

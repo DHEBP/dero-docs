@@ -40,7 +40,7 @@ const config: DocsThemeConfig = {
   primaryHue: { dark: 187, light: 187 },
   primarySaturation: { dark: 85, light: 85 },
   project: {
-    link: 'https://github.com/DHEBP/HOLOGRAM-git'
+    link: 'https://github.com/DHEBP/HOLOGRAM'
   },
   docsRepositoryBase: 'https://github.com/DHEBP/dero-docs',
   useNextSeoProps() {
