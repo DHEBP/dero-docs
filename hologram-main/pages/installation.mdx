@@ -19,81 +19,85 @@ Hologram is available for macOS, Linux, and Windows.
 
 ## Download
 
-<Callout type="warning">
-  **Pre-built binaries are rolling out gradually.** If a binary for your platform isn't listed on the [Releases page](https://github.com/DHEBP/HOLOGRAM/releases) yet, see [Building from Source](#building-from-source) below.
-</Callout>
-
-As binaries become available, download the latest release from the [GitHub Releases](https://github.com/DHEBP/HOLOGRAM/releases) page.
+Download the latest release from the [GitHub Releases](https://github.com/DHEBP/HOLOGRAM/releases) page.
 
 | Platform | Architecture | File |
 |----------|--------------|------|
-| macOS | Intel | `Hologram-darwin-amd64.dmg` |
-| macOS | Apple Silicon | `Hologram-darwin-arm64.dmg` |
-| Linux | x64 | `Hologram-linux-amd64.AppImage` |
-| Linux | ARM64 | `Hologram-linux-arm64.AppImage` |
-| Windows | x64 | `Hologram-windows-amd64.exe` |
+| macOS | Universal (Intel + Apple Silicon) | `Hologram-v*-macos-universal.zip` |
+| Linux | x64 | `Hologram-v*-linux-amd64.tar.gz` |
+| Windows | x64 | `Hologram-v*-windows-amd64.zip` |
+
+Each archive ships with a matching `.sha256` checksum file if you'd like to verify the download.
 
 ## Installation Steps
 
 ### macOS
 
 <Steps>
-### Download the DMG
+### Download the archive
 
-Download the appropriate `.dmg` file for your Mac (Intel or Apple Silicon).
+Download `Hologram-v*-macos-universal.zip` from the Releases page. The universal binary runs natively on both Intel and Apple Silicon.
 
-### Open the DMG
+### Unzip
 
-Double-click the downloaded file to mount the disk image.
+Double-click the downloaded `.zip` to extract `Hologram.app`.
 
-### Drag to Applications
+### Move to Applications
 
-Drag the Hologram app to your Applications folder.
+Drag `Hologram.app` to your `/Applications` folder.
 
 ### First Launch
 
-Right-click and select "Open" for the first launch (required for unsigned apps).
+Right-click `Hologram.app` and select **Open** for the first launch (required for unsigned apps).
 </Steps>
 
 <Callout type="warning">
-  On macOS, you may need to allow the app in System Preferences > Security & Privacy if you see a security warning.
+  On macOS, you may need to allow the app in **System Settings > Privacy & Security** if you see a security warning on first launch.
 </Callout>
 
 ### Linux
 
 <Steps>
-### Download the AppImage
+### Download the archive
 
-Download the appropriate `.AppImage` file for your architecture.
+Download `Hologram-v*-linux-amd64.tar.gz` from the Releases page.
 
-### Make Executable
+### Extract
 
 ```bash
-chmod +x Hologram-linux-amd64.AppImage
+tar -xzf Hologram-v*-linux-amd64.tar.gz
 ```
 
 ### Run
 
 ```bash
-./Hologram-linux-amd64.AppImage
+./Hologram
 ```
 </Steps>
+
+<Callout type="info">
+  Linux builds currently target `glibc 2.35+` (Ubuntu 22.04 build host). If your distribution ships an older glibc, use [Build from Source](#building-from-source) below.
+</Callout>
 
 ### Windows
 
 <Steps>
-### Download the Installer
+### Download the archive
 
-Download the `.exe` installer file.
+Download `Hologram-v*-windows-amd64.zip` from the Releases page.
 
-### Run Installer
+### Extract
 
-Double-click to run the installer and follow the prompts.
+Right-click the `.zip` and choose **Extract All…**, or use your preferred archive tool.
 
-### Launch
+### Run
 
-Find Hologram in your Start menu or desktop.
+Double-click `Hologram.exe` to launch.
 </Steps>
+
+<Callout type="warning">
+  Windows SmartScreen may show an "unrecognized app" warning on first launch. Click **More info → Run anyway** — the release is unsigned for v1.0.x.
+</Callout>
 
 ## First Run Wizard
 
