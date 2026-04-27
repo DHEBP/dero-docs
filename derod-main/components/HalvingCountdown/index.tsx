@@ -5,8 +5,12 @@ import styles from './HalvingCountdown.module.css';
 const HALVING_BLOCK = 7_000_000;
 const BLOCK_TIME_SECONDS = 18;
 
-// Community node RPC endpoint
-const RPC_ENDPOINT = 'https://dero-node-ch4k1pu.mysrv.cloud/json_rpc';
+// Community node RPC endpoints (primary first, fallback second)
+const RPC_ENDPOINTS = [
+  'https://community-pools.mysrv.cloud/json_rpc',
+  'https://dero.osx.fr/json_rpc',
+  'https://dero-node-ch4k1pu.mysrv.cloud/json_rpc'
+];
 
 interface TimeRemaining {
   days: number;
@@ -34,26 +38,37 @@ const HalvingCountdown: React.FC<HalvingCountdownProps> = ({
   // Fetch current block height from DERO node
   const fetchHeight = useCallback(async () => {
     try {
-      const response = await fetch(RPC_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: '1',
-          method: 'DERO.GetInfo'
-        })
-      });
-      
-      if (!response.ok) throw new Error('Network response was not ok');
-      
-      const data = await response.json();
-      
-      if (data.result && typeof data.result.topoheight === 'number') {
-        setCurrentHeight(data.result.topoheight);
-        setError(null);
-      } else {
-        throw new Error('Invalid response format');
+      let lastError: unknown = null;
+
+      for (const endpoint of RPC_ENDPOINTS) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: '1',
+              method: 'DERO.GetInfo'
+            })
+          });
+
+          if (!response.ok) throw new Error('Network response was not ok');
+
+          const data = await response.json();
+
+          if (data.result && typeof data.result.topoheight === 'number') {
+            setCurrentHeight(data.result.topoheight);
+            setError(null);
+            return;
+          }
+
+          throw new Error('Invalid response format');
+        } catch (err) {
+          lastError = err;
+        }
       }
+
+      throw lastError ?? new Error('All RPC endpoints failed');
     } catch (err) {
       console.error('Failed to fetch block height:', err);
       setError('Unable to connect to node');
