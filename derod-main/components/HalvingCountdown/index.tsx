@@ -5,12 +5,17 @@ import styles from './HalvingCountdown.module.css';
 const HALVING_BLOCK = 7_000_000;
 const BLOCK_TIME_SECONDS = 18;
 
-// Community node RPC endpoints (primary first, fallback second)
+// Community node RPC endpoints (verified browser-reachable: valid TLS + CORS).
+// Ordered by operator/region diversity; first to respond wins.
 const RPC_ENDPOINTS = [
-  'https://community-pools.mysrv.cloud/json_rpc',
-  'https://dero.osx.fr/json_rpc',
-  'https://dero-node-ch4k1pu.mysrv.cloud/json_rpc'
+  'https://dero.rabidmining.com/json_rpc',
+  'https://dero-node.mysrv.cloud/json_rpc',
+  'https://dero-node-sk.mysrv.cloud/json_rpc'
 ];
+
+// Cap any single endpoint at a few seconds so a slow node doesn't block the
+// entire fallback cycle and leave the user staring at "Connecting...".
+const ENDPOINT_TIMEOUT_MS = 6000;
 
 interface TimeRemaining {
   days: number;
@@ -41,6 +46,9 @@ const HalvingCountdown: React.FC<HalvingCountdownProps> = ({
       let lastError: unknown = null;
 
       for (const endpoint of RPC_ENDPOINTS) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), ENDPOINT_TIMEOUT_MS);
+
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
@@ -49,10 +57,11 @@ const HalvingCountdown: React.FC<HalvingCountdownProps> = ({
               jsonrpc: '2.0',
               id: '1',
               method: 'DERO.GetInfo'
-            })
+            }),
+            signal: controller.signal
           });
 
-          if (!response.ok) throw new Error('Network response was not ok');
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const data = await response.json();
 
@@ -65,6 +74,8 @@ const HalvingCountdown: React.FC<HalvingCountdownProps> = ({
           throw new Error('Invalid response format');
         } catch (err) {
           lastError = err;
+        } finally {
+          clearTimeout(timeoutId);
         }
       }
 
