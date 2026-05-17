@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "domain": "derod.org",
+  "name": "DERO Blockchain",
+  "description": "Privacy-focused blockchain with homomorphic encryption, private smart contracts, and decentralized web applications (TELA). Provides JSON-RPC APIs for blockchain interaction, wallet operations, and smart contract deployment.",
+  "discovery": {
+    "llms_txt": {
+      "url": "/llms.txt",
+      "description": "LLM-friendly documentation overview"
+    },
+    "openapi": {
+      "url": "/api/openapi.json",
+      "description": "OpenAPI 3.1 specification for DERO JSON-RPC APIs"
+    }
+  },
+  "schema": {
+    "url": "/api/openapi.json",
+    "type": "openapi"
+  },
+  "capabilities": [
+    "blockchain_query",
+    "smart_contract_interaction",
+    "wallet_operations",
+    "transaction_submission",
+    "name_resolution",
+    "gas_estimation"
+  ],
+  "skills": [
+    "query_blockchain_info",
+    "get_block_data",
+    "get_smart_contract_state",
+    "get_transaction_details",
+    "estimate_gas_costs",
+    "resolve_dero_names",
+    "get_wallet_balance",
+    "create_transfers",
+    "invoke_smart_contracts",
+    "generate_integrated_addresses"
+  ],
+  "rpc_endpoints": {
+    "daemon_mainnet": {
+      "url": "http://node.dero.io:10102/json_rpc",
+      "description": "Public mainnet daemon RPC",
+      "methods_prefix": "DERO."
+    },
+    "daemon_testnet": {
+      "url": "http://localhost:40402/json_rpc",
+      "description": "Local testnet daemon RPC",
+      "methods_prefix": "DERO."
+    },
+    "wallet_mainnet": {
+      "url": "http://localhost:10103/json_rpc",
+      "description": "Local mainnet wallet RPC (requires --rpc-server flag)"
+    },
+    "wallet_testnet": {
+      "url": "http://localhost:40403/json_rpc",
+      "description": "Local testnet wallet RPC (requires --rpc-server flag)"
+    }
+  },
+  "documentation": {
+    "main": "https://derod.org",
+    "daemon_rpc": "https://derod.org/rpc-api/daemon-rpc-api",
+    "wallet_rpc": "https://derod.org/rpc-api/wallet-rpc-api",
+    "smart_contracts": "https://derod.org/dvm/dvm-basic",
+    "tela": "https://tela.derod.org"
+  },
+  "community": {
+    "discord": "https://discord.com/invite/H95TJDp",
+    "forum": "https://forum.dero.io",
+    "matrix": "https://matrix.to/#/#general:matrix.dero.live",
+    "github": "https://github.com/deroproject/derohe"
+  },
+  "updated_at": "2026-05-17T00:00:00Z"
+}

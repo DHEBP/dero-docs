@@ -1,0 +1,120 @@
+# DERO Blockchain Documentation
+
+> Privacy-focused blockchain with homomorphic encryption, private smart contracts, and decentralized web applications.
+
+DERO is a Layer-1 blockchain that provides true privacy for transactions and smart contracts using homomorphic encryption. Unlike other privacy coins, DERO's encryption allows computations on encrypted data—balances remain private while the network can still verify correctness.
+
+This documentation site (derod.org) covers everything developers and node operators need to build on DERO: running nodes, mining, wallet operations, smart contract development with DVM-BASIC, and building decentralized applications with TELA.
+
+## Core Capabilities
+
+### Privacy Technology
+- **Homomorphic Encryption**: Compute on encrypted values; balances and transfers stay private
+- **Ring Signatures**: Transaction senders hidden in groups of 2-128 participants
+- **Bulletproofs**: Zero-knowledge range proofs for efficient verification
+- **Private Smart Contracts**: Contract state encrypted; only parties involved see data
+
+### Smart Contracts (DVM-BASIC)
+- Turing-complete smart contract language similar to BASIC
+- Deploy tokens, NFTs, lotteries, escrow, and custom logic
+- Gas-based execution model with storage and compute costs
+- Built-in functions: STORE, LOAD, SEND_DERO_TO_ADDRESS, RANDOM, SHA256
+
+### TELA - Decentralized Web
+- Deploy HTML/CSS/JS applications directly to the blockchain
+- Content-addressed storage with version history
+- No centralized hosting; apps run from any TELA-compatible browser
+- TELA-DOC-1 (files) and TELA-INDEX-1 (app manifests) standards
+
+### Network Operations
+- Run full nodes (derod daemon) on port 10102 (mainnet) / 40402 (testnet)
+- Mining with AstroBWT CPU-friendly algorithm
+- Erasure coding for efficient block propagation
+
+## API & Machine Integration
+
+### JSON-RPC APIs
+DERO provides two JSON-RPC endpoints for programmatic interaction:
+
+**Daemon RPC** (blockchain operations):
+- Endpoint: `http://node:10102/json_rpc` (mainnet) / `http://node:40402/json_rpc` (testnet)
+- Query blocks, transactions, smart contract state
+- Submit transactions, mine blocks
+- Methods: DERO.GetInfo, DERO.GetBlock, DERO.GetSC, DERO.GetTransaction, DERO.SendRawTransaction
+
+**Wallet RPC** (wallet operations):
+- Endpoint: `http://wallet:10103/json_rpc` (mainnet) / `http://wallet:40403/json_rpc` (testnet)
+- Requires `--rpc-server` flag when starting wallet
+- Manage balances, send transfers, interact with contracts
+- Methods: GetBalance, GetAddress, Transfer, scinvoke, GetTransfers
+
+### XSWD - Browser Wallet Protocol
+- WebSocket protocol for dApps to connect to Engram wallet
+- Port 44435 (mainnet) / 44435 (testnet)
+- User approval flow for transaction signing
+
+### Machine-Readable Specs
+- OpenAPI Spec: https://derod.org/api/openapi.json
+- AgentRoot: https://derod.org/.well-known/agentroot.json
+
+## Key Documentation Sections
+
+### Getting Started
+- /basics/about - DERO overview
+- /basics/wallets - Wallet options (Engram, CLI)
+- /basics/running-a-node - Run a full node
+- /basics/mining - Mine DERO with AstroBWT
+
+### RPC API Reference
+- /rpc-api/daemon-rpc-api - Full daemon RPC documentation with examples
+- /rpc-api/wallet-rpc-api - Full wallet RPC documentation with examples
+
+### Smart Contracts
+- /dvm/dvm-basic - DVM-BASIC language reference
+- /dvm/create-deploy-use-smart-contract - Deployment guide
+- /smartContracts/token - Create tokens
+- /smartContracts/assets - Asset management
+
+### Privacy & Cryptography
+- /privacy/homomorphic-encryption - How DERO encrypts balances
+- /privacy/ring-signatures - Transaction privacy
+- /privacy/bulletproofs - Range proofs
+
+### TELA (Decentralized Apps)
+- /tools/tela - TELA overview
+- Related: tela.derod.org for full TELA documentation
+
+## Example: Query Blockchain Info
+
+```bash
+curl -X POST http://node.dero.io:10102/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}'
+```
+
+## Example: Get Smart Contract State
+
+```bash
+curl -X POST http://node.dero.io:10102/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc":"2.0",
+    "id":"1",
+    "method":"DERO.GetSC",
+    "params":{"scid":"0000...0001","code":true,"variables":true}
+  }'
+```
+
+## Contact & Community
+
+- **Discord**: https://discord.com/invite/H95TJDp
+- **Forum**: https://forum.dero.io
+- **Matrix**: https://matrix.to/#/#general:matrix.dero.live
+- **GitHub**: https://github.com/deroproject/derohe
+- **Documentation**: https://derod.org
+
+## Related Sites
+
+- https://derofoundation.org - Official DERO Foundation
+- https://tela.derod.org - TELA documentation
+- https://pay.derod.org - DeroPay payment integration docs

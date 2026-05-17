@@ -1,0 +1,131 @@
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "DERO Blockchain Services",
+  "description": "Machine-readable list of DERO blockchain documentation and API services",
+  "numberOfItems": 8,
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Daemon RPC API",
+        "description": "JSON-RPC API for querying blockchain data, blocks, transactions, and smart contracts",
+        "url": "https://derod.org/rpc-api/daemon-rpc-api",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Blockchain API",
+        "areaServed": "Worldwide"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Wallet RPC API",
+        "description": "JSON-RPC API for wallet operations including balance queries, transfers, and smart contract invocations",
+        "url": "https://derod.org/rpc-api/wallet-rpc-api",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Wallet API",
+        "areaServed": "Worldwide"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@type": "Service",
+        "name": "DVM-BASIC Smart Contract Development",
+        "description": "Documentation and guides for developing smart contracts using DVM-BASIC language on DERO blockchain",
+        "url": "https://derod.org/dvm/dvm-basic",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Developer Documentation"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+        "@type": "Service",
+        "name": "TELA Decentralized Web Platform",
+        "description": "Deploy HTML/CSS/JS web applications directly to DERO blockchain with content-addressed storage",
+        "url": "https://derod.org/tools/tela",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Decentralized Hosting"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 5,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Node Operation",
+        "description": "Guides for running DERO full nodes (derod daemon) on mainnet and testnet",
+        "url": "https://derod.org/basics/running-a-node",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Node Infrastructure"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 6,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Mining",
+        "description": "CPU mining with AstroBWT algorithm, block templates, and mining pool integration",
+        "url": "https://derod.org/basics/mining",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Mining"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 7,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Name Service",
+        "description": "Register human-readable names for DERO addresses via on-chain smart contract",
+        "url": "https://derod.org/smartContracts/name",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Name Resolution"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 8,
+      "item": {
+        "@type": "Service",
+        "name": "DERO Token Creation",
+        "description": "Create fungible tokens and assets on DERO blockchain with privacy features",
+        "url": "https://derod.org/smartContracts/token",
+        "provider": {
+          "@type": "Organization",
+          "name": "DERO Foundation"
+        },
+        "serviceType": "Token Platform"
+      }
+    }
+  ]
+}

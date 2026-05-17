@@ -123,6 +123,115 @@ const config: DocsThemeConfig = {
       ? (meta.image.startsWith('http') ? meta.image : `${seoConfig.openGraph.url}${meta.image}`)
       : `${seoConfig.openGraph.url}${seoConfig.openGraph.images}`
 
+    // Organization schema
+    const organizationSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': 'https://derod.org/#organization',
+      name: 'DERO Foundation',
+      alternateName: 'DERO',
+      url: 'https://derofoundation.org',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://derod.org/assets/apple-touch-icon.png',
+        width: 180,
+        height: 180
+      },
+      description: 'DERO is a privacy-focused blockchain with homomorphic encryption enabling private smart contracts and encrypted transactions.',
+      sameAs: [
+        'https://github.com/deroproject/derohe',
+        'https://discord.com/invite/H95TJDp',
+        'https://forum.dero.io',
+        'https://twitter.com/daboratories'
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'technical support',
+        url: 'https://discord.com/invite/H95TJDp'
+      }
+    }
+
+    // WebSite schema with SearchAction
+    const websiteSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      '@id': 'https://derod.org/#website',
+      name: 'DERO Documentation',
+      alternateName: 'derod.org',
+      url: 'https://derod.org',
+      description: 'Complete guide to DERO blockchain: nodes, mining, wallets, smart contracts, and privacy technology.',
+      publisher: { '@id': 'https://derod.org/#organization' },
+      inLanguage: 'en-US',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://derod.org/?q={search_term_string}'
+        },
+        'query-input': 'required name=search_term_string'
+      }
+    }
+
+    // SoftwareApplication schema for DERO
+    const softwareSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'DERO Blockchain',
+      applicationCategory: 'BlockchainApplication',
+      operatingSystem: 'Windows, macOS, Linux',
+      description: 'Privacy-focused Layer-1 blockchain with homomorphic encryption, private smart contracts, and TELA decentralized apps.',
+      url: 'https://github.com/deroproject/derohe',
+      downloadUrl: 'https://github.com/deroproject/derohe/releases',
+      softwareVersion: '142',
+      author: { '@id': 'https://derod.org/#organization' },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD'
+      },
+      featureList: [
+        'Homomorphic encryption',
+        'Private smart contracts',
+        'Ring signatures',
+        'Bulletproofs',
+        'TELA decentralized web apps',
+        'DVM-BASIC smart contract language',
+        'CPU-friendly AstroBWT mining'
+      ]
+    }
+
+    // TechArticle schema for individual pages
+    const articleSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: title || seoConfig.title.default,
+      description: meta.description || seoConfig.description,
+      image: imageUrl,
+      author: {
+        '@type': 'Organization',
+        name: meta.authors || 'DERO Community'
+      },
+      publisher: { '@id': 'https://derod.org/#organization' },
+      datePublished: meta.date || undefined,
+      dateModified: meta.lastUpdated || undefined,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': `${seoConfig.openGraph.url}${pagePath}`
+      },
+      isPartOf: { '@id': 'https://derod.org/#website' }
+    }
+
+    // Combine schemas into a graph
+    const combinedSchema = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        organizationSchema,
+        websiteSchema,
+        ...(pagePath === '/' ? [softwareSchema] : []),
+        articleSchema
+      ]
+    }
+
     return (
       <>
         {seoConfig.icons.map((icon, index) => (
@@ -160,23 +269,17 @@ const config: DocsThemeConfig = {
         
         {/* Canonical URL */}
         <link rel="canonical" href={`${seoConfig.openGraph.url}${pagePath}`} />
+
+        {/* AI Discovery Links */}
+        <link rel="alternate" type="text/plain" href="https://derod.org/llms.txt" title="LLM Documentation" />
+        <link rel="alternate" type="application/json" href="https://derod.org/api/openapi.json" title="OpenAPI Specification" />
         
-        {/* Structured Data */}
+        {/* Enhanced Structured Data */}
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'TechArticle',
-              headline: title || seoConfig.title.default,
-              description: meta.description || seoConfig.description,
-              image: imageUrl,
-              author: meta.authors || 'DHEBP',
-              datePublished: meta.date || undefined,
-              dateModified: meta.lastUpdated || undefined,
-              mainEntityOfPage: `${seoConfig.openGraph.url}${pagePath}`,
-            }),
+            __html: JSON.stringify(combinedSchema),
           }}
         />
         

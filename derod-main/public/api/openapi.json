@@ -1,0 +1,506 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DERO Blockchain RPC API",
+    "version": "142.0.0",
+    "description": "JSON-RPC API for interacting with DERO blockchain nodes and wallets. DERO is a privacy-focused blockchain with homomorphic encryption that enables private smart contracts and encrypted transactions.\n\n## Network Endpoints\n- **Daemon Mainnet**: http://node:10102/json_rpc\n- **Daemon Testnet**: http://node:40402/json_rpc\n- **Wallet Mainnet**: http://wallet:10103/json_rpc\n- **Wallet Testnet**: http://wallet:40403/json_rpc\n\n## Authentication\nWallet RPC requires the `--rpc-server` flag and optionally `--rpc-login=user:pass` for basic auth.",
+    "contact": {
+      "name": "DERO Community",
+      "url": "https://derod.org",
+      "email": "info@dero.io"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://node.dero.io:10102",
+      "description": "Public DERO Mainnet Daemon"
+    },
+    {
+      "url": "http://localhost:10102",
+      "description": "Local DERO Mainnet Daemon"
+    },
+    {
+      "url": "http://localhost:40402",
+      "description": "Local DERO Testnet Daemon"
+    },
+    {
+      "url": "http://localhost:10103",
+      "description": "Local DERO Mainnet Wallet"
+    },
+    {
+      "url": "http://localhost:40403",
+      "description": "Local DERO Testnet Wallet"
+    }
+  ],
+  "paths": {
+    "/json_rpc": {
+      "post": {
+        "summary": "JSON-RPC Endpoint",
+        "description": "All DERO RPC methods are called via POST to /json_rpc with a JSON-RPC 2.0 payload.",
+        "operationId": "jsonRpc",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonRpcRequest"
+              },
+              "examples": {
+                "getInfo": {
+                  "summary": "Get blockchain info",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "DERO.GetInfo"
+                  }
+                },
+                "getBalance": {
+                  "summary": "Get wallet balance",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "GetBalance"
+                  }
+                },
+                "getSC": {
+                  "summary": "Get smart contract",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": "1",
+                    "method": "DERO.GetSC",
+                    "params": {
+                      "scid": "0000000000000000000000000000000000000000000000000000000000000001",
+                      "code": true,
+                      "variables": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful JSON-RPC response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JsonRpcRequest": {
+        "type": "object",
+        "required": ["jsonrpc", "id", "method"],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": ["2.0"],
+            "description": "JSON-RPC version"
+          },
+          "id": {
+            "type": "string",
+            "description": "Request identifier"
+          },
+          "method": {
+            "type": "string",
+            "description": "RPC method name",
+            "enum": [
+              "DERO.Echo",
+              "DERO.Ping",
+              "DERO.GetInfo",
+              "DERO.GetBlock",
+              "DERO.GetBlockHeaderByTopoHeight",
+              "DERO.GetBlockHeaderByHash",
+              "DERO.GetTxPool",
+              "DERO.GetRandomAddress",
+              "DERO.GetTransaction",
+              "DERO.SendRawTransaction",
+              "DERO.SubmitBlock",
+              "DERO.GetHeight",
+              "DERO.GetBlockCount",
+              "DERO.GetLastBlockHeader",
+              "DERO.GetBlockTemplate",
+              "DERO.GetEncryptedBalance",
+              "DERO.GetSC",
+              "DERO.GetGasEstimate",
+              "DERO.NameToAddress",
+              "Echo",
+              "GetAddress",
+              "GetBalance",
+              "GetHeight",
+              "GetTransferbyTXID",
+              "GetTransfers",
+              "MakeIntegratedAddress",
+              "SplitIntegratedAddress",
+              "QueryKey",
+              "transfer",
+              "scinvoke"
+            ]
+          },
+          "params": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/GetBlockParams" },
+              { "$ref": "#/components/schemas/GetSCParams" },
+              { "$ref": "#/components/schemas/TransferParams" },
+              { "$ref": "#/components/schemas/SCInvokeParams" },
+              { "$ref": "#/components/schemas/GetEncryptedBalanceParams" },
+              { "$ref": "#/components/schemas/GetGasEstimateParams" },
+              { "$ref": "#/components/schemas/NameToAddressParams" },
+              { "$ref": "#/components/schemas/GetTransfersParams" },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          }
+        }
+      },
+      "JsonRpcResponse": {
+        "type": "object",
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": ["2.0"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object"
+          },
+          "error": {
+            "$ref": "#/components/schemas/JsonRpcError"
+          }
+        }
+      },
+      "JsonRpcError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "GetBlockParams": {
+        "type": "object",
+        "description": "Parameters for DERO.GetBlock",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "description": "Block hash (hex string)"
+          },
+          "height": {
+            "type": "integer",
+            "description": "Block height"
+          }
+        }
+      },
+      "GetSCParams": {
+        "type": "object",
+        "description": "Parameters for DERO.GetSC (Get Smart Contract)",
+        "required": ["scid"],
+        "properties": {
+          "scid": {
+            "type": "string",
+            "description": "Smart Contract ID (64-character hex string)"
+          },
+          "code": {
+            "type": "boolean",
+            "description": "Include contract source code"
+          },
+          "variables": {
+            "type": "boolean",
+            "description": "Include all stored variables"
+          },
+          "topoheight": {
+            "type": "integer",
+            "description": "Query at specific topo height (-1 for latest)"
+          },
+          "keysuint64": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Specific uint64 keys to retrieve"
+          },
+          "keysstring": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Specific string keys to retrieve"
+          }
+        }
+      },
+      "GetEncryptedBalanceParams": {
+        "type": "object",
+        "description": "Parameters for DERO.GetEncryptedBalance",
+        "required": ["address", "topoheight"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "DERO address (starts with deto1)"
+          },
+          "topoheight": {
+            "type": "integer",
+            "description": "Topo height (-1 for latest)"
+          },
+          "scid": {
+            "type": "string",
+            "description": "Asset SCID (optional, defaults to native DERO)"
+          }
+        }
+      },
+      "GetGasEstimateParams": {
+        "type": "object",
+        "description": "Parameters for DERO.GetGasEstimate",
+        "properties": {
+          "transfers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Transfer" }
+          },
+          "sc": {
+            "type": "string",
+            "description": "Smart contract code to deploy"
+          },
+          "sc_rpc": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Argument" },
+            "description": "SC call arguments"
+          },
+          "signer": {
+            "type": "string",
+            "description": "Signer address for estimation"
+          }
+        }
+      },
+      "NameToAddressParams": {
+        "type": "object",
+        "description": "Parameters for DERO.NameToAddress",
+        "required": ["name", "topoheight"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Registered name to look up"
+          },
+          "topoheight": {
+            "type": "integer",
+            "description": "Topo height (-1 for latest)"
+          }
+        }
+      },
+      "GetTransfersParams": {
+        "type": "object",
+        "description": "Parameters for GetTransfers (Wallet RPC)",
+        "properties": {
+          "scid": {
+            "type": "string",
+            "description": "Filter by asset SCID"
+          },
+          "coinbase": {
+            "type": "boolean",
+            "description": "Include coinbase transactions"
+          },
+          "in": {
+            "type": "boolean",
+            "description": "Include incoming transfers"
+          },
+          "out": {
+            "type": "boolean",
+            "description": "Include outgoing transfers"
+          },
+          "min_height": {
+            "type": "integer",
+            "description": "Minimum block height"
+          },
+          "max_height": {
+            "type": "integer",
+            "description": "Maximum block height"
+          },
+          "sender": {
+            "type": "string",
+            "description": "Filter by sender address"
+          },
+          "receiver": {
+            "type": "string",
+            "description": "Filter by receiver address"
+          }
+        }
+      },
+      "TransferParams": {
+        "type": "object",
+        "description": "Parameters for transfer (Wallet RPC)",
+        "properties": {
+          "transfers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Transfer" }
+          },
+          "ringsize": {
+            "type": "integer",
+            "description": "Ring size for privacy (2-128, powers of 2)",
+            "minimum": 2,
+            "maximum": 128
+          },
+          "fees": {
+            "type": "integer",
+            "description": "Transaction fees in atomic units"
+          }
+        }
+      },
+      "SCInvokeParams": {
+        "type": "object",
+        "description": "Parameters for scinvoke (Smart Contract Invoke)",
+        "required": ["scid", "sc_rpc"],
+        "properties": {
+          "scid": {
+            "type": "string",
+            "description": "Smart Contract ID to call"
+          },
+          "sc_rpc": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Argument" },
+            "description": "SC call arguments including entrypoint"
+          },
+          "sc_dero_deposit": {
+            "type": "integer",
+            "description": "DERO to deposit (atomic units)"
+          },
+          "sc_token_deposit": {
+            "type": "integer",
+            "description": "Token to deposit (atomic units)"
+          },
+          "ringsize": {
+            "type": "integer",
+            "description": "Ring size for privacy"
+          }
+        }
+      },
+      "Transfer": {
+        "type": "object",
+        "description": "A single transfer destination",
+        "properties": {
+          "scid": {
+            "type": "string",
+            "description": "Asset SCID (0x00...00 for native DERO)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Recipient DERO address"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in atomic units (1 DERO = 100000)"
+          },
+          "burn": {
+            "type": "integer",
+            "description": "Amount to burn"
+          },
+          "payload_rpc": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Argument" }
+          }
+        }
+      },
+      "Argument": {
+        "type": "object",
+        "description": "RPC argument for SC calls",
+        "required": ["name", "datatype", "value"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Argument name"
+          },
+          "datatype": {
+            "type": "string",
+            "enum": ["S", "U", "H"],
+            "description": "Data type: S=String, U=Uint64, H=Hash"
+          },
+          "value": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "integer" }
+            ],
+            "description": "Argument value"
+          }
+        }
+      },
+      "BlockHeader": {
+        "type": "object",
+        "description": "DERO block header",
+        "properties": {
+          "depth": { "type": "integer" },
+          "difficulty": { "type": "string" },
+          "hash": { "type": "string" },
+          "height": { "type": "integer" },
+          "topoheight": { "type": "integer" },
+          "major_version": { "type": "integer" },
+          "minor_version": { "type": "integer" },
+          "nonce": { "type": "integer" },
+          "orphan_status": { "type": "boolean" },
+          "syncblock": { "type": "boolean" },
+          "sideblock": { "type": "boolean" },
+          "txcount": { "type": "integer" },
+          "reward": { "type": "integer" },
+          "tips": { "type": "array", "items": { "type": "string" } },
+          "timestamp": { "type": "integer" }
+        }
+      },
+      "GetInfoResult": {
+        "type": "object",
+        "description": "Result of DERO.GetInfo",
+        "properties": {
+          "height": { "type": "integer" },
+          "stableheight": { "type": "integer" },
+          "topoheight": { "type": "integer" },
+          "difficulty": { "type": "integer" },
+          "version": { "type": "string" },
+          "testnet": { "type": "boolean" },
+          "top_block_hash": { "type": "string" },
+          "tx_count": { "type": "integer" },
+          "tx_pool_size": { "type": "integer" },
+          "status": { "type": "string" }
+        }
+      },
+      "GetBalanceResult": {
+        "type": "object",
+        "description": "Result of GetBalance",
+        "properties": {
+          "balance": {
+            "type": "integer",
+            "description": "Total balance in atomic units"
+          },
+          "unlocked_balance": {
+            "type": "integer",
+            "description": "Spendable balance in atomic units"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Daemon",
+      "description": "Blockchain node operations (DERO.* methods)"
+    },
+    {
+      "name": "Wallet",
+      "description": "Wallet operations (requires wallet RPC server)"
+    },
+    {
+      "name": "Smart Contracts",
+      "description": "Deploy and interact with DVM-BASIC contracts"
+    }
+  ],
+  "externalDocs": {
+    "description": "DERO Documentation",
+    "url": "https://derod.org"
+  }
+}
