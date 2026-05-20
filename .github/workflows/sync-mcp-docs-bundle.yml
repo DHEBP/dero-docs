@@ -1,0 +1,23 @@
+name: Sync MCP docs bundle
+
+# Level 3: after dero-docs merges to main, notify dero-mcp-server to open a refresh PR.
+# Requires repo secret: MCP_DOCS_SYNC_TOKEN (see dero-mcp-server docs/DOCS-BUNDLE-SYNC.md)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger dero-mcp-server docs bundle refresh
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.MCP_DOCS_SYNC_TOKEN }}
+          repository: DHEBP/dero-mcp-server
+          event-type: dero-docs-updated
+          client-payload: |
+            {
+              "ref": "${{ github.sha }}"
+            }
