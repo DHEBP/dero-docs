@@ -4,6 +4,10 @@ Query the DERO blockchain from AI assistants — no middlemen, no API keys, no s
 
 The DERO MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io), an open standard for connecting AI models to external tools. Run it locally, point it at your own node, and let your AI assistant interact with DERO directly.
 
+<Callout type="info">
+**AI discovery files:** [llms.txt](https://derod.org/llms.txt) and [/api/openapi.json](https://derod.org/api/openapi.json) are curated subsets for agents—not a full RPC catalog. Use the [Daemon RPC API](/rpc-api/daemon-rpc-api) and [Wallet RPC API](/rpc-api/wallet-rpc-api) for complete method reference. Examples assume a **local daemon** at `http://127.0.0.1:10102` (there is no official public `node.dero.io` endpoint).
+</Callout>
+
 ## Why This Matters
 
 AI assistants are powerful research tools, but most blockchain integrations route through centralized APIs that log your queries. This server runs on **your machine**, talks to **your node** (or a public one you choose), and communicates with your AI over **local stdio**. No accounts. No tracking. Just code you can audit.

@@ -3,7 +3,7 @@
   "info": {
     "title": "DERO Blockchain RPC API",
     "version": "142.0.0",
-    "description": "JSON-RPC API for interacting with DERO blockchain nodes and wallets. DERO is a privacy-focused blockchain with homomorphic encryption that enables private smart contracts and encrypted transactions.\n\n## Network Endpoints\n- **Daemon Mainnet**: http://node:10102/json_rpc\n- **Daemon Testnet**: http://node:40402/json_rpc\n- **Wallet Mainnet**: http://wallet:10103/json_rpc\n- **Wallet Testnet**: http://wallet:40403/json_rpc\n\n## Authentication\nWallet RPC requires the `--rpc-server` flag and optionally `--rpc-login=user:pass` for basic auth.",
+    "description": "Curated OpenAPI subset for AI agent discovery (not a complete RPC catalog). Full method reference: https://derod.org/rpc-api/daemon-rpc-api and https://derod.org/rpc-api/wallet-rpc-api\n\nJSON-RPC API for interacting with DERO blockchain nodes and wallets. DERO is a privacy-focused blockchain with homomorphic encryption that enables private smart contracts and encrypted transactions.\n\n## Network Endpoints\n- **Daemon Mainnet**: http://localhost:10102/json_rpc (run your own node)\n- **Daemon Testnet**: http://localhost:40402/json_rpc\n- **Wallet Mainnet**: http://localhost:10103/json_rpc\n- **Wallet Testnet**: http://localhost:40403/json_rpc\n\n## Authentication\nWallet RPC requires the `--rpc-server` flag and optionally `--rpc-login=user:pass` for basic auth.",
     "contact": {
       "name": "DERO Community",
       "url": "https://derod.org",
@@ -16,12 +16,8 @@
   },
   "servers": [
     {
-      "url": "http://node.dero.io:10102",
-      "description": "Public DERO Mainnet Daemon"
-    },
-    {
       "url": "http://localhost:10102",
-      "description": "Local DERO Mainnet Daemon"
+      "description": "Local DERO Mainnet Daemon (default; run your own node)"
     },
     {
       "url": "http://localhost:40402",

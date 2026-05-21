@@ -39,8 +39,8 @@
   ],
   "rpc_endpoints": {
     "daemon_mainnet": {
-      "url": "http://node.dero.io:10102/json_rpc",
-      "description": "Public mainnet daemon RPC",
+      "url": "http://localhost:10102/json_rpc",
+      "description": "Local mainnet daemon RPC (run your own node on port 10102)",
       "methods_prefix": "DERO."
     },
     "daemon_testnet": {
@@ -70,5 +70,5 @@
     "matrix": "https://matrix.to/#/#general:matrix.dero.live",
     "github": "https://github.com/deroproject/derohe"
   },
-  "updated_at": "2026-05-17T00:00:00Z"
+  "updated_at": "2026-05-21T00:00:00Z"
 }

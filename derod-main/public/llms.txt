@@ -54,7 +54,7 @@ DERO provides two JSON-RPC endpoints for programmatic interaction:
 - User approval flow for transaction signing
 
 ### Machine-Readable Specs
-- OpenAPI Spec: https://derod.org/api/openapi.json
+- OpenAPI Spec: https://derod.org/api/openapi.json (curated subset for agents; full RPC: /rpc-api/daemon-rpc-api, /rpc-api/wallet-rpc-api)
 - AgentRoot: https://derod.org/.well-known/agentroot.json
 
 ## Key Documentation Sections
@@ -87,7 +87,7 @@ DERO provides two JSON-RPC endpoints for programmatic interaction:
 ## Example: Query Blockchain Info
 
 ```bash
-curl -X POST http://node.dero.io:10102/json_rpc \
+curl -X POST http://localhost:10102/json_rpc \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}'
 ```
@@ -95,7 +95,7 @@ curl -X POST http://node.dero.io:10102/json_rpc \
 ## Example: Get Smart Contract State
 
 ```bash
-curl -X POST http://node.dero.io:10102/json_rpc \
+curl -X POST http://localhost:10102/json_rpc \
   -H 'content-type: application/json' \
   -d '{
     "jsonrpc":"2.0",
