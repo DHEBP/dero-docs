@@ -54,6 +54,11 @@ export default withAnalyze(withPwaPlugin(withNextra({
       source: '/docs/docs-theme/built-ins/callout',
       destination: '/docs/guide/built-ins/callout',
       permanent: true
+    },
+    {
+      source: '/integrity/inflation-claim-v2',
+      destination: '/integrity/inflation-claim',
+      permanent: true
     }
   ]
 })))
