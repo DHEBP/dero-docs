@@ -61,3 +61,7 @@ deropay-main/build/
 **/VERIFICATION.md
 **/VERIFICATION_RESULTS.md
 
+# AI agent tooling (lean-ctx context layer — auto-generated, not project content)
+/AGENTS.md
+/LEAN-CTX.md
+
