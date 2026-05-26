@@ -1,22 +1,25 @@
 import cn from 'clsx'
-import Image from 'next/image'
 
-export function Screenshot({ src, alt, full }) {
+// Framed figure for screenshots / explorer captures.
+// Pass the image as a child (markdown ![]() works thanks to staticImage);
+// `caption` renders a subtle figcaption beneath the frame.
+export function Screenshot({ children, caption, className }) {
   return (
-    <div
-      className={cn(
-        '-mb-4 mt-6 flex justify-center overflow-hidden rounded-xl border dark:border-zinc-800',
-        full ? 'bg-white' : 'bg-zinc-100'
-      )}
-    >
-      <Image
-        src={src}
-        alt={alt}
+    <figure className="my-6">
+      <div
         className={cn(
-          'w-auto select-none bg-white',
-          full ? '' : 'ring-1 ring-gray-200'
+          'flex justify-center overflow-hidden rounded-lg border',
+          'border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900',
+          className
         )}
-      />
-    </div>
+      >
+        {children}
+      </div>
+      {caption ? (
+        <figcaption className="mt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          {caption}
+        </figcaption>
+      ) : null}
+    </figure>
   )
 }
