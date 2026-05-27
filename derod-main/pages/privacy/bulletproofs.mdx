@@ -119,109 +119,21 @@ flowchart TD
 
 ## Protection Against Negative Transfers
 
-### Three-Layer Defense
+The guarantee is cryptographic, not a string-parsing quirk: by the **soundness** of the Bulletproof range proof, no prover can construct a proof that verifies for a committed value outside the proven range. Combined with DERO's homomorphic value conservation, value cannot be created from nothing.
 
-DERO uses **three cryptographic layers** to prevent negative transfers:
+DERO packs **two** quantities into a single 128-bit value and range-proves them together — the transfer amount in the low 64 bits and the sender's remaining balance in the high 64 bits — so one Bulletproof binds **both** to non-negative 64-bit ranges (`number = transfer + (balance << 64)`, `cryptography/crypto/proof_generate.go:471`).
 
-```mermaid
-graph TB
-    A["Transaction Amount"] --> B{"Layer 1:<br/>Bit Decomposition"}
-    B -->|Valid| C{"Layer 2:<br/>Range Proof A_t"}
-    B -->|Invalid| REJ1["Rejected"]
-    C -->|Valid| D{"Layer 3:<br/>Inner Product Proof"}
-    C -->|Invalid| REJ2["Rejected"]
-    D -->|Valid| ACC["Accepted"]
-    D -->|Invalid| REJ3["Rejected"]
-```
+A "negative" transfer is the `uint64` wraparound of a value near `2^64`. It fails the range proof from both directions:
 
-### Layer 1: Bit Decomposition Protection
+| Attack framing | Why the range proof rejects it |
+|---|---|
+| Treat the wraparound as the **transfer amount** | A value near `2^64` lies outside `[0, 2^64)` — the low-64 range bound fails. |
+| Treat it as **receiving** (so your own balance jumps) | The conservation proof forces a matching decrease; the sender's **remaining balance** goes negative → wraps → the high-64 range bound fails. |
 
-**What Happens with Negative Values:**
-
-| Scenario | Binary Representation | Result |
-|---------|----------------------|--------|
-| **Valid (100 DERO)** | `1100100` | ✅ Valid bit string |
-| **Invalid (-100)** | `-1100100` | ❌ Contains `-` character |
-
-**From Source Code** (`cryptography/crypto/proof_generate.go:473-487`):
-
-```go
-// Bit decomposition process
-number_string := reverse("0000...000" + number.Text(2))
-
-// For negative values:
-// Go's BigInt.Text(2) returns "-1100100" (with minus sign)
-// Bit loop expects only '0' or '1' characters
-// Minus sign ('-', ASCII 45) is invalid
-// Proof generation fails → Transaction rejected
-```
-
-**Technical Guarantee:**
-- Go's `BigInt.Text(2)` **always** returns `"-[binary]"` for negatives
-- This is standard library behavior (cannot be bypassed)
-- Bit processing loop expects only `'0'` (48) or `'1'` (49)
-- Minus sign `'-'` (45) breaks the proof generation
-
-### Layer 2: Range Proof (A_t)
-
-**What A_t Validates:**
-
-DERO constructs a **combined 128-bit value** where the lower 64 bits represent the transfer amount and the upper 64 bits represent the remaining balance. This is created by: `value = transfer_amount + (remaining_balance << 64)`.
-
-```
-A_t Range Proof checks:
-  ✓ Combined 128-bit value is valid
-  ✓ Transfer amount (lower 64 bits) is in range [0, 2^64)
-  ✓ Remaining balance (upper 64 bits) is in range [0, 2^64)
-  ✓ All 128 bit commitments are valid (0 or 1)
-```
-
-**If Layer 1 fails (has `-` character):**
-- Bit commitments cannot be created
-- A_t proof generation fails
-- Transaction rejected
-
-**Source:** `cryptography/crypto/proof_generate.go:471` - Combined value construction: `btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))`
+The protection lives in **verification** (`cryptography/crypto/proof_verify.go`), not generation. The wallet builds the proof in `proof_generate.go`; an attacker controls their own wallet and could patch out any client-side check. The cryptographic guarantee comes from the verifier check that every node runs independently before accepting a block.
 
 <Callout type="info" emoji="📐">
-**Why 128 bits?** By combining transfer amount and remaining balance into a single 128-bit value, DERO proves both are valid in one proof while keeping both values hidden.
-</Callout>
-
-### Layer 3: Inner Product Proof - The Cryptographic Fail-Safe
-
-Layer 3 is the **cryptographic fail-safe** that ensures complete integrity across all proof components. Using a recursive halving algorithm, it creates cryptographic commitments at each step, making it mathematically impossible to have invalid bit vectors or any form of manipulation.
-
-**What It Validates:**
-
-```
-Inner Product Proof cryptographically verifies:
-  ✓ Bit commitments match amount commitment
-  ✓ Mathematical consistency across all components
-  ✓ No manipulation possible at any level
-  ✓ Integrity of entire proof structure
-```
-
-**From Source Code** (`cryptography/crypto/proof_innerproduct.go`):
-
-```go
-// Inner product proof verifies:
-// - Bit vectors (aL, aR) match commitments
-// - Final inner product equals committed value
-// - All recursive steps are cryptographically consistent
-
-// If ANY layer fails:
-if P_calculated.String() != P.String() {
-    // Verification fails
-    // Transaction rejected
-}
-```
-
-**The Fail-Safe Guarantee:**
-
-Even if Layers 1 and 2 were somehow bypassed (mathematically impossible), Layer 3 would still reject the transaction because invalid bit vectors create inconsistent inner products, and the recursive structure cryptographically binds all components. The final verification checks mathematical consistency - any corruption is detected and rejected.
-
-<Callout type="warning" emoji="🛡️">
-**Triple Protection:** Layer 1 catches negatives at bit decomposition. Layer 2 validates range. **Layer 3 is the cryptographic fail-safe** that ensures complete integrity across all proof components. All three layers must pass - this is mathematically guaranteed.
+**Common misconception:** A claim circulates that Go's `BigInt.Text(2)` emitting a `'-'` for negative values "breaks the bit loop" in proof generation, and that this is what stops negative transfers. It does not — the loop is `if b == '1' { … } else { … }`, which silently treats a stray `'-'` as a `0` bit. And for any real transaction the packed 128-bit `number` is positive, so no `'-'` appears at all. The actual safeguard is verifier-side Bulletproof soundness. See [Negative Transfer Protection](/integrity/negative-transfer-protection) for the full derivation.
 </Callout>
 
 ---
@@ -350,7 +262,7 @@ graph TB
 | **🔒 Zero-Knowledge** | Amount hidden from network | Perfect privacy |
 | **📦 Logarithmic Proofs** | 7 rounds for 128-bit range | Efficient transactions |
 | **🔐 No Trusted Setup** | Pure cryptography | Decentralized security |
-| **🛡️ Triple-Layer Defense** | Multiple fail-safes | Negative transfers impossible |
+| **🛡️ Soundness + Conservation** | No verifying proof for out-of-range values | Negative transfers cryptographically impossible |
 | **✅ Proven Security** | bn256 elliptic curve discrete log | Standard discrete log security assumption |
 
 ### What You're Protected From
@@ -369,7 +281,7 @@ graph LR
 **The Bottom Line:**
 
 <Callout type="success" emoji="🔒">
-**Triple-Layer Security:** Layer 1 catches negatives at bit decomposition. Layer 2 validates range. Layer 3 provides cryptographic fail-safe integrity. All three must pass - mathematically guaranteed.
+**Verifier-side guarantee:** Every node independently checks the Bulletproof. By soundness, no prover can construct a verifying proof for an out-of-range value. Combined with homomorphic value conservation, negative transfers are cryptographically impossible.
 </Callout>
 
 <Callout type="info" emoji="⚡">
