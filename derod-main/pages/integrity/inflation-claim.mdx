@@ -117,7 +117,7 @@ Paste the [Part 1](#part-1-the-claim-and-its-foundation) **payload proof** into 
 </Callout>
 
 <Callout type="info" emoji="🔬">
-**Even the on-screen amount's last digit is display-only.** Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure. The explorer prints `.51434` only because `FormatMoney` divides that `uint64` in a **64-bit-mantissa `big.Float`** (`FormatMoneyPrecision`), whose step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`). Because the gap is barely more than a single atom, the rounding error lands in the **last** place — `…51435` renders as `…51434`. An "off-by-one" read of the display is reading that rounding, not the integer in the string, which matches the report to the atom. A layer that cannot reliably render its own last digit is not consensus state.
+**Even the on-screen amount's last digit is display-only.** Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure. The explorer prints `.51434` only because `FormatMoneyPrecision` parses the `uint64` via `big.ParseFloat(..., prec=0, ...)`, which Go's stdlib promotes to a **64-bit mantissa** before rounding (documented behavior — when `prec=0`, [`math/big.Float.Parse`](https://pkg.go.dev/math/big#Float.Parse) sets it to 64). At that precision the step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`), so the rounding error lands in the **last** place — `…51435` renders as `…51434`. An "off-by-one" read of the display is reading that rounding, not the integer in the string, which matches the report to the atom. A layer that cannot reliably render its own last digit is not consensus state.
 </Callout>
 
 ### Decode it yourself
@@ -583,8 +583,13 @@ crypto.EncryptDecryptUserData(crypto.Keccak256(shared_key[:], publickeylist[i].E
 // ─────────────────────────────────────────────────────────────────────────────
 // Release 142 — fix
 // A per-payload ephemeral scalar replaces r in the key derivation; the ephemeral
-// pubkey is prepended so the receiver can still derive the shared secret.
-ephemeral_scalar := /* SHAKE-derived from sender + roothash + ring + receiver */
+// pubkey is prepended so the receiver can still derive the shared secret. The
+// scalar is bound through two SHAKE passes to sender_secret, roothash, ring
+// inputs, and receiver — none of which an outside observer can reconstruct.
+ephemeral_key    := crypto.ShakeXOF(publickeylist[i].String(), sender_secret.Bytes(), roothash[:])
+ephemeral_seed   := crypto.ShakeXOF(sender.String(), ephemeral_key[:], rinputs, publickeylist[i].EncodeCompressed())
+ephemeral_scalar := new(big.Int).SetBytes(ephemeral_seed[:])
+ephemeral_scalar  = ephemeral_scalar.Mod(ephemeral_scalar, bn256.Order)
 ephemeral_pub    := crypto.GPoint.ScalarMult(crypto.GetBNRed(ephemeral_scalar))
 shared_key       := crypto.GenerateSharedSecret(ephemeral_scalar, publickeylist[i]) // key independent of r
 payload          := append([]byte{byte(uint(witness_index[1]))}, data...)            // still the RECEIVER index
