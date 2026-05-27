@@ -59,6 +59,13 @@ export default withAnalyze(withPwaPlugin(withNextra({
       source: '/integrity/inflation-claim-v2',
       destination: '/integrity/inflation-claim',
       permanent: true
+    },
+    {
+      // ChatGPT Plugins sunset 2024-04-09 — forward to SEP-2127 mcp-server-card.
+      // Temporary (302) so clients re-discover, not cache the old URL.
+      source: '/.well-known/ai-plugin.json',
+      destination: '/.well-known/mcp-server-card.json',
+      permanent: false
     }
   ]
 })))

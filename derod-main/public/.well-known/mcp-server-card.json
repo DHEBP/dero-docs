@@ -1,0 +1,86 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+  "name": "io.github.DHEBP/dero-mcp-server",
+  "title": "DERO MCP Server",
+  "description": "Read-only MCP server for the DERO privacy blockchain. 21 daemon-read primitives + 7 composite tools (intent-shaped flows). Bundled DERO docs index, structured _meta.error codes, curated docs citations on every response.",
+  "version": "0.2.2",
+  "websiteUrl": "https://derod.org",
+  "repository": {
+    "url": "https://github.com/DHEBP/dero-mcp-server",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "dero-mcp-server",
+      "version": "0.2.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  },
+  "tools": [
+    { "name": "dero_daemon_ping", "description": "Daemon liveness check." },
+    { "name": "dero_daemon_echo", "description": "Echo a list of strings — round-trip test." },
+    { "name": "dero_get_info", "description": "Daemon info: network, version, topoheight, stableheight, peers." },
+    { "name": "dero_get_height", "description": "Current chain height." },
+    { "name": "dero_get_block_count", "description": "Total block count." },
+    { "name": "dero_get_last_block_header", "description": "Latest block header." },
+    { "name": "dero_get_block", "description": "Block by hash OR height." },
+    { "name": "dero_get_block_header_by_topo_height", "description": "Block header by topological height." },
+    { "name": "dero_get_block_header_by_hash", "description": "Block header by hash." },
+    { "name": "dero_get_tx_pool", "description": "Current mempool snapshot." },
+    { "name": "dero_get_random_address", "description": "A random recent address; optional scid for an asset." },
+    { "name": "dero_get_transaction", "description": "Transaction by hash list; optional decode_as_json." },
+    { "name": "dero_get_encrypted_balance", "description": "Encrypted balance for an address at a given topoheight." },
+    { "name": "dero_get_sc", "description": "Smart contract state (code + variables) by SCID." },
+    { "name": "dero_get_gas_estimate", "description": "Gas estimate for transfers or SC deploy." },
+    { "name": "dero_name_to_address", "description": "Resolve a registered name to a DERO address." },
+    { "name": "dero_get_block_template", "description": "Block template for a mining wallet address." },
+    { "name": "dero_decode_proof_string", "description": "Decode a bech32 DERO proof/address string." },
+    { "name": "dero_docs_search", "description": "Full-text search across DERO docs (derod, tela, hologram, deropay)." },
+    { "name": "dero_docs_get_page", "description": "Fetch a doc page by slug." },
+    { "name": "dero_docs_list", "description": "Enumerate doc pages, optionally filtered by product." },
+    { "name": "diagnose_chain_health", "description": "Composite: chain health narrative + signals + tip metadata + citations." },
+    { "name": "explain_smart_contract", "description": "Composite: contract kind classification + surface + curated DVM docs." },
+    { "name": "recommend_docs_path", "description": "Composite: natural-language intent → ranked doc page recommendations." },
+    { "name": "estimate_deploy_cost", "description": "Composite: deploy gas estimate + breakdown + parsed function surface." },
+    { "name": "trace_transaction_with_context", "description": "Composite: tx confirmation + kind classification + SC install surface." },
+    { "name": "audit_chain_artifact_claim", "description": "Composite: verify a chain-related claim end-to-end." },
+    { "name": "dero_forge_demo_proof", "description": "Composite: generate demo proof strings for testing." }
+  ],
+  "resources": [
+    { "uri": "dero://mcp/server-info", "name": "Server info", "description": "Server metadata, tool list, resource list, prompt names." },
+    { "uri": "dero://mcp/safety-boundary", "name": "Safety boundary", "description": "Read-only posture, excluded methods, write-path guidance." },
+    { "uri": "dero://mcp/example-flows", "name": "Example flows", "description": "Agent flow recipes (composite-first, primitive fallback)." },
+    { "uri": "dero://mcp/composites", "name": "Composite catalog", "description": "Full catalog of composite tools with intents, inputs, outputs, error codes." }
+  ],
+  "prompts": [
+    { "name": "network_health_check", "description": "Composite-first daemon sync and health check." },
+    { "name": "inspect_smart_contract", "description": "Composite-first contract inspection (surface + DVM docs)." },
+    { "name": "trace_transaction", "description": "Composite-first transaction trace (confirmation + kind)." },
+    { "name": "find_dero_docs_for_intent", "description": "Composite-first docs routing from natural-language intent." },
+    { "name": "estimate_deploy_for_contract", "description": "Composite-first DVM deploy pre-flight (gas + breakdown + surface)." }
+  ],
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false
+  },
+  "discovery": {
+    "llms_txt": "https://derod.org/llms.txt",
+    "agents_md": "https://derod.org/agents.md",
+    "skill_md": "https://derod.org/SKILL.md",
+    "openapi": "https://derod.org/api/openapi.json"
+  },
+  "contact": {
+    "url": "https://derod.org"
+  }
+}
