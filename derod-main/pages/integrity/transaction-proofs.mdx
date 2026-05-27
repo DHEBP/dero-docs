@@ -244,9 +244,9 @@ Properties:
 **Purpose:** Proves the combined 128-bit value is valid (lower 64 bits = transfer, upper 64 bits = remaining balance) without revealing either value.
 
 **This is the bulletproof component:**
-- Uses bit decomposition (catches negatives)
+- Validates both transfer AND remaining balance simultaneously (low and high 64 bits of the packed 128-bit value)
 - Logarithmic proof size (7 rounds for 128-bit range)
-- Validates both transfer AND remaining balance simultaneously
+- By bulletproof soundness, no prover can construct a verifying proof for a committed value outside the proven range — the cryptographic basis for non-negative amounts
 
 **[Detailed explanation →](/integrity/range-proof-integrity)**
 
