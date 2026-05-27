@@ -36,7 +36,7 @@ const NodeConnectionIndicator: React.FC<NodeConnectionIndicatorProps> = ({
   className = ''
 }) => {
   // Convert legacy isConnected to new status format
-  const getStatusFromLegacy = (connected: boolean | null): NodeConnectionStatus => {
+  const getStatusFromLegacy = (connected: boolean | null | undefined): NodeConnectionStatus => {
     if (connected === true) return 'connected';
     if (connected === false) return 'disconnected';
     return 'unknown';

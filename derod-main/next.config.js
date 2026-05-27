@@ -67,5 +67,14 @@ export default withAnalyze(withPwaPlugin(withNextra({
       destination: '/.well-known/mcp-server-card.json',
       permanent: false
     }
+  ],
+  rewrites: () => [
+    {
+      // Per-page Markdown mirrors: /<path>.md served by the App Router
+      // route handler at app/llm-digest/[...slug]/route.ts.
+      // Pattern matches /any/depth.md → /llm-digest/any/depth.
+      source: '/:path*.md',
+      destination: '/llm-digest/:path*'
+    }
   ]
 })))

@@ -55,3 +55,6 @@ coverage/
 *_STATUS.md
 *_COMPLETE.md
 *_GUIDE.md
+
+# MDX→.md prototype output (scratch — not part of build)
+/scripts/__output__/
