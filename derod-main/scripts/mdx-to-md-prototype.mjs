@@ -123,6 +123,34 @@ function mdxToMarkdown(source) {
     },
   )
 
+  // 4b. <Tabs items={[...]}>…<Tabs.Tab>…</Tabs.Tab>…</Tabs> → labeled
+  //     headings. Mirrors lib/mdx-to-md.ts step 4b.
+  body = body.replace(
+    /<Tabs\b([^>]*)>([\s\S]*?)<\/Tabs>/g,
+    (_m, attrs, inner) => {
+      const labels = []
+      const itemsMatch = attrs.match(/items=\{(\[[\s\S]*?\])\}/)
+      if (itemsMatch) {
+        const arrayInner = itemsMatch[1].slice(1, -1)
+        const stringRegex = /(['"])((?:\\.|(?!\1).)*)\1/g
+        let sm
+        while ((sm = stringRegex.exec(arrayInner)) !== null) {
+          labels.push(sm[2].replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\'))
+        }
+      }
+      const tabs = []
+      const tabRegex = /<Tabs\.Tab\b[^>]*>([\s\S]*?)<\/Tabs\.Tab>/g
+      let tm
+      while ((tm = tabRegex.exec(inner)) !== null) {
+        tabs.push(tm[1].trim())
+      }
+      if (tabs.length === 0) return inner
+      return tabs
+        .map((content, i) => (labels[i] ? `### ${labels[i]}\n\n${content}` : content))
+        .join('\n\n')
+    },
+  )
+
   // 5. <ZoomableImage src="..." alt="..." /> → ![alt](src).
   body = body.replace(
     /<ZoomableImage\b[^>]*?\bsrc=["']([^"']+)["'][^>]*?\balt=["']([^"']*)["'][^>]*?\/>/g,

@@ -87,6 +87,37 @@ export function mdxBodyToMarkdown(source: string): string {
     },
   )
 
+  // 4b. <Tabs items={[...]}>…<Tabs.Tab>…</Tabs.Tab>…</Tabs> → labeled
+  //     headings. Extracts the items array if present and pairs each label
+  //     with the corresponding tab content. Tabs without a parseable items
+  //     array fall through to step 6 (generic JSX strip) and their content
+  //     flows sequentially with no headings.
+  body = body.replace(
+    /<Tabs\b([^>]*)>([\s\S]*?)<\/Tabs>/g,
+    (_m, attrs: string, inner: string) => {
+      const labels: string[] = []
+      const itemsMatch = attrs.match(/items=\{(\[[\s\S]*?\])\}/)
+      if (itemsMatch) {
+        const arrayInner = itemsMatch[1].slice(1, -1)
+        const stringRegex = /(['"])((?:\\.|(?!\1).)*)\1/g
+        let sm: RegExpExecArray | null
+        while ((sm = stringRegex.exec(arrayInner)) !== null) {
+          labels.push(sm[2].replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\'))
+        }
+      }
+      const tabs: string[] = []
+      const tabRegex = /<Tabs\.Tab\b[^>]*>([\s\S]*?)<\/Tabs\.Tab>/g
+      let tm: RegExpExecArray | null
+      while ((tm = tabRegex.exec(inner)) !== null) {
+        tabs.push(tm[1].trim())
+      }
+      if (tabs.length === 0) return inner
+      return tabs
+        .map((content, i) => (labels[i] ? `### ${labels[i]}\n\n${content}` : content))
+        .join('\n\n')
+    },
+  )
+
   // 5. <ZoomableImage src alt /> → ![alt](src). Handle both attr orders.
   body = body.replace(
     /<ZoomableImage\b[^>]*?\bsrc=["']([^"']+)["'][^>]*?\balt=["']([^"']*)["'][^>]*?\/>/g,
