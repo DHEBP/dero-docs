@@ -238,10 +238,9 @@ func (proof *Proof) Verify(scid Hash, scid_index int, s *Statement, txid Hash, e
 
 | Check | What It Prevents | Location |
 |-------|-----------------|----------|
-| **Overflow check** | Arithmetic manipulation | `proof_verify.go:108-110` |
-| **Bit decomposition** | Negative amounts | `proof_generate.go:479-487` |
-| **Range proof** | Out-of-range values | Bulletproof system |
-| **Inner product** | Proof forgery | `proof_innerproduct.go` |
+| **Overflow check** | Arithmetic manipulation (fee wraparound) | `proof_verify.go:108-110` |
+| **Bulletproof range proof** | Out-of-range values, including negative/wraparound amounts | `proof_verify.go` (every node) |
+| **Inner product verification** | Proof forgery / cryptographic consistency | `proof_innerproduct.go` |
 
 ### Defense in Depth
 
