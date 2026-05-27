@@ -14,17 +14,17 @@ tags: ["privacy", "proofs", "security", "ring-signatures", "verification", "tech
 import { Callout } from 'nextra/components'
 import { Tabs } from 'nextra/components'
 
-# DERO Payload Proofs: Privacy That Actually Works
+# DERO Payload Proofs
 
 <Callout type="success" emoji="🔒">
-**Privacy Success:** Only YOU (with your private keys) can prove you sent a transaction. Third parties can only make guesses - exactly as designed for maximum privacy!
+**Privacy by construction:** Only you (holding the private key) can prove you sent a transaction. Third parties can guess but cannot prove — by design, so ring-signature plausible deniability remains intact.
 </Callout>
 
-## Why DERO Privacy Works
+## How payload-proof ambiguity works
 
-DERO uses **ring signatures** to provide class-leading transaction privacy. When you send a transaction, your real output is hidden among ring_size/2 potential senders (rings are split evenly between senders and recipients). This creates **plausible deniability**: observers cannot determine who actually sent the transaction.
+DERO uses **ring signatures** to hide the sender. When you send a transaction, your real output is hidden among ring_size/2 potential senders (rings are split evenly between senders and recipients), creating **plausible deniability** — observers cannot determine who actually sent the transaction.
 
-**This is a feature, not a bug.** If third parties could easily prove who sent what, privacy would be broken.
+That ambiguity is what makes payload-proof verification ambiguous. If a third party could verify exactly who sent what, ring signatures would not provide privacy.
 
 ```mermaid
 graph LR
@@ -48,7 +48,7 @@ graph LR
 | **Explorer Verification** | ⚠️ Probabilistic | ✅ Exact (less private) | ✅ Exact (no privacy) |
 | **Sender Privacy** | ✅ Maximum | 🟡 Opt-in viewkeys | ❌ None |
 
-**DERO's privacy model:** Third parties cannot definitively prove who sent a transaction. **This is the entire point of privacy technology!**
+**DERO's privacy model:** Third parties cannot definitively prove who sent a transaction — this is the point of ring-signature privacy.
 
 ### Two Proof Types (Standard in Privacy Blockchains)
 
@@ -129,7 +129,7 @@ C[1] = (amount × G) + address[1]
 C[k] = (amount × G) + address[k]  ← Same amount for ALL
 ```
 
-**Result:** Plausible deniability for all ring members. **This is how privacy works** - ambiguity protects identity in all ring-signature-based privacy systems.
+**Result:** Plausible deniability for all ring members. This is the standard ring-signature mechanism — observable ambiguity is what protects sender identity.
 
 **Technical Note:** When an address is included as a ring member (decoy), its encrypted balance changes due to homomorphic operations, even though the address performed no actions. This is cryptographically required behavior - all ring members' encrypted balances participate in the transaction. Observing encrypted balance changes alone cannot identify the real sender, as this happens for all ring members by design.
 
@@ -215,12 +215,12 @@ if x.String() == tx.Payloads[t].Statement.C[k].String() {
 addresses, amounts, raw, decoded, err := proof.Prove(tx_proof, info.Hex, info.Ring, mainnet)
 ```
 
-**Why This Design is Correct:**
+**Why the design works this way:**
 
-- ✅ If explorers could prove exact senders, ring signatures would be useless
-- ✅ Allows users to verify their own transactions
-- ✅ Users can generate proofs for any ring member (privacy feature)
-- ✅ All ring-signature privacy coins work this way
+- If explorers could prove exact senders, ring signatures would offer no privacy
+- Users can still verify their own transactions with their private key
+- Any ring member can generate a matching proof — this is what makes the proof ambiguous to third parties
+- All ring-signature privacy systems work this way
 
 **For Real Verification:**
 - Use your wallet with private keys (only you can prove you sent)
@@ -265,34 +265,28 @@ Same amount for ALL k (0 through 15)
 
 **Trade-off:** Any ring member can generate "valid" proof
 
-### DERO's Privacy-First Design Choice
+### DERO's privacy posture
 
-**Privacy blockchains make a fundamental choice:**
+Privacy blockchains make different trade-offs:
 
 | Approach | Benefits | Trade-offs | Used By |
 |----------|----------|------------|---------|
-| **Maximum Privacy** | Complete sender anonymity | Third parties use own wallets to verify | DERO |
-| **Optional Privacy** | User controls disclosure | Privacy only if used correctly | Zcash |
-| **Public Ledger** | Full transparency | No privacy | Bitcoin, Ethereum |
+| **Privacy by default** | Sender hidden among ring decoys; amounts encrypted | Third parties cannot verify the sender — must use their own wallet | DERO |
+| **Optional privacy** | User controls disclosure | Privacy only if explicitly used | Zcash |
+| **Public ledger** | Full transparency | No privacy | Bitcoin, Ethereum |
 
-**DERO's Choice:** Maximum privacy by default ✅
-
-**Why this matters:** Privacy coins protect users from surveillance, financial tracking, and targeted attacks. Ambiguous proof verification is **proof that privacy works**.
+DERO opts for privacy by default. Payload-proof ambiguity isn't a flaw — it's the visible consequence of the ring-signature construction.
 
 ---
 
 ## The Bottom Line
 
-**DERO delivers real privacy:**
+**What payload proofs are, and aren't:**
 
-✅ **Your transactions are private** - Only you can prove what you sent  
-✅ **Industry-standard technology** - Ring signatures proven in cryptography research  
-✅ **Mathematically secure** - Homomorphic encryption + bulletproofs  
-✅ **Working as designed** - Ambiguous proofs = successful privacy  
+- **They are:** wallet-level display tools. Only you, with your private key, can prove you sent a specific transaction.
+- **They aren't:** a cryptographic identifier of the sender. Any ring member can generate a verifying payload proof for a given transaction.
 
-**Privacy through plausible deniability:** Observers see possibilities, not certainties. This is mathematically enforced and prevents mass surveillance.
-
-**Comparison:** Bitcoin/Ethereum explorers show exact senders (zero privacy). DERO explorers show possibilities (maximum privacy). You choose which model you prefer.
+That ambiguity is the visible consequence of how ring signatures work. Bitcoin and Ethereum explorers show exact senders; DERO explorers show ring members. The trade-off is third-party verifiability for sender privacy.
 
 ---
 
