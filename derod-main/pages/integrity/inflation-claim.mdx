@@ -18,19 +18,19 @@ import { Screenshot } from '@components/screenshot'
 # The 2022 Inflation Claim: Claims vs. Evidence
 
 <Callout type="info" emoji="📋">
-**Scope:** This page evaluates the foundational claim in publicly circulated exploit reports — that DERO minted ~2.2M coins via negative-transfer wraparound in October 2022. Downstream allegations (laundering, attribution, dollar figures) **derive from it**. Governance and holdings claims are out of scope. Mechanics: [Proof Types](/integrity/payload-vs-transaction-proofs), [Ring Member Behavior](/integrity/ring-member-behavior), [Negative Transfer Protection](/integrity/negative-transfer-protection).
+**Scope:** This page tests **one** claim: that DERO minted ~2.2M coins in October 2022 by exploiting a bug in how transfers were validated. Laundering totals, dollar figures, and attribution to individuals all **derive from this single claim** — if it falls, they fall with it. Governance and wallet-holdings allegations are out of scope here.
 </Callout>
 
 ## TL;DR Summary
 
 | Question | The Evidence |
 |----------|--------------|
-| **Did total supply increase by ~2.2M DERO?** | **Not by the alleged mechanism.** Exploit-block reward was **0.615 DERO**, not 2.2M; the cited TX was accepted under range proofs. No supply delta published. [Part 4](#verify-supply-at-the-exploit-block) |
+| **Did total supply increase by ~2.2M DERO?** | **No.** The exploit-block reward was **0.615 DERO** — normal scheduled emission, not millions. The report never shows a supply jump on chain. [Part 4](#verify-supply-at-the-exploit-block) |
 | Is negative-transfer wraparound possible on consensus? | **No.** Range proofs bind every transfer to a non-negative range; a negative/out-of-range amount cannot produce a verifying proof. [Part 4](#part-4-the-chains-account-at-the-exploit-block) |
 | Is the circulated payload proof cryptographic evidence of a mint? | **No.** It is a user-supplied **display object**; "Verified" means its own math is consistent, not that consensus accepted it. [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Can explorer **Verified** on inflated proofs be reproduced? | **Yes** on unpatched explorers (`MAX_INT64_SAFE` bypass). [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output; a faithful deanonymization recovers an ordinary transfer of coins already held. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
-| Could another inflation mechanism exist? | This page constrains only the alleged negative-transfer mechanism; it does not audit every transaction in chain history. |
+| **Bottom line on the keystone?** | **The artifact at the center of every accusation is a display object anyone can forge — and consensus could not have accepted the transfer it depicts.** [Part 6](#part-6-the-keystone-collapses) |
 
 ---
 
@@ -40,7 +40,7 @@ That string is the foundation of the [Derolytics "DERO Heist" report](https://we
 
 The technique that produced it became possible in **May 2024**, when a separate wallet-layer randomness-reuse bug (patched in Release 142) gave outside observers their first means of reading inside DERO's encrypted payloads. Pointed back at a transaction mined on **October 17, 2022** — accepted by every validating node, indistinguishable on-chain from any other transfer — that technique returned a value, paired it with a payload proof, and announced an inflation.
 
-The chain never said any such thing. The transaction is the same one it has always been: bounded by range proofs, conserved by sigma proofs, accepted unanimously. What changed in 2024 was the ability to *interpret* — and a misreading, intentional or otherwise, of what a payload proof is and does. The entire Derolytics narrative rests on that single misreading. Every chart, every accusation, every dollar figure.
+The chain never said any such thing. The transaction is the same one it has always been: bounded by range proofs that pin every amount to a non-negative range, conserved by balance proofs that bind inputs to outputs, accepted unanimously. What changed in 2024 was the ability to *interpret* — and a misreading, intentional or otherwise, of what a payload proof is and does. The entire Derolytics narrative rests on that single misreading. Every chart, every accusation, every dollar figure.
 
 ---
 
@@ -411,12 +411,12 @@ The report's conclusion is that ~2.2M DERO was **minted from nothing** on Octobe
 
 Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go`: `PREMINE + CalcBlockReward(topoheight) × topoheight`) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
 
-<Callout type="warning" emoji="⚖️">
-**Conservation is enforced, not audited.** `GetInfo.total_supply` implements the emission schedule (premine plus scheduled rewards) — by itself, it does not audit balances. It doesn't need to: the proof system enforces supply conservation by construction. Every accepted transaction is balance-preserving — sigma proofs bind inputs to outputs to balance exactly — so cumulative supply at any height equals premine plus block rewards. The independent checks for this case: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged negative-transfer mechanism ([above](#negative-transfers-fail-range-proof-validation)).
-</Callout>
-
 <Callout type="info" emoji="📊">
-**Burden of proof:** The report never publishes a supply delta against any independent measure. Per-block emission at the exploit era is **~0.62 DERO** — not millions. The on-chain block record at topo 1,081,893 matches normal scheduled emission.
+**Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so cumulative supply at any height is exactly **premine + scheduled block rewards**. `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
+
+To show a 2.2M mint, the report would need a deviation against an independent supply measure, or an accounting discrepancy in the block record. It shows neither. Per-block emission at this era was **0.615 DERO**, and the cited block records exactly that.
+
+The independent checks on this case: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged mechanism ([above](#negative-transfers-fail-range-proof-validation)).
 </Callout>
 
 ### Exploit block: what the chain records
