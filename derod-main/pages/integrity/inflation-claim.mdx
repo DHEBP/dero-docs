@@ -25,11 +25,11 @@ import { Screenshot } from '@components/screenshot'
 
 | Question | The Evidence |
 |----------|--------------|
-| **Did total supply increase by ~2.2M DERO?** | **Not established.** Exploit-block reward was **0.615 DERO**, not 2.2M; the cited TX was accepted under range proofs. No supply delta published. [Part 4](#verify-supply-at-the-exploit-block) |
+| **Did total supply increase by ~2.2M DERO?** | **Not by the alleged mechanism.** Exploit-block reward was **0.615 DERO**, not 2.2M; the cited TX was accepted under range proofs. No supply delta published. [Part 4](#verify-supply-at-the-exploit-block) |
 | Is negative-transfer wraparound possible on consensus? | **No.** Range proofs bind every transfer to a non-negative range; a negative/out-of-range amount cannot produce a verifying proof. [Part 4](#part-4-the-chains-account-at-the-exploit-block) |
 | Is the circulated payload proof cryptographic evidence of a mint? | **No.** It is a user-supplied **display object**; "Verified" means its own math is consistent, not that consensus accepted it. [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Can explorer **Verified** on inflated proofs be reproduced? | **Yes** on unpatched explorers (`MAX_INT64_SAFE` bypass). [Part 3](#part-3-forge-a-fake-proof-yourself) |
-| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output. A faithful deanonymization reads the value committed on-chain, which the range proof guarantees was held and conserved ([Part 4](#part-4-the-chains-account-at-the-exploit-block)) — an ordinary transfer. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
+| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output; a faithful deanonymization recovers an ordinary transfer of coins already held. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | Could another inflation mechanism exist? | This page constrains only the alleged negative-transfer mechanism; it does not audit every transaction in chain history. |
 
 ---
@@ -46,7 +46,7 @@ The chain never said any such thing. The transaction is the same one it has alwa
 
 ## Part 1: The Claim and Its Foundation
 
-The report cites this **payload proof** as cryptographic evidence — readers paste it into an explorer, see **Verified**, and treat that as confirmation the on-chain transfer was negative ([Proof Types](/integrity/payload-vs-transaction-proofs); display-layer only, not consensus). Alongside it, the transaction it claims to describe:
+The report cites this **payload proof** as cryptographic evidence — readers paste it into an explorer, see **Verified**, and treat that as confirmation the on-chain transfer was negative ([Proof Types](/integrity/payload-vs-transaction-proofs); display-layer only, not consensus). As cited:
 
 ```
 Payload proof:  deroproof1qyyj0cgu3htmkumr79sgca75vwsx8kx7zkrjg0nfez46w36qyx4kwq9zvfyyskpqvdpcfhkhk4m7y9d77ehyj7yhnnrv9z0tjr9m5fqe2yx9t27dwtdxy4j4r0llll7vcmaxwjcl8jzfq
@@ -83,7 +83,7 @@ flowchart TD
 
 1. The transfer amount was **−2,200,000.00181 DERO** (fee included in the negative value).
 2. Stored as `uint64` (an unsigned 64-bit integer, no negatives), that negative value wraparound displays as **~184 trillion DERO** on explorers — roughly **14 million× total supply**.
-3. Post-2024 deanonymization is cited to name a fresh wallet as the **sender**, allegedly receiving **~2.2M DERO** from the negative transfer — not the **~184 trillion** figure on screen.
+3. Post-2024 deanonymization is cited to name a fresh wallet as the **sender** — and to read the wraparound as a **~2.2M DERO** credit to that sender, not the **~184 trillion** figure on screen.
 4. **Conclusion:** consensus failed → **~2.2M DERO** minted from nothing.
 
 Each step is load-bearing. The rest of this page evaluates them on three independent grounds — the proof string ([Parts 2–3](#part-2-the-explorer-wraparound--what-it-actually-proves)), what consensus enforces ([Part 4](#part-4-the-chains-account-at-the-exploit-block)), and attribution limits ([Part 5](#part-5-what-deanonymization-can-and-cannot-establish)) — then synthesizes them ([Part 6](#part-6-the-keystone-collapses)).
@@ -381,7 +381,7 @@ Change `amount` and `slot` to forge any display value for any ring position. If 
 
 The proof asserts consensus accepted a negative-amount transfer — that the protocol minted ~2.2M DERO from nothing. The chain testifies otherwise on two independent counts.
 
-**First:** range proofs cannot verify a negative-amount transfer, so no validating node could have accepted one. **Second:** the block where it allegedly happened records a **0.615 DERO** reward — scheduled emission, not millions — and one transaction whose range proofs passed cleanly at every validator. The assertion needs both counts to fail. Neither does.
+**First:** range proofs cannot verify a negative-amount transfer, so no validating node could have accepted one. **Second:** the block where it allegedly happened records a **0.615 DERO** reward — scheduled emission, not millions — and one transaction whose range proofs passed cleanly at every validator. Both counts hold.
 
 ### Negative transfers fail range-proof validation
 
