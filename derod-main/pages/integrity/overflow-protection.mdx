@@ -277,7 +277,7 @@ Inner product verification
 ### Confidence Level
 
 <Callout type="success" emoji="🔒">
-**Mathematical Certainty:** The overflow check uses a fundamental property of unsigned integer arithmetic that cannot be bypassed. If `a + b` overflows, then `a + b < a` is **always** true. This is guaranteed by CPU hardware behavior.
+**Mathematical Certainty:** The overflow check uses a fundamental property of unsigned integer arithmetic that cannot be bypassed. If `a + b` overflows, then `a + b < a` is **always** true. This is guaranteed by the Go language specification, which defines `uint64` arithmetic as wrapping modulo 2^64.
 </Callout>
 
 ---
@@ -304,7 +304,7 @@ Overflow attack attempt:
 - **Prevents token creation** from arithmetic manipulation
 - **Protects fee integrity** ensuring miners receive proper fees
 - **Fails fast** saving network resources
-- **Hardware-guaranteed** relies on CPU arithmetic behavior
+- **Language-spec-guaranteed** — Go defines `uint64` arithmetic as wrapping modulo 2^64
 
 ---
 

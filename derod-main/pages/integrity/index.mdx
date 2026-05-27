@@ -82,7 +82,7 @@ All cryptographic protections below rely on the hardness of ECDLP on the bn256 c
 
 | Threat | Protection |
 |--------|------------|
-| **Negative transfers** | Bit decomposition + range proofs |
+| **Negative transfers** | Bulletproof soundness (verifier-enforced range) |
 | **Transaction replay** | A_u key image + nonce/height + consensus rules |
 | **Invalid amounts** | 128-bit combined range proof |
 | **Forged transactions** | A_y proof (private key ownership) |
@@ -107,7 +107,6 @@ All cryptographic protections below rely on the hardness of ECDLP on the bn256 c
 
 | Protection | File | Lines |
 |------------|------|-------|
-| Bit decomposition | `cryptography/crypto/proof_generate.go` | 468-487 |
 | Overflow check | `cryptography/crypto/proof_verify.go` | 108-110 |
 | Parity check | `cryptography/crypto/proof_verify.go` | 136-141 |
 | Challenge hash | `cryptography/crypto/proof_verify.go` | 410-425 |
@@ -120,7 +119,6 @@ git clone https://github.com/deroproject/derohe.git
 cd derohe
 
 # Verify any of the above:
-sed -n '468,487p' cryptography/crypto/proof_generate.go   # Bit decomposition
 sed -n '108,110p' cryptography/crypto/proof_verify.go     # Overflow check
 sed -n '410,425p' cryptography/crypto/proof_verify.go     # Challenge hash
 sed -n '457,459p' cryptography/crypto/proof_verify.go     # Inner product

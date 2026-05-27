@@ -39,7 +39,7 @@ But WITHOUT revealing:
 **The Solution: Six Sigma Proofs**
 - ✅ Each proof validates one aspect
 - ✅ All proofs bound together cryptographically
-- ✅ Cannot fake one without breaking all
+- ✅ All-or-nothing cryptographic binding — faking one breaks all
 - ✅ Zero-knowledge (reveals nothing)
 
 ---
@@ -335,11 +335,19 @@ If any checkpoint returns `false`, the entire transaction is rejected. See [Proo
 2. **Random Oracle Model** -- Hash functions behave as random oracles
 3. **Decisional Diffie-Hellman (DDH)** -- Underpins the ElGamal encryption used for balance confidentiality
 
-**Note on curve choice:** DERO uses bn256, a pairing-friendly curve. Bitcoin uses secp256k1, a non-pairing curve. Both rely on ECDLP hardness, but they are different curves with different security profiles. bn256 enables the pairing operations needed for DERO's proof system; its parameters are chosen so that both the curve ECDLP and the finite field DLP (via pairing reduction) remain computationally infeasible.
+### Why bn256?
+
+DERO's proof system requires **pairing operations** — a math operation that pairing-friendly curves like bn256 support and non-pairing curves like secp256k1 do not. This is why DERO and Bitcoin use different curves: they need different capabilities. Bitcoin can do its job without pairings; DERO's bulletproofs cannot.
+
+The trade-off: pairing-friendly curves have lower effective security at the same parameter size. For bn256 specifically, analysis of the extended Tower Number Field Sieve (Menezes 2016; NCC Group 2017 reassessment) places effective security at **~100 bits** against discrete-log attacks on the pairing-target field, rather than the ~128 bits originally targeted.
+
+**What this means in practice:** ~100 bits remains computationally infeasible for any foreseeable adversary, including well-resourced nation-states. The same analysis applies to every production pairing-based system — Ethereum's bn256 precompiles (EIP-196/197), early Zcash, and others. bn256 has not been broken and is not approaching practical attack. But it is not 128, and these docs name that honestly rather than imply parity with secp256k1.
+
+
 
 **Breaking DERO's proofs would require:**
 - Solving ECDLP on bn256 (no known efficient algorithm exists for these parameters)
-- Or finding a flaw in the proof system itself (open source, auditable)
+- Or finding a flaw in the underlying constructions (bulletproofs and sigma protocols, published cryptographic literature; DERO's implementation is open for independent review)
 
 ---
 
@@ -349,7 +357,7 @@ If any checkpoint returns `false`, the entire transaction is rejected. See [Proo
 
 | Feature | Benefit |
 |---------|---------|
-| **🔐 All-or-nothing security** | Cannot fake partial proofs |
+| **🔐 All-or-nothing security** | No partial fakes — challenge hash binds all six |
 | **🔒 Zero-knowledge** | Reveals nothing about transaction |
 | **⚡ Efficient verification** | Logarithmic proof size (7 rounds for 128-bit range) enables fast verification |
 | **📐 Mathematical guarantee** | Based on proven cryptography |

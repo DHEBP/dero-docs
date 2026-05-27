@@ -38,8 +38,8 @@ sequenceDiagram
     
     Note over V: Phase 3: Verification
     N->>V: Full verification
-    V->>V: Verify all 6 sigma proofs (including A_t range proof)
-    V->>V: Verify inner product proof (bulletproof sub-component of A_t)
+    V->>V: Verify all 6 sigma proofs (A_y, A_D, A_b, A_X, A_t, A_u)
+    V->>V: Verify inner product proof (closes the A_t bulletproof)
     
     Note over BC: Phase 4: Acceptance
     V-->>N: Valid/Invalid
@@ -308,7 +308,7 @@ If any proof component was tampered with, the recomputed hash won't match `proof
   <Tabs.Tab>
     **A_t: Range Proof**
     
-    The bulletproof range proof component. Validates that the combined 128-bit value (transfer amount in lower 64 bits + remaining balance in upper 64 bits) is within valid range. This is where bit decomposition, bit commitments, and range bounds are all verified.
+    The bulletproof range proof component. Commits the combined 128-bit value (transfer amount in lower 64 bits + remaining balance in upper 64 bits) as a bit decomposition, along with the structural commitments the verifier needs. The actual range check is closed by the inner product proof (next tab) — by bulletproof soundness, that closure rejects any committed value outside the proven range.
     
     **What it proves:** Amount is valid (not negative, not overflow)
     
@@ -316,9 +316,9 @@ If any proof component was tampered with, the recomputed hash won't match `proof
   </Tabs.Tab>
   
   <Tabs.Tab>
-    **Inner Product Proof**
+    **Inner Product Proof (closes A_t)**
     
-    The final cryptographic check. From `proof_verify.go:457-459`:
+    The recursive closure of the A_t bulletproof. From `proof_verify.go:457-459`:
     
     ```go
     if !proof.ip.Verify(hPrimes, u_x, P, o, gparams) {
@@ -327,9 +327,9 @@ If any proof component was tampered with, the recomputed hash won't match `proof
     }
     ```
     
-    This recursively verifies that the bit vectors, commitments, and all proof components are cryptographically consistent. Uses 7 rounds of halving (from `proof_innerproduct.go:71: length := 7`) to verify 128 bits.
+    This is the bulletproof sub-protocol that completes A_t's range check. Uses 7 rounds of halving (from `proof_innerproduct.go:71: length := 7`) to verify the 128-bit range constraint. The IP argument and A_t are not independent checks — passing the IP is what makes A_t valid.
     
-    **What it proves:** All components are cryptographically consistent
+    **What it proves:** A_t's range constraint holds (by bulletproof soundness, no out-of-range value can produce a passing IP proof)
   </Tabs.Tab>
 </Tabs>
 
@@ -345,13 +345,11 @@ flowchart TD
     C -->|No| REJ
     C -->|Yes| D{"A_X valid?"}
     D -->|No| REJ
-    D -->|Yes| E{"A_t valid?"}
-    E -->|No| REJ
-    E -->|Yes| F{"A_u valid?"}
+    D -->|Yes| F{"A_u valid?"}
     F -->|No| REJ
-    F -->|Yes| G{"Inner product valid?"}
-    G -->|No| REJ
-    G -->|Yes| ACC["✅ ACCEPT"]
+    F -->|Yes| E{"A_t valid?<br/>(closed by inner product proof)"}
+    E -->|No| REJ
+    E -->|Yes| ACC["✅ ACCEPT"]
 ```
 
 **Key Point:** ALL proofs must pass. There is no "partial acceptance."
@@ -429,7 +427,7 @@ Transaction Accepted ⟺ ALL of:
   ✓ Wallet could generate valid proofs
   ✓ TLS encrypted during transit
   ✓ All 6 sigma proofs valid (A_y, A_D, A_b, A_X, A_t, A_u)
-  ✓ Inner product proof valid (bulletproof sub-component of A_t)
+  ✓ Inner product proof valid (the recursive closure that completes A_t's bulletproof)
   ✓ Nonce/height valid (replay prevention)
   ✓ Consensus acceptance
 ```
@@ -437,7 +435,7 @@ Transaction Accepted ⟺ ALL of:
 ### Why Invalid Transactions Cannot Succeed
 
 <Callout type="success" emoji="🛡️">
-**Multiple Barriers:** Invalid transactions face multiple independent barriers. They can't be created (bit decomposition), can't be verified (proof system), and can't be accepted (consensus). Each barrier is independently sufficient.
+**Verifier-enforced, then consensus-confirmed:** Invalid transactions are rejected by the verifier itself, regardless of what the sender's wallet does. Every node independently re-runs the proof system; by bulletproof soundness, no out-of-range or negative committed value can produce a passing proof. Consensus then ensures all honest nodes agree on the outcome.
 </Callout>
 
 ---

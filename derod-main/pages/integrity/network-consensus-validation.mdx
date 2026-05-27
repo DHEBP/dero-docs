@@ -19,6 +19,10 @@ import { Tabs } from 'nextra/components'
 **Distributed Security:** Every DERO node independently validates every transaction. There's no central authority - security comes from the mathematical certainty that all nodes will reach the same conclusion when given the same data.
 </Callout>
 
+<Callout type="info" emoji="🧭">
+**Scope of this page:** "Consensus" here refers to *network agreement on transaction validity* — every node independently re-runs the proof system and reaches the same accept/reject decision because the math is deterministic. **Chain consensus** — which sequence of blocks is canonical, how forks are resolved — is a separate concern handled by DERO's proof-of-work + DAG selection rules, and is not the subject of this page.
+</Callout>
+
 ## The Consensus Model
 
 ### Distributed Validation
@@ -188,7 +192,7 @@ flowchart TD
         M1["Malicious Node<br/>Claims: Transaction Invalid"]
     end
     
-    H1 --> C["Consensus:<br/>Transaction is Valid"]
+    H1 --> C["Network agreement:<br/>Transaction is Valid"]
     H2 --> C
     H3 --> C
     M1 --> |"Ignored"| C

@@ -41,7 +41,7 @@ So one Bulletproof establishes **both**:
 
 ## The cryptographic guarantee
 
-By the **soundness** of Bulletproofs, no prover can construct a proof that *verifies* for a committed value outside the proven range — forging one is as hard as breaking the underlying discrete-log assumption on the bn256 curve. Combined with DERO's homomorphic accounting (inputs and outputs bound to balance exactly), value cannot be created from nothing.
+By the **computational soundness** of Bulletproofs — under the discrete-log assumption on the bn256 curve, in the random oracle model (Fiat-Shamir) — no prover can construct a proof that *verifies* for a committed value outside the proven range, except with negligible probability bounded by the underlying hardness. Combined with DERO's homomorphic accounting (inputs and outputs bound to balance exactly), value cannot be created from nothing. See [Cryptographic Assumptions](/integrity/transaction-proofs#cryptographic-assumptions) for the full assumption stack.
 
 A "negative" transfer is the `uint64` wraparound of a value near `2^64`. It fails the range proof from both directions:
 

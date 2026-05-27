@@ -99,7 +99,7 @@ The existence of the transaction is expected. What matters is whether the **payl
 | Report claim | What actually follows |
 |---|---|
 | *"Protocol failed to validate transaction proofs"* | They mean **payload proofs** (display layer). **Transaction proofs** are verified by every node. [Proof Types](/integrity/payload-vs-transaction-proofs) |
-| *"Verify yourself… proof string … on the official explorer"* | **Verified** = pasted object math checks out, not node acceptance. The string decodes to exactly **−2,200,000.00181** and even verifies on-chain — because that is all a display proof does. [Part 3](#part-3-forge-a-fake-proof-yourself) |
+| *"Verify yourself… proof string … on the official explorer"* | **Verified** = pasted object math checks out, not node acceptance. The string decodes to exactly **−2,200,000.00181** and the explorer's display-layer consistency check passes — because that is all a display proof does. [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | *"Sender actually received 2.2M DERO"* | The ~2.2M is the [forgeable proof string](#part-3-forge-a-fake-proof-yourself), not a deanonymization result; a faithful deanonymization reads a **conserved transfer of coins already held**. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | *"Both wallets freshly created and empty"* | Ring members **always** show encrypted balance changes — including decoys who did not send. [Ring Member Behavior](/integrity/ring-member-behavior) |
 | *"$8.34M laundered over 781 transactions"* | **Assumes the mint happened.** No keystone → the graph is unmotivated. Out of scope here. |
@@ -419,7 +419,7 @@ A "negative" transfer is the `uint64` wraparound of a huge value, and it cannot 
 - **As the amount** — a value near `2^64` exceeds the 64-bit range bound.
 - **As the consequence** — spending more than you hold drives the *remaining balance* negative, which wraps out of range too.
 
-By the **soundness** of Bulletproofs, no prover can construct a proof that *verifies* for an out-of-range committed value — forging one is as hard as breaking the underlying discrete-log assumption. Combined with DERO's homomorphic accounting (inputs and outputs are bound to balance exactly), value cannot be created from nothing. Every node runs this verification independently before accepting a block, so a negative-transfer mint is rejected at **consensus** — not merely discouraged client-side.
+By the **computational soundness** of Bulletproofs — under the discrete-log assumption on the bn256 curve, in the random oracle model (Fiat-Shamir) — no prover can construct a proof that *verifies* for an out-of-range committed value, except with negligible probability bounded by the underlying hardness. Combined with DERO's homomorphic accounting (inputs and outputs are bound to balance exactly), value cannot be created from nothing. Every node runs this verification independently before accepting a block, so a negative-transfer mint is rejected at **consensus** — not merely discouraged client-side. See [Cryptographic Assumptions](/integrity/transaction-proofs#cryptographic-assumptions) for the full assumption stack.
 
 | Proves | Does not prove |
 |---|---|
@@ -437,7 +437,7 @@ The report's conclusion is that ~2.2M DERO was **minted from nothing** on Octobe
 Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go`: `PREMINE + CalcBlockReward(topoheight) × topoheight`) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
 
 <Callout type="warning" emoji="⚖️">
-**What `GetInfo` can and cannot do:** Comparing `GetInfo.total_supply` to the emission formula confirms the RPC implements the schedule. It does **not** independently detect a surreptitious mint — both numbers come from the same model. DERO does not expose a chain-wide balance sum via RPC. The **independent** checks for this case are: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged negative-transfer mechanism ([above](#negative-transfers-fail-range-proof-validation)).
+**What `GetInfo` can and cannot do:** Comparing `GetInfo.total_supply` to the emission formula confirms the RPC implements the schedule. It does **not** independently detect a surreptitious mint — both numbers come from the same model. DERO does not expose a separately-computed chain-wide balance sum via RPC, but it doesn't need to: **the proof system itself enforces supply conservation**. Every accepted transaction is balance-preserving (inputs and outputs are bound by the sigma proofs to balance exactly), so the cumulative supply at any height equals premine plus the sum of block rewards **by construction** — regardless of whether the RPC exposes a balance-sum endpoint. The **independent** checks for this case are: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged negative-transfer mechanism ([above](#negative-transfers-fail-range-proof-validation)).
 </Callout>
 
 <Callout type="info" emoji="📊">
