@@ -43,5 +43,12 @@ export default withAnalyze(withPwaPlugin(withNextra({
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true
-  }
+  },
+  rewrites: () => [
+    {
+      // Per-page Markdown mirrors: /<path>.md → App Router route handler.
+      source: '/:path*.md',
+      destination: '/llm-digest/:path*'
+    }
+  ]
 })))
