@@ -52,6 +52,13 @@ export default withAnalyze(withPwaPlugin(withNextra({
       destination: '/developer-support',
       permanent: true
     }
+  ],
+  rewrites: () => [
+    {
+      // Per-page Markdown mirrors: /<path>.md → App Router route handler.
+      source: '/:path*.md',
+      destination: '/llm-digest/:path*'
+    }
   ]
 })))
 
