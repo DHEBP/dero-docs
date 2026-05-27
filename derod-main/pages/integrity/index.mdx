@@ -51,8 +51,7 @@ Before a transaction leaves the wallet, the proof system is already at work.
 |-------------|------------|
 | Wallet reads the sender's encrypted balance: 66 bytes, two curve points, zero plaintext | [Balance Mechanics](/integrity/balance-mechanics) |
 | Wallet generates six sigma proofs, all bound through a single challenge hash | [Transaction Proofs](/integrity/transaction-proofs) |
-| A_t validates a combined 128-bit value: 64 bits transfer + 64 bits remaining. Triple-layer defense | [Range Proofs](/integrity/range-proof-integrity) |
-| Negative amounts are caught here, before the transaction leaves the wallet | [Negative Transfers](/integrity/negative-transfer-protection) |
+| A_t encodes a combined 128-bit value: 64 bits transfer + 64 bits remaining. Bulletproof construction starts here | [Range Proofs](/integrity/range-proof-integrity) |
 
 ### Phase 2: Network Verification
 
@@ -62,6 +61,7 @@ Every node that receives this transaction runs the same verification independent
 |-------------|------------|
 | First checkpoint: `uint64` overflow checks on fees and values. Fails fast before expensive crypto | [Overflow Protection](/integrity/overflow-protection) |
 | Five checkpoints in sequence: overflow, parity, polynomial recovery, challenge hash, inner product | [Verification Flow](/integrity/proof-verification-flow) |
+| Bulletproof soundness rejects any committed value outside the proven range — including negative/wraparound amounts | [Negative Transfers](/integrity/negative-transfer-protection) |
 
 ### Phase 3: Acceptance and State
 
