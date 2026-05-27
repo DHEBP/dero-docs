@@ -17,6 +17,7 @@
     "build:deropay": "cd deropay-main && npm run build",
     "build:all": "npm run build:derod && npm run build:tela && npm run build:deropay",
     "validate:boundaries": "bash ./scripts/validate-boundaries.sh",
+    "check:llms-links": "node ./scripts/check-llms-link-health.mjs",
     "install:all": "cd derod-main && npm install && cd ../tela-main && npm install && cd ../deropay-main && npm install",
     "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out deropay-main/.next deropay-main/out",
     "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules deropay-main/node_modules node_modules"
