@@ -90,18 +90,16 @@ flowchart TD
 The proof generation function builds all components in sequence:
 
 1. **Create commitments** for each sigma proof component (A_y, A_D, A_b, A_X, A_t, A_u)
-2. **Bit decomposition** occurs during A_t construction (lines 468-487) -- this is where negative amounts are caught
+2. **Bit decomposition** occurs during A_t construction (lines 468-487) -- the wallet encodes the packed 128-bit value as a bit vector for the bulletproof
 3. **Compute challenge hash** binding all six components together via `reducedhash()`
 4. **Generate responses** (s_y, s_D, etc.) using the challenge `c` and secret values
 5. **Generate inner product proof** for the bulletproof range verification
 
-### Step 1.3: Bit Decomposition (Critical Security Point)
+### Step 1.3: Where the actual safeguard lives
 
-**This is where negative amounts are caught.** The amount is converted to binary via Go's `BigInt.Text(2)`. For negative values, this always returns a string starting with `-`, which breaks the bit processing loop expecting only `'0'` or `'1'`.
+The wallet's bit decomposition above is **proof construction**, not protection. A malicious sender controls their own wallet and could patch any client-side check. The cryptographic guarantee for non-negative amounts comes from the **verifier's** bulletproof check that every node runs in Phase 3 — by bulletproof soundness, no prover can construct a verifying proof for an out-of-range committed value.
 
-**Key Point:** Invalid transactions cannot even be created. The wallet cannot generate a valid proof for negative amounts.
-
-**[Full technical details →](/integrity/negative-transfer-protection)**
+**[Full derivation →](/integrity/negative-transfer-protection)**
 
 ---
 
@@ -402,9 +400,9 @@ Once a transaction is included in a block, the state is updated (see `blockchain
 
 | Phase | What's Checked | Attack Prevented |
 |-------|---------------|------------------|
-| **Creation** | Bit decomposition | Negative amounts |
+| **Creation** | Proof construction (wallet-side) | None on its own — an attacker controls their wallet |
 | **Broadcast** | TLS encryption | Network snooping |
-| **Verification** | All proofs | Forgery, transaction replay |
+| **Verification** | All proofs (incl. bulletproof soundness) | Forgery, transaction replay, negative/out-of-range amounts |
 | **Acceptance** | Consensus | Byzantine actors |
 
 ---
