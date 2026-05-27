@@ -17,30 +17,36 @@ import { Screenshot } from '@components/screenshot'
 
 # The 2022 Inflation Claim: Claims vs. Evidence
 
+<Callout type="info" emoji="📋">
+**Scope:** This page evaluates the foundational claim in publicly circulated exploit reports — that DERO minted ~2.2M coins via negative-transfer wraparound in October 2022. Downstream allegations (laundering, attribution, dollar figures) **derive from it**. Governance and holdings claims are out of scope. Mechanics: [Proof Types](/integrity/payload-vs-transaction-proofs), [Ring Member Behavior](/integrity/ring-member-behavior), [Negative Transfer Protection](/integrity/negative-transfer-protection).
+</Callout>
+
 ## TL;DR Summary
 
 | Question | The Evidence |
 |----------|--------------|
 | **Did total supply increase by ~2.2M DERO?** | **Not established.** Exploit-block reward was **0.615 DERO**, not 2.2M; the cited TX was accepted under range proofs. No supply delta published. [Part 4](#verify-supply-at-the-exploit-block) |
-| Is negative-transfer wraparound possible on consensus? | **No.** Range proofs bind every transfer to a non-negative range; a negative/out-of-range amount cannot produce a verifying proof. [Part 4](#part-4-what-consensus-actually-enforces) |
+| Is negative-transfer wraparound possible on consensus? | **No.** Range proofs bind every transfer to a non-negative range; a negative/out-of-range amount cannot produce a verifying proof. [Part 4](#part-4-the-chains-account-at-the-exploit-block) |
 | Is the circulated payload proof cryptographic evidence of a mint? | **No.** It is a user-supplied **display object**; "Verified" means its own math is consistent, not that consensus accepted it. [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Can explorer **Verified** on inflated proofs be reproduced? | **Yes** on unpatched explorers (`MAX_INT64_SAFE` bypass). [Part 3](#part-3-forge-a-fake-proof-yourself) |
-| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output. A faithful deanonymization reads the value committed on-chain, which the range proof guarantees was held and conserved ([Part 4](#part-4-what-consensus-actually-enforces)) — an ordinary transfer. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
+| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output. A faithful deanonymization reads the value committed on-chain, which the range proof guarantees was held and conserved ([Part 4](#part-4-the-chains-account-at-the-exploit-block)) — an ordinary transfer. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | Could another inflation mechanism exist? | This page constrains only the alleged negative-transfer mechanism; it does not audit every transaction in chain history. |
 
 ---
 
-<Callout type="info" emoji="📋">
-**Scope:** This page evaluates the foundational claim in publicly circulated exploit reports — that DERO minted ~2.2M coins via negative-transfer wraparound in October 2022. Downstream allegations (laundering, attribution, dollar figures) **derive from it**. Governance and holdings claims are out of scope. Mechanics: [Proof Types](/integrity/payload-vs-transaction-proofs), [Ring Member Behavior](/integrity/ring-member-behavior), [Negative Transfer Protection](/integrity/negative-transfer-protection).
-</Callout>
+At the center of every inflation accusation is a string. About a hundred characters of base32, prefixed `deroproof1...`, pasted into an unpatched DERO explorer where it lights up as **Verified ✓** for an amount the explorer renders as `184,467,438,537,095.51434 DERO` — roughly eleven million times the entire DERO supply.
 
-On **October 17, 2022**, a transaction was mined on mainnet — unremarkable at the time. The inflation claim surfaced in **2024–2025** in the [Derolytics "DERO Heist" report](https://web.archive.org/web/20250903162339/https://derolytics.com/) and related posts, after a **separate** wallet-layer privacy bug (May 2024, fixed in Release 142) made forensic analysis of encrypted payloads possible. That separate privacy bug is what made the *story* possible to tell — it is not evidence that any extra DERO was created.
+That string is the foundation of the [Derolytics "DERO Heist" report](https://web.archive.org/web/20250903162339/https://derolytics.com/) and its follow-ups — the source of the **2.2-million-DERO** figure, the cited evidence for every downstream claim of laundering, theft, and attribution. It is also a *payload proof*: a wallet-side display object the protocol gives no third party any way to verify. By design. Ring signatures rely on exactly this ambiguity — if outsiders could verify payload proofs, plausible deniability would die with them.
+
+The technique that produced it became possible in **May 2024**, when a separate wallet-layer randomness-reuse bug (patched in Release 142) gave outside observers their first means of reading inside DERO's encrypted payloads. Pointed back at a transaction mined on **October 17, 2022** — accepted by every validating node, indistinguishable on-chain from any other transfer — that technique returned a value, paired it with a payload proof, and announced an inflation.
+
+The chain never said any such thing. The transaction is the same one it has always been: bounded by range proofs, conserved by sigma proofs, accepted unanimously. What changed in 2024 was the ability to *interpret* — and a misreading, intentional or otherwise, of what a payload proof is and does. The entire Derolytics narrative rests on that single misreading. Every chart, every accusation, every dollar figure.
 
 ---
 
 ## Part 1: The Claim and Its Foundation
 
-The report cites these artifacts — readers paste the **payload proof** into an explorer, see **Verified**, and treat that as confirmation the on-chain transfer was negative ([Proof Types](/integrity/payload-vs-transaction-proofs); display-layer only, not consensus):
+The report cites this **payload proof** as cryptographic evidence — readers paste it into an explorer, see **Verified**, and treat that as confirmation the on-chain transfer was negative ([Proof Types](/integrity/payload-vs-transaction-proofs); display-layer only, not consensus). Alongside it, the transaction it claims to describe:
 
 ```
 Payload proof:  deroproof1qyyj0cgu3htmkumr79sgca75vwsx8kx7zkrjg0nfez46w36qyx4kwq9zvfyyskpqvdpcfhkhk4m7y9d77ehyj7yhnnrv9z0tjr9m5fqe2yx9t27dwtdxy4j4r0llll7vcmaxwjcl8jzfq
@@ -73,26 +79,14 @@ flowchart TD
     C3 -->|"Actually governs"| FACTS["Supply curve + block reward"]
 ```
 
-The inflation narrative conflates the left path with the right. [Parts 2–3](#part-2-the-explorer-wraparound--what-it-actually-proves) dismantle the display-layer path; [Part 4](#part-4-what-consensus-actually-enforces) checks what nodes actually enforce.
-
-**The technical claim** (as stated in public exploit reports):
+**The technical claim** (as stated in public exploit reports) rests on a single assumption — that the payload proof above is cryptographic evidence, and what verifies on an explorer also represents what consensus accepted:
 
 1. The transfer amount was **−2,200,000.00181 DERO** (fee included in the negative value).
 2. Stored as `uint64` (an unsigned 64-bit integer, no negatives), that negative value wraparound displays as **~184 trillion DERO** on explorers — roughly **14 million× total supply**.
 3. Post-2024 deanonymization is cited to name a fresh wallet as the **sender**, allegedly receiving **~2.2M DERO** from the negative transfer — not the **~184 trillion** figure on screen.
 4. **Conclusion:** consensus failed → **~2.2M DERO** minted from nothing.
 
-Each step is load-bearing. The rest of this page evaluates them on three independent grounds — the proof string ([Parts 2–3](#part-2-the-explorer-wraparound--what-it-actually-proves)), what consensus enforces ([Part 4](#part-4-what-consensus-actually-enforces)), and attribution limits ([Part 5](#part-5-what-deanonymization-can-and-cannot-establish)) — then synthesizes them ([Part 6](#part-6-the-keystone-collapses)).
-
-### The TX is on chain — so what?
-
-Public reports treat `5bbe1b7eecfe3447cb045b1197a07a214b456968eda8a3d5a90f5fae9ce57e55` appearing in a mined block as proof of inflation. It is not:
-
-- The transaction **was accepted** → all six sigma proofs and range proofs **passed at every node** that validated the block. [Transaction Proofs](/integrity/transaction-proofs)
-- Nodes do not store plaintext amounts; they verify cryptographic proofs bind to **non-negative** values. [Range Proof Integrity](/integrity/range-proof-integrity)
-- A tx in a block proves **validity under protocol rules**, not that a pasted deroproof string reflects consensus state.
-
-The existence of the transaction is expected. What matters is whether the **payload proof** and **deanonymized interpretation** prove what they claim — and whether the alleged mechanism could have passed the proofs nodes actually verified.
+Each step is load-bearing. The rest of this page evaluates them on three independent grounds — the proof string ([Parts 2–3](#part-2-the-explorer-wraparound--what-it-actually-proves)), what consensus enforces ([Part 4](#part-4-the-chains-account-at-the-exploit-block)), and attribution limits ([Part 5](#part-5-what-deanonymization-can-and-cannot-establish)) — then synthesizes them ([Part 6](#part-6-the-keystone-collapses)).
 
 ### Report claims vs. evidence
 
@@ -117,9 +111,9 @@ Paste the [Part 1](#part-1-the-claim-and-its-foundation) **payload proof** into 
 </Callout>
 
 <Callout type="info" emoji="🔬">
-**The "off-by-one" isn't a real discrepancy — it's the explorer's rounding. The on-chain integer matches the cited figure down to the smallest unit; only the printed string differs.** *Here's why:*
+**The proof is authentic.** Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure to the atom. The "off-by-one" in the display is the explorer's rounding, not a flaw in the proof: `FormatMoneyPrecision` parses the `uint64` via `big.ParseFloat(..., prec=0, ...)`, which Go's stdlib promotes to a **64-bit mantissa** before rounding (documented behavior — when `prec=0`, [`math/big.Float.Parse`](https://pkg.go.dev/math/big#Float.Parse) sets it to 64). At that precision the step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`), so rounding lands in the **last** place — `…51435` renders as `…51434`.
 
-Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure. The explorer prints `.51434` only because `FormatMoneyPrecision` parses the `uint64` via `big.ParseFloat(..., prec=0, ...)`, which Go's stdlib promotes to a **64-bit mantissa** before rounding (documented behavior — when `prec=0`, [`math/big.Float.Parse`](https://pkg.go.dev/math/big#Float.Parse) sets it to 64). At that precision the step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`), so the rounding error lands in the **last** place — `…51435` renders as `…51434`. An "off-by-one" read of the display is reading that rounding, not the integer in the string, which matches the report to the atom. A layer that cannot reliably render its own last digit is not consensus state.
+Authenticity is the page's point, not a problem for it. The misreading at the heart of the inflation claim isn't "Derolytics produced a broken proof" — it's that an authentic display object was treated as consensus state. A layer that cannot reliably render its own last digit is not consensus state.
 </Callout>
 
 ### Decode it yourself
@@ -180,17 +174,7 @@ The point isn't that forgery is *theoretically possible* — it's that **the rep
 4. **Do the math.** Each ring slot has a published commitment of the form `amount × G + blinder` — public on chain. Pick any amount; rearrange to solve for the blinder that fits: `blinder = C[slot] − amount × G`.
 5. **Paste the string** into an unpatched explorer with the same TX.
 
-If the display math fits → **Verified ✓**.
-
-<Callout type="error" emoji="🚫">
-**Verified ✓ does not mean:**
-
-- Coins were minted
-- The chain accepted that amount
-- That ring member actually sent it
-
-It only means: **your pasted string is internally consistent with public display math.** Nodes never saw the string. Supply does not change. The circulated report string ([Part 1](#part-1-the-claim-and-its-foundation)) is exactly one such pasted object.
-</Callout>
+If the display math fits → **Verified ✓** on an unpatched explorer. Nodes never saw the string; supply didn't change. The circulated report string ([Part 1](#part-1-the-claim-and-its-foundation)) is exactly one such pasted object.
 
 <Callout type="warning" emoji="🧪">
 **Paste this forged demo** — built for this page, not from the report.
@@ -221,8 +205,6 @@ deroproof1qyvvfxzyfqtjm0lgyf5jncleh6cxmmfahgmekxpyrzhhsz832dv8qq9zvfyyskpqqqqqqq
 ![Same forged proof rejected — wraparound amount blocked](/assets/integrity/inflation-claim/explorer-patched-forged-rejected.png)
 
 </Screenshot>
-
-On an **unpatched** explorer, this can show **Verified ✓** for an amount we chose from thin air. [DEROFDN/derohe `community-dev`](https://github.com/DEROFDN/derohe/tree/community-dev) (via [PR #14](https://github.com/DEROFDN/derohe/pull/14)), [HOLOGRAM](https://hologram.derod.org/proof-validation), and patched explorers reject wraparound amounts before display — that is a display-layer fix, not evidence the chain minted coins.
 
 ### How the demo string was built
 
@@ -394,11 +376,12 @@ Change `amount` and `slot` to forge any display value for any ring position. If 
 
 ---
 
-## Part 4: What Consensus Actually Enforces
+<a id="part-4-what-consensus-actually-enforces"></a>
+## Part 4: The Chain's Account at the Exploit Block
 
-[Parts 2–3](#part-2-the-explorer-wraparound--what-it-actually-proves) dismantled the display layer — pasted deroproof strings and explorer **Verified** badges. Part 4 turns to the **consensus layer** from the diagram above: what every node validates and what the chain permanently records.
+The proof asserts consensus accepted a negative-amount transfer — that the protocol minted ~2.2M DERO from nothing. The chain testifies otherwise on two independent counts.
 
-Two independent checks apply. First, **could** the alleged negative-transfer mechanism pass protocol validation? Second, **what does on-chain history record** at the exploit block — block reward, transaction acceptance, and the emission schedule? A real consensus mint via this mechanism must evade range proofs *and* show abnormal coin creation in the block record. Neither is supported.
+**First:** range proofs cannot verify a negative-amount transfer, so no validating node could have accepted one. **Second:** the block where it allegedly happened records a **0.615 DERO** reward — scheduled emission, not millions — and one transaction whose range proofs passed cleanly at every validator. The assertion needs both counts to fail. Neither does.
 
 ### Negative transfers fail range-proof validation
 
@@ -429,34 +412,24 @@ The report's conclusion is that ~2.2M DERO was **minted from nothing** on Octobe
 Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go`: `PREMINE + CalcBlockReward(topoheight) × topoheight`) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
 
 <Callout type="warning" emoji="⚖️">
-**What `GetInfo` can and cannot do:** Comparing `GetInfo.total_supply` to the emission formula confirms the RPC implements the schedule. It does **not** independently detect a surreptitious mint — both numbers come from the same model. DERO does not expose a separately-computed chain-wide balance sum via RPC, but it doesn't need to: **the proof system itself enforces supply conservation**. Every accepted transaction is balance-preserving (inputs and outputs are bound by the sigma proofs to balance exactly), so the cumulative supply at any height equals premine plus the sum of block rewards **by construction** — regardless of whether the RPC exposes a balance-sum endpoint. The **independent** checks for this case are: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged negative-transfer mechanism ([above](#negative-transfers-fail-range-proof-validation)).
+**Conservation is enforced, not audited.** `GetInfo.total_supply` implements the emission schedule (premine plus scheduled rewards) — by itself, it does not audit balances. It doesn't need to: the proof system enforces supply conservation by construction. Every accepted transaction is balance-preserving — sigma proofs bind inputs to outputs to balance exactly — so cumulative supply at any height equals premine plus block rewards. The independent checks for this case: block-header **reward**, cited-TX **acceptance** (range proofs passed), and the **impossibility** of the alleged negative-transfer mechanism ([above](#negative-transfers-fail-range-proof-validation)).
 </Callout>
 
 <Callout type="info" emoji="📊">
 **Burden of proof:** The report never publishes a supply delta against any independent measure. Per-block emission at the exploit era is **~0.62 DERO** — not millions. The on-chain block record at topo 1,081,893 matches normal scheduled emission.
 </Callout>
 
-### Exploit block facts (permanent on-chain)
+### Exploit block: what the chain records
 
-These values are fixed in mainnet history — query any synced node at topoheight **1,081,893**:
-
-| Field | Value |
-|---|---|
-| **Timestamp** | 2022-10-17 07:58:09 UTC |
-| **Block hash** | `b6bd914f7fb1c79788fe8676c277e58e7bb5a904317afb096b1d2793af9aed13` |
-| **Block reward** | **0.615 DERO** (61,500 atomic units) |
-| **TX count** | **1** (the cited transaction) |
-
-The block reward is normal scheduled emission — not a multi-million DERO mint. The cited TX being mined here proves the transaction was **accepted under protocol rules**; it does not prove a pasted deroproof amount.
-
-### What the chain record shows
-
-**Independent on-chain checks** at topo 1,081,893 — query any synced node:
+Independent on-chain checks at topoheight **1,081,893** — query any synced node:
 
 | Check | RPC / source | Result |
 |---|---|---|
-| Block reward | `GetBlockHeaderByTopoHeight` | **0.615 DERO** — normal scheduled emission, not a 2.2M mint |
-| Cited TX | `GetTransaction` | **Accepted and mined** → all range proofs passed at every validating node |
+| Block timestamp | `GetBlockHeaderByTopoHeight` | 2022-10-17 07:58:09 UTC |
+| Block hash | `GetBlockHeaderByTopoHeight` | `b6bd914f7fb1c79788fe8676c277e58e7bb5a904317afb096b1d2793af9aed13` |
+| Block reward | `GetBlockHeaderByTopoHeight` | **0.615 DERO** (61,500 atomic units) — normal scheduled emission, not a 2.2M mint |
+| TX count | `GetBlockHeaderByTopoHeight` | **1** (the cited transaction) |
+| Cited TX status | `GetTransaction` | **Accepted and mined** → all range proofs passed at every validating node |
 | Expected cumulative supply | Emission formula | **~12,946,618 DERO** at this height (schedule only — not a ledger audit) |
 
 For context, if a **+2.2M DERO** consensus mint had occurred at this block, expected cumulative supply under the schedule would be **~15,146,618 DERO** instead — but detecting that would require an **independent** supply measure the protocol does not expose via RPC. The report never publishes one.
@@ -548,7 +521,7 @@ Part 4 closes the consensus side: the alleged mechanism cannot pass range-proof 
 
 ## Part 5: What Deanonymization Can and Cannot Establish
 
-[Parts 2–4](#part-4-what-consensus-actually-enforces) closed the mint question. The report leans on one further capability — deanonymization — to name a beneficiary and trace funds. Applied honestly to this transaction, it does not support the inflation claim. It undercuts it.
+[Parts 2–4](#part-4-the-chains-account-at-the-exploit-block) closed the mint question. The report leans on one further capability — deanonymization — to name a beneficiary and trace funds. Applied honestly to this transaction, it does not support the inflation claim. It undercuts it.
 
 <Callout type="info" emoji="ℹ️">
 **The bug was real, and the fix mattered.** The deanonymization in public reports relies on a genuine wallet-layer randomness-reuse vulnerability (disclosed May 2024, fixed in Release 142): payloads were encrypted under a key derived from a **deterministic** blinding scalar feeding a zero-nonce stream cipher, which Release 142 replaced with a per-payload ephemeral key. This page neither disputes the vulnerability nor minimizes the fix.
@@ -556,40 +529,11 @@ Part 4 closes the consensus side: the alleged mechanism cannot pass range-proof 
 
 **The ~2.2M is not a deanonymization result.** It is the [circulated proof string](#part-1-the-claim-and-its-foundation) — a forgeable display object ([Part 3](#part-3-forge-a-fake-proof-yourself)) whose embedded `uint64` reads as −2,200,000.00181 only if you take a wraparound as negative. The report sources the figure there itself: *"use the proof string on the official explorer to confirm."*
 
-**A faithful deanonymization reads the chain — and the chain was constrained in advance.** Deanonymizing recovers the value actually committed in the transaction, not a pasted string. Whatever that value is, the range proof already pinned what it *can* be ([Part 4](#part-4-what-consensus-actually-enforces)): the sender provably **held** the amount and the balances **conserved**. A committed transfer of ~184 trillion DERO is impossible — the sender would have had to hold it, and the proof would not have verified. So a faithful deanonymization of this transaction recovers an **ordinary transfer of coins that already existed** — not a mint.
+**A faithful deanonymization reads the chain — and the chain was constrained in advance.** Deanonymizing recovers the value actually committed in the transaction, not a pasted string. Whatever that value is, the range proof already pinned what it *can* be ([Part 4](#part-4-the-chains-account-at-the-exploit-block)): the sender provably **held** the amount and the balances **conserved**. A committed transfer of ~184 trillion DERO is impossible — the sender would have had to hold it, and the proof would not have verified. So a faithful deanonymization of this transaction recovers an **ordinary transfer of coins that already existed** — not a mint.
+
+The payload structure backs this up: in both pre-fix and post-fix wallet code (`walletapi/transaction_build.go`), the only address-bound byte serialized into the payload is the **receiver index** (`witness_index[1]`) — the sender is never written into the payload in either era. What Release 142 changed was the **key derivation**, from the global blinding scalar `r` to a per-payload ephemeral scalar an outside observer can't reconstruct. A faithful read of either era's payload surfaces a receiver index and the committed value — exactly what a deanonymization can return, and nothing more.
 
 Attribution to a named individual is the report's own conceded allegation, resting on timing, access, and behavior — not cryptography. The laundering graph inherits that dependency: with no minted 2.2M, there is nothing to launder.
-
-### What changes — and what doesn't
-
-Compare the pre-fix payload encryption with the Release-142 fix, both from `walletapi/transaction_build.go`:
-
-```go
-// Release 113/114 — pre-fix
-// The payload key derives from r, the blinding scalar that also hides every commitment.
-// D = rG is published in the statement, so anyone who recovers r can read this payload.
-shared_key := crypto.GenerateSharedSecret(r, publickeylist[i])                       // key tied to r
-asset.RPCPayload = append([]byte{byte(uint(witness_index[1]))}, data...)             // prepends RECEIVER index
-crypto.EncryptDecryptUserData(crypto.Keccak256(shared_key[:], publickeylist[i].EncodeCompressed()), asset.RPCPayload)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Release 142 — fix
-// A per-payload ephemeral scalar replaces r in the key derivation; the ephemeral
-// pubkey is prepended so the receiver can still derive the shared secret. The
-// scalar is bound through two SHAKE passes to sender_secret, roothash, ring
-// inputs, and receiver — none of which an outside observer can reconstruct.
-ephemeral_key    := crypto.ShakeXOF(publickeylist[i].String(), sender_secret.Bytes(), roothash[:])
-ephemeral_seed   := crypto.ShakeXOF(sender.String(), ephemeral_key[:], rinputs, publickeylist[i].EncodeCompressed())
-ephemeral_scalar := new(big.Int).SetBytes(ephemeral_seed[:])
-ephemeral_scalar  = ephemeral_scalar.Mod(ephemeral_scalar, bn256.Order)
-ephemeral_pub    := crypto.GPoint.ScalarMult(crypto.GetBNRed(ephemeral_scalar))
-shared_key       := crypto.GenerateSharedSecret(ephemeral_scalar, publickeylist[i]) // key independent of r
-payload          := append([]byte{byte(uint(witness_index[1]))}, data...)            // still the RECEIVER index
-crypto.EncryptDecryptUserData(crypto.Keccak256(shared_key[:], publickeylist[i].EncodeCompressed()), payload)
-asset.RPCPayload  = append(ephemeral_pub.EncodeCompressed(), payload...)             // ephemeral pub prepended
-```
-
-The receiver byte (`witness_index[1]`) is in both versions — the sender is never serialized in either era. What changed is the key derivation, from `r` to an independent ephemeral scalar. So a faithful read of either era's payload surfaces a receiver index and the committed value — exactly what a deanonymization can return, and nothing more.
 
 ---
 
@@ -600,17 +544,17 @@ Every downstream claim in the public exploit narrative — dollar figures, laund
 That artifact fails on four independent grounds — in the order established above:
 
 1. **It is only a display object.** [Part 3](#part-3-forge-a-fake-proof-yourself) — a payload proof is user-supplied; anyone can build a **Verified ✓** one for any amount and any ring slot.
-2. **The mechanism is impossible.** [Part 4](#part-4-what-consensus-actually-enforces) — a negative/wraparound transfer cannot produce a verifying range proof, so no node would accept it at the protocol layer.
+2. **The mechanism is impossible.** [Part 4](#part-4-the-chains-account-at-the-exploit-block) — a negative/wraparound transfer cannot produce a verifying range proof, so no node would accept it at the protocol layer.
 3. **No consensus mint recorded.** [Part 4](#verify-supply-at-the-exploit-block) — block reward was **0.615 DERO**, not millions; the cited TX was **accepted** (range proofs passed). `GetInfo` reports scheduled emission, not a UTXO census — it cannot detect a surreptitious mint by itself. The report never publishes a supply delta against any independent measure.
 4. **Deanonymization refutes the mint, it doesn't support it.** [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) — the ~2.2M is the forgeable proof string, not a deanonymization output. A faithful deanonymization reads the value committed on-chain, which the range proof guarantees was held and conserved — an ordinary transfer. Attribution to a person is the report's own conceded allegation.
 
 The display-layer bug that made this confusion possible was real. It is being remediated — [DEROFDN/derohe `community-dev`](https://github.com/DEROFDN/derohe/tree/community-dev) ([PR #14](https://github.com/DEROFDN/derohe/pull/14)), [HOLOGRAM](https://hologram.derod.org), and patched explorers now reject proofs like this one; `main` and other unpatched explorers may still show **Verified**. That is a display-layer problem worth fixing. It is not evidence that the chain minted coins; the range proofs do not permit it.
 
 <Callout type="warning" emoji="💬">
-**"Irrefutable" is only as strong as its evidence.** [Derolytics' executive summary](https://web.archive.org/web/20250903162339/https://derolytics.com/) calls the case *"irrefutable"* and invites readers to *"verify yourself"* by pasting the proof string into an explorer. But that string is a user-supplied display object — one [anyone can forge for any amount](#part-3-forge-a-fake-proof-yourself), describing a transfer that [consensus could never accept](#part-4-what-consensus-actually-enforces).
+**"Irrefutable" is only as strong as its evidence.** [Derolytics' executive summary](https://web.archive.org/web/20250903162339/https://derolytics.com/) calls the case *"irrefutable"* and invites readers to *"verify yourself"* by pasting the proof string into an explorer. But that string is a user-supplied display object — one [anyone can forge for any amount](#part-3-forge-a-fake-proof-yourself), describing a transfer that [consensus could never accept](#part-4-the-chains-account-at-the-exploit-block).
 </Callout>
 
-What this page establishes is narrow but decisive: the circulated payload proof, presented as evidence of a sophisticated consensus exploit, does not support what it was meant to prove. The alleged mechanism is what fails — not every conceivable scenario — but the artifact the report calls "irrefutable" is neither irrefutable nor proof.
+The artifact at the center of every accusation is a display object anyone can forge. The chain neither records the event the report describes nor permits the mechanism it alleges. Every downstream claim — laundering, attribution, dollar figures — requires that artifact to function as cryptographic evidence. It does not.
 
 ---
 
