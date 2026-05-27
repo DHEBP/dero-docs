@@ -16,7 +16,7 @@ import { Tabs } from 'nextra/components'
 # Negative Transfer Protection
 
 <Callout type="success" emoji="🔒">
-**Cryptographic impossibility:** A negative — or `uint64`-wraparound — transfer amount cannot produce a transaction that passes DERO consensus. The guarantee comes from the **soundness of the Bulletproof range proof** combined with **homomorphic value conservation** — not from a string check that could be patched out of a wallet.
+**The chain rejects it.** No DERO transaction can transfer a negative amount or create coins from nothing — the network refuses to accept it. The protection isn't a check inside the wallet that a malicious sender could remove; it's enforced by every node, by recomputing the math on every transfer (formally: range-proof soundness + value conservation).
 </Callout>
 
 ## The claim

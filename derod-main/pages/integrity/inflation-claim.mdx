@@ -17,14 +17,6 @@ import { Screenshot } from '@components/screenshot'
 
 # The 2022 Inflation Claim: Claims vs. Evidence
 
-<Callout type="info" emoji="📋">
-**Scope:** This page evaluates the foundational claim in publicly circulated exploit reports — that DERO minted ~2.2M coins via negative-transfer wraparound in October 2022. Downstream allegations (laundering, attribution, dollar figures) **derive from it**. Governance and holdings claims are out of scope. Mechanics: [Proof Types](/integrity/payload-vs-transaction-proofs), [Ring Member Behavior](/integrity/ring-member-behavior), [Negative Transfer Protection](/integrity/negative-transfer-protection).
-</Callout>
-
-On **October 17, 2022**, a transaction was mined on mainnet — unremarkable at the time. The inflation claim surfaced in **2024–2025** in the [Derolytics "DERO Heist" report](https://web.archive.org/web/20250903162339/https://derolytics.com/) and related posts, after a **separate** wallet-layer privacy bug (May 2024, fixed in Release 142) made forensic analysis of encrypted payloads possible. That bug is real; it does not by itself prove consensus minted coins.
-
----
-
 ## TL;DR Summary
 
 | Question | The Evidence |
@@ -35,6 +27,14 @@ On **October 17, 2022**, a transaction was mined on mainnet — unremarkable at 
 | Can explorer **Verified** on inflated proofs be reproduced? | **Yes** on unpatched explorers (`MAX_INT64_SAFE` bypass). [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output. A faithful deanonymization reads the value committed on-chain, which the range proof guarantees was held and conserved ([Part 4](#part-4-what-consensus-actually-enforces)) — an ordinary transfer. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | Could another inflation mechanism exist? | This page constrains only the alleged negative-transfer mechanism; it does not audit every transaction in chain history. |
+
+---
+
+<Callout type="info" emoji="📋">
+**Scope:** This page evaluates the foundational claim in publicly circulated exploit reports — that DERO minted ~2.2M coins via negative-transfer wraparound in October 2022. Downstream allegations (laundering, attribution, dollar figures) **derive from it**. Governance and holdings claims are out of scope. Mechanics: [Proof Types](/integrity/payload-vs-transaction-proofs), [Ring Member Behavior](/integrity/ring-member-behavior), [Negative Transfer Protection](/integrity/negative-transfer-protection).
+</Callout>
+
+On **October 17, 2022**, a transaction was mined on mainnet — unremarkable at the time. The inflation claim surfaced in **2024–2025** in the [Derolytics "DERO Heist" report](https://web.archive.org/web/20250903162339/https://derolytics.com/) and related posts, after a **separate** wallet-layer privacy bug (May 2024, fixed in Release 142) made forensic analysis of encrypted payloads possible. That separate privacy bug is what made the *story* possible to tell — it is not evidence that any extra DERO was created.
 
 ---
 
@@ -117,7 +117,9 @@ Paste the [Part 1](#part-1-the-claim-and-its-foundation) **payload proof** into 
 </Callout>
 
 <Callout type="info" emoji="🔬">
-**Even the on-screen amount's last digit is display-only.** Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure. The explorer prints `.51434` only because `FormatMoneyPrecision` parses the `uint64` via `big.ParseFloat(..., prec=0, ...)`, which Go's stdlib promotes to a **64-bit mantissa** before rounding (documented behavior — when `prec=0`, [`math/big.Float.Parse`](https://pkg.go.dev/math/big#Float.Parse) sets it to 64). At that precision the step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`), so the rounding error lands in the **last** place — `…51435` renders as `…51434`. An "off-by-one" read of the display is reading that rounding, not the integer in the string, which matches the report to the atom. A layer that cannot reliably render its own last digit is not consensus state.
+**The "off-by-one" isn't a real discrepancy — it's the explorer's rounding. The on-chain integer matches the cited figure down to the smallest unit; only the printed string differs.** *Here's why:*
+
+Decode the bech32 string as an integer (`rpc.NewAddress` → `args.Value(RPC_VALUE_TRANSFER, DataUint64)`) and the embedded value is `18,446,743,853,709,551,435` — exactly **−2,200,000.00181 DERO**, the report's own stated figure. The explorer prints `.51434` only because `FormatMoneyPrecision` parses the `uint64` via `big.ParseFloat(..., prec=0, ...)`, which Go's stdlib promotes to a **64-bit mantissa** before rounding (documented behavior — when `prec=0`, [`math/big.Float.Parse`](https://pkg.go.dev/math/big#Float.Parse) sets it to 64). At that precision the step size near 10¹⁴ (~`0.0000153 DERO`) is *just over* one atomic unit (`0.00001 DERO`), so the rounding error lands in the **last** place — `…51435` renders as `…51434`. An "off-by-one" read of the display is reading that rounding, not the integer in the string, which matches the report to the atom. A layer that cannot reliably render its own last digit is not consensus state.
 </Callout>
 
 ### Decode it yourself
@@ -166,29 +168,19 @@ On the cited TX with the [Part 1](#part-1-the-claim-and-its-foundation) string:
 
 ## Part 3: Forge a Fake Proof Yourself
 
-A payload proof is a **user-supplied display object** — like filling in a receipt template, not an official bank record. It is not signed by the network, not bound to consensus, and on unpatched explorers can show **Verified ✓** for amounts that never moved on-chain.
+**We forged one to show how trivial it is.** Below is a fake `deroproof…` built specifically for this page — accepts on unpatched explorers, shows an amount that never moved on-chain. It took minutes. No wallet, no private keys, no insider access. Everything needed is already public: the [Part 1](#part-1-the-claim-and-its-foundation) transaction, its 16 ring slots, and the commitment math.
 
-Everything needed to forge one for the [Part 1](#part-1-the-claim-and-its-foundation) transaction is **already public**: the TX, its **16 ring slots**, and the commitment math inside the payload. No wallet. No private keys.
+The point isn't that forgery is *theoretically possible* — it's that **the report's "Verified ✓" evidence is the same kind of object, built the same way**. We're showing the work so a skeptic can re-run it.
 
 ### The trick, in plain English
 
 1. **Pick the real transaction** everyone is looking at (`5bbe1b7eecfe3447cb045b1197a07a214b456968eda8a3d5a90f5fae9ce57e55`).
 2. **Pick one of 16 ring slots** (positions 0–15) — each slot has a public address; you choose which slot the fake proof should attach to.
 3. **Pick any amount** you want on screen — including **−1 DERO** or **~184 trillion DERO** wraparound values.
-4. **Do the math** so your fake `deroproof…` string fits that slot's public commitment.
+4. **Do the math.** Each ring slot has a published commitment of the form `amount × G + blinder` — public on chain. Pick any amount; rearrange to solve for the blinder that fits: `blinder = C[slot] − amount × G`.
 5. **Paste the string** into an unpatched explorer with the same TX.
 
 If the display math fits → **Verified ✓**.
-
-```mermaid
-flowchart LR
-    TX["Real TX on chain"] --> SLOT["Pick ring slot 0–15"]
-    SLOT --> AMT["Pick any display amount"]
-    AMT --> MATH["Math: string fits slot"]
-    MATH --> PASTE["Paste into explorer"]
-    PASTE --> V["Verified ✓"]
-    V --> NOTE["Display math only"]
-```
 
 <Callout type="error" emoji="🚫">
 **Verified ✓ does not mean:**
