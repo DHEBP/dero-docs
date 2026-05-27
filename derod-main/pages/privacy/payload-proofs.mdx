@@ -20,6 +20,8 @@ import { Tabs } from 'nextra/components'
 **Privacy by construction:** Only you (holding the private key) can prove you sent a transaction. Third parties can guess but cannot prove — by design, so ring-signature plausible deniability remains intact.
 </Callout>
 
+*For the integrity angle — why explorer "Verified ✓" on a payload proof isn't evidence of consensus — see [Proof Types Explained](/integrity/payload-vs-transaction-proofs).*
+
 ## How payload-proof ambiguity works
 
 DERO uses **ring signatures** to hide the sender. When you send a transaction, your real output is hidden among ring_size/2 potential senders (rings are split evenly between senders and recipients), creating **plausible deniability** — observers cannot determine who actually sent the transaction.
@@ -49,33 +51,6 @@ graph LR
 | **Sender Privacy** | ✅ Maximum | 🟡 Opt-in viewkeys | ❌ None |
 
 **DERO's privacy model:** Third parties cannot definitively prove who sent a transaction — this is the point of ring-signature privacy.
-
-### Two Proof Types (Standard in Privacy Blockchains)
-
-| Proof Type | What It Does | Security Level |
-|-----------|--------------|----------------|
-| **Transaction Proof** | Validates blockchain consensus | 🔒 Cryptographically secure |
-| **Payload Proof** | Shows metadata (amount, recipient) | ⚠️ Convenience only, not cryptographic |
-
-**Important:** Explorers show **payload proofs** (convenience), not **transaction proofs** (cryptographic). This is standard across all privacy blockchains with ring signatures.
-
----
-
-## Two Proof Types
-
-| Feature | Transaction Proofs | Payload Proofs |
-|---------|-------------------|----------------|
-| **Verified By** | All network nodes | Explorer software only |
-| **Security** | Cryptographically secure | Math consistency only |
-| **Can Be Faked?** | ❌ No | ⚠️ Yes |
-| **Checks** | Bulletproofs, range proofs, signatures | Commitment matching |
-| **Purpose** | Blockchain consensus | Display convenience |
-| **Shows** | Transaction validity | Amounts, addresses, comments |
-| **Trust Level** | Trustless | User-provided data |
-
-<Callout type="info">
-  **For Certainty:** Use your wallet with private keys. Payload proofs are convenience tools, not cryptographic guarantees.
-</Callout>
 
 ---
 
@@ -167,65 +142,9 @@ Real senders typically include encrypted metadata (destination address, comment,
 
 ## Why Payload Proofs Can Be Faked
 
-### Payload Proofs Are Wallet-Level Tools
+The ambiguity that protects sender privacy comes at a cost: **any ring member can generate a verifying payload proof for the transaction.** This is not a defect — it is the visible consequence of how ring signatures work. The commitment check an explorer performs (`amount × G + address`) matches for every ring member by construction, because all ring members were constructed using the same amount (see [Why All Ring Members Use Same Amount](#why-all-ring-members-use-same-amount) below). If only the real sender could produce a verifying proof, ring-signature privacy would not exist.
 
-**Key Distinction:**
-
-| Proof Type | Scope | Validation | Can Be Faked? |
-|-----------|-------|-----------|---------------|
-| **Transaction Proof** | Blockchain consensus | Cryptographic verification by all nodes | ❌ No |
-| **Payload Proof** | Explorer display | Math consistency check only | ⚠️ Yes |
-
-**Why Payload Proofs Can Be Faked:**
-
-1. **User-Provided Data**
-   - Payload proofs contain user-submitted metadata
-   - Not cryptographically bound to transaction
-   - Anyone can create matching proof for any ring member
-
-2. **Math Consistency Only**
-   - Explorer verifies: `commitment = amount × G + address`
-   - Does NOT verify: This address was the actual sender
-   - Any ring member can generate matching proof
-
-3. **No Cryptographic Binding**
-   - Payload proofs are separate from transaction proofs
-   - They don't affect blockchain consensus
-   - Fake proofs don't invalidate transactions
-
-**From Source Code** (`proof/proof.go:34-149`, `cmd/explorer/explorerlib/explorerlib.go:689`):
-
-The payload proof system is designed for **convenience and display**, not cryptographic verification. The explorer checks if the proof's commitment matches any ring member's commitment, but this doesn't prove the sender identity.
-
-**Code Evidence:**
-```go
-// proof/proof.go:98-104
-// Calculate commitment: x = amount × G + address
-x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
-x.Add(new(bn256.G1).Set(&x), addr.PublicKey.G1())
-
-// Check if commitment matches ANY ring member
-if x.String() == tx.Payloads[t].Statement.C[k].String() {
-    // Proof "verified" - but this only proves math consistency, not sender identity
-}
-```
-
-**Explorer Call** (`cmd/explorer/explorerlib/explorerlib.go:689`):
-```go
-addresses, amounts, raw, decoded, err := proof.Prove(tx_proof, info.Hex, info.Ring, mainnet)
-```
-
-**Why the design works this way:**
-
-- If explorers could prove exact senders, ring signatures would offer no privacy
-- Users can still verify their own transactions with their private key
-- Any ring member can generate a matching proof — this is what makes the proof ambiguous to third parties
-- All ring-signature privacy systems work this way
-
-**For Real Verification:**
-- Use your wallet with private keys (only you can prove you sent)
-- Transaction proofs are cryptographically secure (network consensus)
-- Payload proofs are convenience tools (explorer display)
+Third parties cannot use payload-proof verification as cryptographic evidence of *who sent what*. **For the integrity-framed perspective** — why payload-proof "Verified ✓" in an explorer is not the same as consensus acceptance, and not evidence of chain state — see [Proof Types Explained](/integrity/payload-vs-transaction-proofs).
 
 ---
 

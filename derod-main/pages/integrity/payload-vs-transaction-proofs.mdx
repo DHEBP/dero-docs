@@ -19,6 +19,8 @@ import { Tabs } from 'nextra/components'
 **Critical Distinction:** DERO has two completely different proof systems that serve different purposes. Confusing them leads to fundamental misunderstandings about what can and cannot be verified.
 </Callout>
 
+A transaction proof is part of the chain, verified by every node. A payload proof is a sender-supplied display string that DERO's own code calls a helper *"to detect and decode output amount for the tx."* It was built to read transactions, not to prove them, which is why it's fakeable by design.
+
 ## The Two Proof Systems
 
 ```mermaid
@@ -139,15 +141,13 @@ The critical detail: this uses `ScalarMult(crypto.G, new(big.Int).SetInt64(int64
 
 ---
 
-## Why Payload Proofs Can Be Faked
+## Why fakeability isn't a flaw
 
-### The Design Reason
+**Unforgeability is a deliberate property, not a default.** Building it in requires cryptographic binding (signatures or commitments tied to keys), verification by a trusted party (consensus), and a formal soundness argument. DERO's designers added that machinery where the threat model required it — transaction proofs going to chain state. Payload proofs are a sender-supplied helper for *reading* what was sent; their threat model doesn't require unforgeability, so it wasn't built in. The absence isn't a flaw — it's the natural shape of an object whose use case never demanded the property.
 
-<Callout type="info" emoji="🔐">
-**Sender anonymity is the design goal; payload-proof forgeability is a side effect of the construction:** Ring signatures intentionally prevent third parties from identifying which ring member sent a transaction. Payload-proof forgeability is not itself a design feature — it falls out of the commitment-rearrangement construction (any ring member's commitment can be made to "match" any amount). A different payload-proof scheme could preserve anonymity while constraining what amounts validate, which is exactly what the [explorer mitigation](#explorer-mitigation) below does for bounded amounts.
-</Callout>
+Treating an object as if it should have a property it was never designed to have — for example, citing a "Verified ✓" payload proof as evidence of an on-chain mint — is a category error, not a finding.
 
-### How Faking Works
+### How forgery works
 
 **Anyone can create a payload proof for any ring member:**
 
@@ -164,6 +164,8 @@ The math will check out because:
   - You can solve for any position
 ```
 
+For the worked example (with the actual fake string, screenshots, and reproducible code), see [Forge a Fake Proof Yourself](/integrity/inflation-claim#part-3-forge-a-fake-proof-yourself).
+
 ### Demonstration
 
 **From security research (August 2025):**
@@ -179,7 +181,7 @@ Reality: DERO's emission model targets ~10.5 million total from mining
 Conclusion: Payload proofs can show impossible amounts
 ```
 
-**This is not a bug - it's the consequence of privacy-preserving design.**
+**This is not a bug — it's the consequence of an object built to read, not to prove.**
 
 ---
 
@@ -400,30 +402,6 @@ flowchart TD
 - ⚠️ Sender attribution is not cryptographically verifiable
 - ⚠️ Amounts shown may be manipulated
 - ✅ Transaction existence/validity is verifiable
-
----
-
-## Why This Design?
-
-### The Privacy Trade-off
-
-```
-Option A: Verifiable payload proofs
-  → Third parties can prove sender identity
-  → Ring signatures become meaningless
-  → Privacy: ❌ BROKEN
-
-Option B: Unverifiable payload proofs (DERO's choice)
-  → Third parties can only guess sender
-  → Ring signatures provide real privacy
-  → Privacy: ✅ PRESERVED
-```
-
-### The Philosophy
-
-<Callout type="success" emoji="🛡️">
-**Privacy Over Verification:** DERO prioritizes user privacy over third-party verification capabilities. Only YOU should be able to prove you sent a transaction. Third parties should only be able to guess.
-</Callout>
 
 ---
 
