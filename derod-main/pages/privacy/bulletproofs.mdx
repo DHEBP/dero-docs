@@ -39,7 +39,7 @@ But WITHOUT revealing:
 - ✅ Prove combined 128-bit value is valid (transfer + remaining balance, each 64-bit)
 - ✅ Never reveal the amount value
 - ✅ Logarithmic-size proof (7 rounds for 128-bit range)
-- ✅ No trusted setup needed
+- ✅ No trusted setup needed (the bulletproof generators `G` and `H` are derived deterministically from public protocol constants via hash-to-curve — `cryptography/crypto/algebra_pedersen.go:36-37` — so there is no setup ceremony to trust)
 
 ---
 

@@ -70,7 +70,7 @@ Understanding what different parties can and cannot see helps illustrate how DER
 
 | Observer | Can See | Cannot See | Why Privacy Maintained |
 |----------|---------|-----------|----------------------|
-| **ISP/Network** | Encrypted traffic to DERO | Transaction details, amounts, addresses | TLS encryption hides content from **passive** observers. Caveat: the p2p layer uses `tls.Config{InsecureSkipVerify: true}` with self-signed certs (`p2p/controller.go:398`, cert at `:551`), so an **active** MITM (e.g., a hostile ISP that can intercept and present its own self-signed cert) is *not* defended against by TLS alone. |
+| **ISP/Network** | Encrypted traffic to DERO | Transaction details, amounts, addresses | TLS encryption hides content from **passive** observers. Caveat: the p2p layer uses `tls.Config{InsecureSkipVerify: true}` with self-signed certs (`p2p/controller.go:398`, cert at `:551`), so an **active** MITM (e.g., a hostile ISP that can intercept and present its own self-signed cert) is *not* defended against by TLS alone — the upstream code itself acknowledges this with the comment `// NOTE: this does NOT protect from individual active man-in-the-middle attacks` at `p2p/controller.go:716`. |
 | **Blockchain** | Ring (2-128 members), encrypted commitments | Real sender, actual amounts, balances | Ring signatures + homomorphic encryption |
 | **Chainalysis** | Transaction patterns, metadata | Definitive sender, amounts, proof of sending | Cannot prove specific sender identity |
 | **Bob (receiver)** | Amount, comment, sender position | Alice's balance, other transactions | Only sees his own transaction details |

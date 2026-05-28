@@ -241,7 +241,7 @@ flowchart TD
 To prevent explorers from displaying obviously fake amounts, validation was added to the payload proof verification.
 
 <Callout type="info" emoji="🛡️">
-**Hologram-Exclusive:** This fix is currently only implemented in [Hologram's proof validation page](https://hologram.derod.org/proof-validation). The standard `derohe` binaries from the official DERO repository do not include this validation. Hologram is an official community project developed by DHEBP.
+**Where this lives:** [Hologram's proof validation page](https://hologram.derod.org/proof-validation), and — since [PR #14](https://github.com/DEROFDN/derohe/pull/14) landed — [DEROFDN/derohe `community-dev`](https://github.com/DEROFDN/derohe/tree/community-dev). The upstream `main` branch and other unpatched explorers do not include this validation. Hologram is an official community project developed by DHEBP.
 </Callout>
 
 **New Validation** (`proof/proof_validation.go`):
@@ -285,9 +285,8 @@ x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
 
 | Attack | Before Fix | After Fix |
 |--------|------------|-----------|
-| **184 trillion DERO proof** | ✓ "Verified" | ✗ "Amount exceeds maximum" |
-| **Wraparound to -2.2M** | ✓ "Verified" | ✗ "Possible wraparound attack" |
-| **100M DERO fake** | ✓ "Verified" | ✗ "Exceeds reasonable maximum" |
+| **184 trillion DERO proof (wraparound display)** | ✓ "Verified" | ✗ "Possible wraparound attack" |
+| **Negative amount wrapping to large positive (e.g., −1 DERO → 184 trillion display)** | ✓ "Verified" | ✗ "Possible wraparound attack" |
 | **Legitimate 1M DERO** | ✓ "Verified" | ✓ "Verified" |
 
 ### Honest Limitations
@@ -297,8 +296,8 @@ x.ScalarMult(crypto.G, new(big.Int).SetUint64(amount))
 </Callout>
 
 **What the fix CAN do:**
-- ✅ Block amounts > 22M DERO (above total supply)
-- ✅ Block amounts that would wrap to negative
+- ✅ Block amounts large enough to trigger `int64` wraparound (the actual demonstrated attack)
+- ✅ Block amounts that would wrap from negative back to an enormous positive display
 - ✅ Prevent the specific attack used to create false narratives
 - ✅ Improve user experience (no impossible amounts displayed)
 
