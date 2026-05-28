@@ -2,6 +2,123 @@
 User-agent: *
 Allow: /
 
+# GPTBot
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# ChatGPT-User
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# OAI-SearchBot
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# ClaudeBot
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# anthropic-ai
+User-agent: anthropic-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Claude-Web
+User-agent: Claude-Web
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Google-Extended
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# PerplexityBot
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Applebot-Extended
+User-agent: Applebot-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# cohere-ai
+User-agent: cohere-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Bytespider
+User-agent: Bytespider
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Amazonbot
+User-agent: Amazonbot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
+# Meta-ExternalAgent
+User-agent: Meta-ExternalAgent
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /agents.md
+Allow: /SKILL.md
+Allow: /.well-known/mcp-server-card.json
+
 # Host
 Host: https://hologram.derod.org
 
