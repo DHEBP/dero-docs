@@ -34,14 +34,16 @@ DERO (Stargate) holds account balances as **homomorphic ElGamal ciphertexts**. A
 1. A **Sigma proof** binds the transaction together: the sender controls their key, and the encrypted amounts **conserve value** across the statement — what leaves one account enters others, nothing is created.
 2. A **Bulletproof range proof** proves the hidden quantities lie in a valid **non-negative** range.
 
-The range proof is the one that closes the door on negative transfers. DERO packs **two** quantities into a single 128-bit value and range-proves them together (`cryptography/crypto/proof_generate.go`):
+The range proof is the one that closes the door on negative transfers. DERO packs **two** quantities into a single 128-bit value and range-proves them together (`cryptography/crypto/proof_generate.go:468-471`):
 
 ```go
 // transfer amount in the low 64 bits, sender's remaining balance in the high 64 bits
-btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount))
-bdiff     := new(big.Int).SetInt64(int64(witness.Balance))   // balance left AFTER the transfer
-number    := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))  // 128-bit value to range-prove
+btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount)) // this should be reduced
+bdiff     := new(big.Int).SetInt64(int64(witness.Balance))        // this should be reduced
+number    := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))       // 128-bit value to range-prove
 ```
+
+The trailing `// this should be reduced` comments are the DERO author's own forensic note in source — flagging that reduction modulo the bn256 group order should be applied to these inputs. They are preserved verbatim here because they carry that authorial signal.
 
 So one range proof establishes **both**:
 
@@ -91,7 +93,7 @@ for _, b := range []byte(bits) {
 }
 ```
 
-`aL` is the bit vector of `number`; `aR = aL − 1`. The proof then demonstrates, in zero knowledge, that for every position `aL ∘ aR = 0` and `aL − aR = 1` — i.e. **each component really is a single bit (0 or 1)** — and that those bits reconstruct the committed value. A value that is not a genuine 128-bit non-negative integer cannot satisfy those constraints, so the inner-product argument the verifier checks will not close.
+`aL` is the bit vector of `number`; `aR = aL − 1`. Note: in the actual source at `proof_generate.go:485`, the `-1` is stored as `new(big.Int).Mod(new(big.Int).SetInt64(-1), bn256.Order)` — i.e. the field-order representative of `-1` (a 256-bit positive integer congruent to `-1` mod `bn256.Order`). A literal `-1` in Go's `big.Int` would carry the negative sign and would *not* be equivalent in the bulletproof's polynomial relations; the `Mod(..., bn256.Order)` is load-bearing. The proof then demonstrates, in zero knowledge, that for every position `aL ∘ aR = 0` and `aL − aR = 1` — i.e. **each component really is a single bit (0 or 1)** — and that those bits reconstruct the committed value. A value that is not a genuine 128-bit non-negative integer cannot satisfy those constraints, so the inner-product argument the verifier checks will not close.
 
 <Callout type="info" emoji="🔎">
 This is generation code, shown for understanding. What *enforces* the rule is `cryptography/crypto/proof_verify.go`, run by every node: it re-derives the commitments and checks the inner-product relation. A malformed or out-of-range `number` yields a proof that simply fails that check.

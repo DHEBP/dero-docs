@@ -20,6 +20,10 @@ import { Tabs } from 'nextra/components'
   **Core Concept:** Your address is mixed with others in a ring of 2-128. Rings are split evenly between senders and recipients — only half are possible senders. The blockchain can't determine which one actually sent.
 </Callout>
 
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
+</Callout>
+
 ## How It Works
 
 ```mermaid
@@ -107,24 +111,35 @@ Which one? HIDDEN
 
 ## How Ring Members Are Selected
 
-**From source code** (`cmd/derod/rpc/rpc_dero_getrandomaddress.go`):
+**Source** (`cmd/derod/rpc/rpc_dero_getrandomaddress.go:80-111` — quoted verbatim):
 
 ```go
-// Get addresses with UNCHANGED balances (past 5 blocks)
-for i := 0; i < 100; i++ {
-    address := balance_tree.Random()
-    old_balance := balance_tree_old.Get(address)
-    balance := balance_tree.Get(address)
-    
-    if balance != old_balance {
-        continue  // Skip if balance changed recently
-    }
-    
-    candidates = append(candidates, address)
-}
+account_map := map[string]bool{}
 
-// Returns up to ~140 candidates
-// Wallet selects ringsize-1 decoys for the ring
+for i := 0; i < 100; i++ {
+    k, v, err := balance_tree.Random()
+    if err != nil {
+        continue
+    }
+    v_old, err := balance_tree_old.Get(k)
+    if err != nil {
+        continue
+    }
+    if bytes.Compare(v, v_old) != 0 {
+        continue // docs: balance recently changed → not a stable decoy
+    }
+    var acckey crypto.Point
+    if err := acckey.DecodeCompressed(k[:]); err != nil {
+        continue
+    }
+    addr := rpc.NewAddressFromKeys(&acckey)
+    addr.Mainnet = (globals.Config.Name == config.Mainnet.Name)
+    account_map[addr.String()] = true
+    if len(account_map) > 140 {
+        break
+    }
+}
+// docs: returns up to ~140 candidate addresses; wallet samples ring_size-1 of them.
 ```
 
 **Why unchanged balances?**
@@ -164,18 +179,19 @@ The comment in the source says it plainly: sender and receiver must not share pa
 
 The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members. An observer cannot determine which parity the sender occupies.
 
-**From source code** (`cryptography/crypto/proof_generate.go:700-710`):
+**Source** (`cryptography/crypto/proof_generate.go:700-723` — code below is verbatim; the `// docs:` lines are docs annotations, not in source):
 
 ```go
 for i := 0; i < N; i++ {
     var poly [][]*big.Int
     if i%2 == 0 {
-        poly = P   // Even indices: one role (sender or recipient)
+        poly = P   // docs: even indices form one parity group
     } else {
-        poly = Q   // Odd indices: the other role
+        poly = Q   // docs: odd indices form the other parity group
     }
-    // ... poly[j][(witness.Index[0]+N-(i-i%2))%N] used for sender amounts
-    // ... poly[j][(witness.Index[1]+N-(i-i%2))%N] used for recipient amounts
+    // ... math at lines 721-723 uses
+    //     poly[j][(witness.Index[0]+N-(i-i%2))%N]  (sender side)
+    //     poly[j][(witness.Index[1]+N-(i-i%2))%N]  (receiver side)
 }
 ```
 
@@ -201,9 +217,11 @@ Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
 - **8 odd indices** (1, 3, 5, 7, 9, 11, 13, 15) — the other parity role
 - The sender is one of the 8 members in their parity group → probability of correct identification: **1/8 = 12.5%**
 
-### Why Ring Size 2 Offers No Sender Privacy
+### Why Ring Size 2 Offers No Anonymity Set
 
-With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. An observer who knows which parity role is "sender" trivially identifies both parties. This is why ring size 2 is listed as "no sender privacy" in the table above.
+With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. The parity assignment itself (which parity is the sender's role) is **cryptographically hidden** — the verifier's parity check at `cryptography/crypto/proof_verify.go:130-141` rejects malformed parity but does not reveal the assignment to observers. So an observer sees the two ring members and knows one sent and one received, but cannot tell from on-chain data alone which is which.
+
+The reason ring size 2 is listed as "no sender privacy" is not that the parity leaks — it's that there is **no anonymity set within the sender's parity role**: there is exactly one candidate sender (the lone member of that parity), so the sender's identity collapses to the singleton on that side. Any additional out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) then resolves the pair trivially. Ring size 2 should therefore be treated as no meaningful anonymity, even though the parity itself remains hidden.
 
 ### Verify It Yourself
 
@@ -230,19 +248,21 @@ grep "RINGSIZE" config/config.go                        # Ring size limits
 
 When an address is included as a ring member (decoy) in a transaction, its encrypted balance changes even though the address performed no actions. This is **normal behavior** and part of how ring signatures provide privacy.
 
-**From source code** (`walletapi/daemon_communication.go`):
+**Source** (`walletapi/daemon_communication.go:863-903` — code below is verbatim; the `// docs:` lines are docs annotations, not in source):
 
 ```go
-// When address is a ring member:
 if bytes.Compare(compressed_address, tx.Payloads[t].Statement.Publickeylist_compressed[j][:]) == 0 {
-    // Encrypted balance changes for ALL ring members
+    // docs: this monitored address appears in the ring at slot j.
     changes := crypto.ConstructElGamal(tx.Payloads[t].Statement.C[j], tx.Payloads[t].Statement.D)
     changed_balance_e := previous_balance_e_tx.Add(changes)
-    
-    // This happens even if address did nothing!
+    // docs: the encrypted balance ciphertext updates regardless of role
+    //       (sender / receiver / decoy) — observers can't distinguish from this.
     switch {
-    case previous_balance == changed_balance:
-        ring_member = true  // Address identified as ring decoy
+    case previous_balance == changed_balance: //ring member/* handle 0 value tx but fees is deducted */
+        //fmt.Printf("Anon Ring Member in TX %s\n", bl.Tx_hashes[i].String())
+        ring_member = true
+    case previous_balance > changed_balance: // we generated this tx
+        // ...
     }
 }
 ```

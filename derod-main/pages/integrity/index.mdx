@@ -107,10 +107,11 @@ All cryptographic protections below rely on the hardness of ECDLP on the bn256 c
 
 | Protection | File | Lines |
 |------------|------|-------|
-| Overflow check | `cryptography/crypto/proof_verify.go` | 108-110 |
+| `Verify()` entry point | `cryptography/crypto/proof_verify.go` | 98 |
+| Overflow check | `cryptography/crypto/proof_verify.go` | 108-111 |
 | Parity check | `cryptography/crypto/proof_verify.go` | 136-141 |
 | Challenge hash | `cryptography/crypto/proof_verify.go` | 410-425 |
-| Inner product | `cryptography/crypto/proof_verify.go` | 457-459 |
+| Inner product | `cryptography/crypto/proof_verify.go` | 457-460 |
 | Block time | `config/config.go` | 34 |
 | Balance init | `blockchain/transaction_execute.go` | 189-194 |
 

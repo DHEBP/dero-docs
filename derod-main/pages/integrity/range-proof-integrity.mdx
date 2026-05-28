@@ -20,13 +20,15 @@ import { Callout } from 'nextra/components'
 
 ## What the range proof proves
 
-DERO packs **two** quantities into a single 128-bit value and range-proves them together (`cryptography/crypto/proof_generate.go:468-471`):
+DERO packs **two** quantities into a single 128-bit value and range-proves them together. The packing step is at `cryptography/crypto/proof_generate.go:468-471` and the bit-decomposition loop that feeds the bulletproof is at `proof_generate.go:473-487`:
 
 ```go
-btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount))
-bdiff     := new(big.Int).SetInt64(int64(witness.Balance))    // balance left AFTER the transfer
-number    := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))   // 128-bit value to range-prove
+btransfer := new(big.Int).SetInt64(int64(witness.TransferAmount)) // this should be reduced
+bdiff     := new(big.Int).SetInt64(int64(witness.Balance))        // this should be reduced
+number    := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))       // 128-bit value to range-prove
 ```
+
+The trailing `// this should be reduced` comments are the DERO author's own forensic note in source — flagging that reduction modulo the bn256 group order should be applied to these inputs. They are preserved verbatim here because they carry that authorial signal.
 
 So one Bulletproof establishes **both**:
 
@@ -101,7 +103,7 @@ flowchart TD
 - Fold vectors in half
 - Repeat until a single element remains (`log₂(128) = 7` rounds, `cryptography/crypto/proof_innerproduct.go`)
 
-If the final inner product does not match the committed value, the check at `proof_verify.go:457-459` fails — and the transaction is rejected at consensus.
+If the final inner product does not match the committed value, the check at `proof_verify.go:457-460` fails — and the transaction is rejected at consensus.
 
 ---
 

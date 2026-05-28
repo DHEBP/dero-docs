@@ -19,6 +19,10 @@ import { Tabs } from 'nextra/components'
 **Critical Understanding:** Encrypted balance changes occur for ALL ring members in a transaction, including decoys. This is **by design** - it's how ring signatures provide plausible deniability. Observing a balance change does NOT mean an address was the sender.
 </Callout>
 
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
+</Callout>
+
 ## The Core Mechanism
 
 ### How Ring Signatures Work
@@ -181,23 +185,35 @@ The address has zero blockchain activity for that period.
 
 ### How Decoys Are Chosen
 
-**From Source Code** (`cmd/derod/rpc/rpc_dero_getrandomaddress.go`):
+**Source** (`cmd/derod/rpc/rpc_dero_getrandomaddress.go:80-111` — quoted verbatim):
 
 ```go
-// Get addresses with UNCHANGED balances (past 5 blocks)
-for i := 0; i < 100; i++ {
-    address := balance_tree.Random()
-    old_balance := balance_tree_old.Get(address)
-    
-    if balance != old_balance {
-        continue  // Skip if balance changed recently
-    }
-    
-    candidates = append(candidates, address)
-}
+account_map := map[string]bool{}
 
-// Returns ~140 candidates
-// Wallet picks ring_size-1 for ring (+ sender)
+for i := 0; i < 100; i++ {
+    k, v, err := balance_tree.Random()
+    if err != nil {
+        continue
+    }
+    v_old, err := balance_tree_old.Get(k)
+    if err != nil {
+        continue
+    }
+    if bytes.Compare(v, v_old) != 0 {
+        continue // docs: balance recently changed → not a stable decoy
+    }
+    var acckey crypto.Point
+    if err := acckey.DecodeCompressed(k[:]); err != nil {
+        continue
+    }
+    addr := rpc.NewAddressFromKeys(&acckey)
+    addr.Mainnet = (globals.Config.Name == config.Mainnet.Name)
+    account_map[addr.String()] = true
+    if len(account_map) > 140 {
+        break
+    }
+}
+// docs: returns up to ~140 candidate addresses; wallet samples ring_size-1 of them.
 ```
 
 ### Selection Criteria

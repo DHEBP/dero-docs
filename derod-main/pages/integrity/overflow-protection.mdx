@@ -50,7 +50,7 @@ If fees + extra_value overflows:
 
 ### The Overflow Check
 
-**Location:** `cryptography/crypto/proof_verify.go:108-110`
+**Location:** `cryptography/crypto/proof_verify.go:108-111`
 
 ```go
 total_open_value := s.Fees + extra_value
@@ -238,7 +238,7 @@ func (proof *Proof) Verify(scid Hash, scid_index int, s *Statement, txid Hash, e
 
 | Check | What It Prevents | Location |
 |-------|-----------------|----------|
-| **Overflow check** | Arithmetic manipulation (fee wraparound) | `proof_verify.go:108-110` |
+| **Overflow check** | Arithmetic manipulation (fee wraparound) | `proof_verify.go:108-111` |
 | **Bulletproof range proof** | Out-of-range values, including negative/wraparound amounts | `proof_verify.go` (every node) |
 | **Inner product verification** | Proof forgery / cryptographic consistency | `proof_innerproduct.go` |
 
@@ -311,8 +311,8 @@ Overflow attack attempt:
 ## Source Code Reference
 
 **File:** `cryptography/crypto/proof_verify.go`
-**Lines:** 108-110
-**Function:** `Verify()`
+**Lines:** 108-111
+**Function:** `Verify()` (defined at `proof_verify.go:98`)
 
 ```go
 // The complete overflow protection check
@@ -334,8 +334,8 @@ sed -n '108,110p' cryptography/crypto/proof_verify.go
 ## Related Pages
 
 **Security Suite:**
-- [Negative Transfer Protection](/integrity/negative-transfer-protection) - Bit decomposition defense
-- [Range Proof Integrity](/integrity/range-proof-integrity) - Triple-layer protection
+- [Negative Transfer Protection](/integrity/negative-transfer-protection) - Verifier-enforced bulletproof soundness
+- [Range Proof Integrity](/integrity/range-proof-integrity) - 128-bit range proof closed at the verifier
 - [Proof Verification Flow](/integrity/proof-verification-flow) - Complete verification process
 
 **Technical Reference:**

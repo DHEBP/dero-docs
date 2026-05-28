@@ -212,15 +212,21 @@ Privacy complete!
 ### Complete Implementation
 
 ```basic
-/* Private Token Smart Contract */
+/* Private Token Smart Contract — illustrative.
+   `InitializePrivate()` in the canonical DERO test
+   (`tests/normal/multi_deposit_test/asset.bas:20-22`) is just
+   `40 RETURN 0` — empty body. Its only role is to flip the
+   contract's SC_META_DATA.Type from 0 (Open) to 1 (Private);
+   the function exists for its name, not its body. Any
+   one-time setup (owner, supply, initial mint) is typically
+   done in a separate `Initialize()` or in the calling tx. */
 
 Function InitializePrivate() Uint64
-    10 STORE("owner", SIGNER())
-    20 STORE("total_supply", 1000000)  // Public (verifiable)
-    30 SEND_ASSET_TO_ADDRESS(SIGNER(), 1000000, SCID())
     40 RETURN 0
 End Function
 
+/* Owner/supply setup and asset minting happen elsewhere
+   — shown here as a separate function for illustration. */
 Function IssueTokens() Uint64
     10 IF LOAD("owner") != SIGNER() THEN GOTO 30
     20 SEND_ASSET_TO_ADDRESS(SIGNER(), DEROVALUE(), SCID())
@@ -308,11 +314,12 @@ End Function
 **When contract sends tokens:**
 
 ```go
-// Source: dvm/dvm_functions.go - SEND_ASSET_TO_ADDRESS()
-// blockchain/transaction_execute.go:239
-
-nb.Balance = nb.Balance.Plus(amount)  // Homomorphic addition!
-// User's encrypted balance updated WITHOUT decryption
+// blockchain/transaction_execute.go:237-239
+echanges := crypto.ConstructElGamal(tx.Payloads[t].Statement.C[i], tx.Payloads[t].Statement.D)
+nb.Balance = nb.Balance.Add(echanges) // homomorphic addition of changes
+// User's encrypted balance updated WITHOUT decryption.
+// `.Add` combines two ElGamal ciphertexts; `.Plus` (scalar add) is a
+// distinct method and is NOT what runs here.
 ```
 
 **Storage structure:**
@@ -344,9 +351,10 @@ Each encrypted balance:
 Based on source code analysis:
 
 ```go
-// dvm/sc.go:38
+// dvm/sc.go:37-40
 type SC_META_DATA struct {
-    Type byte  // 0 = Open, 1 = Private
+    Type     byte        // 0 = Open, 1 = Private
+    DataHash crypto.Hash // hash of SC data tree, anchors all SC state in the meta tree
 }
 
 // blockchain/transaction_execute.go:325-327

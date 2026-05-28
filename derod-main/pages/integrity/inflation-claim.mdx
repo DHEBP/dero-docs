@@ -388,7 +388,7 @@ The proof asserts consensus accepted a negative-amount transfer — that the pro
 
 Could negative transfers pass consensus — separate from the submitted proof string?
 
-**No — and the guarantee is cryptographic, not a string-parsing quirk.** Every DERO transfer carries a **Bulletproof range proof**. The protocol packs the **transfer amount** and the sender's **remaining balance** into one 128-bit value and proves, in zero knowledge, that it lies in `[0, 2^128)` — i.e. that *both* the amount sent and the balance left over are valid **non-negative** 64-bit numbers (`num := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))` at `cryptography/crypto/proof_generate.go:471`).
+**No — and the guarantee is cryptographic, not a string-parsing quirk.** Every DERO transfer carries a **Bulletproof range proof**. The protocol packs the **transfer amount** and the sender's **remaining balance** into one 128-bit value and proves, in zero knowledge, that it lies in `[0, 2^128)` — i.e. that *both* the amount sent and the balance left over are valid **non-negative** 64-bit numbers (`number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))` at `cryptography/crypto/proof_generate.go:471`).
 
 A "negative" transfer is the `uint64` wraparound of a huge value, and it cannot satisfy that proof:
 

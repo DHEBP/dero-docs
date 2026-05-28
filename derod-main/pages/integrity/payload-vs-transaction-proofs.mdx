@@ -90,7 +90,7 @@ sequenceDiagram
 
 **Verification** (see `cryptography/crypto/proof_verify.go`):
 
-The `Verify()` function recomputes the challenge hash `c` from all six recovered sigma components (A_y, A_D, A_b, A_X, A_t, A_u) at lines 410-425, then verifies the inner product proof at lines 457-459. If any component was tampered with, the recomputed hash won't match and `Verify()` returns `false`.
+The `Verify()` function (`proof_verify.go:98`) recomputes the challenge hash `c` from all six recovered sigma components (A_y, A_D, A_b, A_X, A_t, A_u) at lines 410-425, then verifies the inner product proof at lines 457-460. If any component was tampered with, the recomputed hash won't match and `Verify()` returns `false`.
 
 **Why they can't be faked:**
 - All proofs are cryptographically bound
@@ -131,7 +131,7 @@ flowchart TD
 
 The verification in `proof/proof.go` performs a scalar multiplication to check math consistency: it takes the commitment `C[position]`, subtracts a shared key derived from the proof, and checks whether the result equals `amount × G`. If the math is consistent, the amount is displayed.
 
-The critical detail: this uses `ScalarMult(crypto.G, new(big.Int).SetInt64(int64(amount)))` at line 98 -- the `int64` cast is where the wraparound issue occurs (see [Technical Cause](#technical-cause-the-int64-cast-issue) below).
+The critical detail: this uses `ScalarMult(crypto.G, new(big.Int).SetInt64(int64(amount)))` at line 89 -- the `int64` cast is where the wraparound issue occurs (see [Technical Cause](#technical-cause-the-int64-cast-issue) below).
 
 **What this does NOT check:**
 - ❌ Whether the sender actually had that amount
@@ -191,7 +191,7 @@ Conclusion: Payload proofs can show impossible amounts
 
 The ability to create fake proofs showing impossible amounts (like 184 trillion DERO) stems from a specific technical issue in the explorer's proof verification code.
 
-**From Source Code** (`proof/proof.go:98`):
+**From Source Code** (`proof/proof.go:89`):
 
 ```go
 // Original code - vulnerable to wraparound
@@ -271,7 +271,7 @@ func ValidatePayloadProofAmount(amount uint64) error {
 }
 ```
 
-**Fixed int64 Cast** (`proof/proof.go:98`):
+**Fixed int64 Cast** (`proof/proof.go:89`):
 
 ```go
 // Before (vulnerable):

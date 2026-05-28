@@ -22,6 +22,10 @@ import { Tabs } from 'nextra/components'
 
 *For the integrity angle — why explorer "Verified ✓" on a payload proof isn't evidence of consensus — see [Proof Types Explained](/integrity/payload-vs-transaction-proofs).*
 
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
+</Callout>
+
 ## How payload-proof ambiguity works
 
 DERO uses **ring signatures** to hide the sender. When you send a transaction, your real output is hidden among ring_size/2 potential senders (rings are split evenly between senders and recipients), creating **plausible deniability** — observers cannot determine who actually sent the transaction.
@@ -30,14 +34,14 @@ That ambiguity is what makes payload-proof verification ambiguous. If a third pa
 
 ```mermaid
 graph LR
-    U[Your Transaction] --> R[Ring of 16 Addresses]
-    R --> D1[Decoy 1]
-    R --> D2[Decoy 2]
-    R --> YOU[Your Address<br/>Hidden Among Decoys]
-    R --> D3[Decoy 3]
-    R --> D4[Decoy 15]
+    U[Your Transaction] --> R[Ring of 16 Addresses<br/>8 sender slots + 8 receiver slots]
+    R --> S0[Sender slot 0<br/>could be sender]
+    R --> S1[Sender slots 1-7<br/>could be sender]
+    R --> YOU[Your Address<br/>hidden in 1-of-8 within your parity role]
+    R --> R0[Receiver slot 0<br/>could be receiver]
+    R --> R1[Receiver slots 1-7<br/>could be receiver]
     
-    R --> P[Observer Cannot Tell<br/>Which Is Real]
+    R --> P[Observer cannot tell<br/>which sender slot is real,<br/>which receiver slot is real,<br/>or even which parity is sender vs receiver]
     P --> PR[✅ Privacy Achieved]
 ```
 
@@ -96,13 +100,15 @@ graph LR
     C --> R[✅ Privacy: Observer<br/>cannot identify sender]
 ```
 
-**Mathematical Privacy:**
+**Mathematical Privacy** (actual per-ring construction, `walletapi/transaction_build.go:152-206`):
 ```
-C[0] = (amount × G) + address[0]
-C[1] = (amount × G) + address[1]
+C[0] = ±amount × G + r × pubkey[0]    // sender slot: -amount; receiver slot: +amount; decoys: 0
+C[1] = ±amount × G + r × pubkey[1]    // same r (transaction-wide blinding scalar)
 ...
-C[k] = (amount × G) + address[k]  ← Same amount for ALL
+C[k] = ±amount × G + r × pubkey[k]    // observer cannot tell which slot is sender/receiver/decoy
 ```
+
+Each ring slot's commitment uses that slot's own **public key** as the second generator — this is what makes the same encryption serve both as anonymity-set membership and as a per-receiver decryption hint.
 
 **Result:** Plausible deniability for all ring members. This is the standard ring-signature mechanism — observable ambiguity is what protects sender identity.
 
@@ -112,18 +118,20 @@ C[k] = (amount × G) + address[k]  ← Same amount for ALL
 
 ---
 
-## Recognizing Authentic Transaction Metadata
+## Decoded Payload — Receiver's View Only
 
-Real senders typically include encrypted metadata (destination address, comment, amount). This helps wallets display transaction history.
+A real transaction carries an encrypted payload (destination address, optional comment, amount) inside the per-ring-member commitment structure. **Only the intended receiver can decrypt that payload** (using their secret key plus the shared `D` ElGamal half — see [Ring Signatures: encrypted balance changes](/privacy/ring-signatures#encrypted-balance-changes-for-ring-members)).
 
-| Indicator | Authentic Sender | Ring Decoy |
-|-----------|------------------|------------|
-| **Payload** | Encrypted data (random bytes) | Often empty or sparse |
-| **Decoded** | Valid encrypted structure | Minimal data |
-| **Comment** | Encrypted message | Usually absent |
-| **Metadata** | Complete fields | Partial fields |
+The table below describes what the **receiver's wallet** sees after successful decryption of *its own* slot — not what a third-party observer sees on chain.
 
-**Note:** This is an observation, not a guarantee. Privacy systems require uncertainty - that's the entire point.
+| Indicator | What the receiver's wallet shows (after decrypt) |
+|-----------|---------------------------------------------------|
+| **Payload** | The plaintext fields the sender embedded for this receiver |
+| **Decoded** | Address, amount, comment recovered |
+| **Comment** | The plaintext comment, if the sender included one |
+| **Metadata** | The fields the sender chose to include |
+
+**Third-party observers see encrypted bytes for all 16 ring members identically.** They cannot use payload contents to identify the sender, the receiver, or the real ring slots — every slot looks the same on chain. The "indicators" above are wallet UX after decryption, not chain-level forensic signals.
 
 ## What Explorers Can and Cannot Show
 

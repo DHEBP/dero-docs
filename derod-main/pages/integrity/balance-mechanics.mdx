@@ -34,17 +34,17 @@ Every DERO balance is stored as 66 bytes of encrypted data:
 └──────────────────────────────────┴──────────────────────────────────┘
 ```
 
-**From Source Code** (`cryptography/crypto/algebra_elgamal.go`):
+**Conceptual structure** (the source struct in `cryptography/crypto/algebra_elgamal.go:34-39` has no inline comments — annotations below are docs notes; `Serialize()` is at `algebra_elgamal.go:84-91`):
 
 ```go
 type ElGamal struct {
-    G          *bn256.G1   // Generator point
-    Randomness *big.Int    // Blinding factor (used during construction)
-    Left       *bn256.G1   // L = amount×G + r×P (33 bytes compressed)
-    Right      *bn256.G1   // R = r×G (33 bytes compressed)
+    G          *bn256.G1   // docs: Pedersen value generator (NewElGamal sets G = global_pedersen_values.G)
+    Randomness *big.Int    // docs: blinding scalar (set by RandomScalarFixed during CommitElGamal)
+    Left       *bn256.G1   // docs: L = value × e.G + r × peer_pubkey (33 bytes compressed)
+    Right      *bn256.G1   // docs: R = r × G_pkg (note: package-level G, a different generator)
 }
 
-// Only Left and Right are serialized (66 bytes)
+// docs: only Left and Right are serialized (66 bytes); G + Randomness are reconstructed
 func (e *ElGamal) Serialize() (data []byte) {
     data = append(data, e.Left.EncodeCompressed()...)
     data = append(data, e.Right.EncodeCompressed()...)
@@ -52,7 +52,7 @@ func (e *ElGamal) Serialize() (data []byte) {
 }
 ```
 
-> **Note:** The full struct includes `G` (generator) and `Randomness` (blinding factor) fields used during construction, but only `Left` and `Right` are serialized to the 66-byte on-chain representation.
+> **Note:** The full struct includes `G` (the Pedersen value generator, set from `global_pedersen_values.G`) and `Randomness` (the blinding scalar) fields used during construction, but only `Left` and `Right` are serialized to the 66-byte on-chain representation. The right-commitment generator (`R = r × G`) is the package-level `G` declared at `algebra_pedersen.go:29` — distinct from `e.G`.
 
 ### What Each Component Represents
 
@@ -63,9 +63,10 @@ func (e *ElGamal) Serialize() (data []byte) {
 
 **Where:**
 - `amount` = The actual balance (hidden)
-- `G` = Generator point (public constant)
-- `r` = Random blinding factor (secret)
-- `P` = Account's public key
+- `G` = Pedersen value generator (`global_pedersen_values.G`) — the same `G` used in every value commitment
+- `r` = Random blinding scalar (secret, from `RandomScalarFixed`)
+- `P` = Account's public key (used as the second generator inside `L`, not a global `H`)
+- The `R = r × G` term uses a **distinct** package-level `G` (`algebra_pedersen.go:29`) for the randomness commitment — the formula collapses two generators for brevity
 
 ---
 
@@ -142,11 +143,13 @@ flowchart TD
 **The Math:**
 
 ```
-E(balance) - E(amount) = (L_balance - L_amount, R_balance - R_amount)
-                       = E(balance - amount)
+E(balance) + E(-amount) = (L_balance + L_negAmount, R_balance + R_negAmount)
+                        = E(balance - amount)
 ```
 
-**Source:** `cryptography/crypto/algebra_elgamal.go:69` - ElGamal operations
+> **Implementation note:** there is **no** `Sub` method on `ElGamal` (method set is `Add / Plus / Mul / Neg / Serialize`). The wallet builds a signed `changes` ciphertext at `walletapi/daemon_communication.go:886-887` and the daemon then adds it via `nb.Balance.Add(echanges)` at `blockchain/transaction_execute.go:239`. Subtraction is "add a negated commitment," not a primitive.
+
+**Source:** `cryptography/crypto/algebra_elgamal.go:69` (`func (e *ElGamal) Add`) and `:80` (`func (e *ElGamal) Plus`) — these are the two homomorphic primitives; subtraction is composed from `Add` + `Neg`.
 
 ---
 
@@ -167,13 +170,13 @@ E(balance) - E(amount) = (L_balance - L_amount, R_balance - R_amount)
 **Important:** Encrypted balance changes occur for ALL ring members in a transaction, including decoys. This is by design, not a bug. See [Ring Member Behavior](/integrity/ring-member-behavior) for details.
 </Callout>
 
-**From Source Code** (`walletapi/daemon_communication.go:886-889`):
+**Source** (`walletapi/daemon_communication.go:886-887` — the `//` lines below are docs annotations, not in source):
 
 ```go
-// When address is a ring member:
+// docs: this runs for every monitored address that appears in the ring,
+//       including decoys — the encrypted blob updates either way.
 changes := crypto.ConstructElGamal(tx.Payloads[t].Statement.C[j], tx.Payloads[t].Statement.D)
 changed_balance_e := previous_balance_e_tx.Add(changes)
-// Balance changes even if address is just a decoy!
 ```
 
 ---

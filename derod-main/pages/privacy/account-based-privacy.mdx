@@ -73,7 +73,7 @@ graph TB
     
     E --> F["Challenge 1: E(old) + E(amount) equals ?"]
     E --> G["Challenge 2: Verify E(balance) >= E(amount)"]
-    E --> H["Challenge 3: Update encrypted state"]
+    E --> H["Challenge 3: Update encrypted balance ciphertexts"]
     
     F --> I["Most blockchains: CANNOT solve"]
     G --> I
@@ -101,7 +101,7 @@ graph TB
     The problem:
       ❌ How to add E(old) + E(new)?
       ❌ How to verify E(balance) >= E(amount)?
-      ❌ How to update encrypted state?
+      ❌ How to update encrypted balance ciphertexts?
       ❌ How to do this efficiently?
     
     Most blockchains: CANNOT solve this
@@ -117,7 +117,7 @@ graph TB
       2. Operations work: E(a) + E(b) = E(a+b)
       3. Verification via proofs (no decryption)
       4. Direct updates (account model benefit)
-      5. Smart contracts can use encrypted state
+      5. Smart contracts can move encrypted wallet balances homomorphically
     
     Enables:
       ✓ Account simplicity
@@ -150,7 +150,7 @@ graph TB
 **Advantage:** Fast confirmation with account model + privacy ✅
 
 <Callout type="info" emoji="⏱️">
-  **Source:** Target block time is defined by `config/config.go` (`BLOCK_TIME = 18`).
+  **Source:** Target block time is defined by `config/config.go:34` (`const BLOCK_TIME = uint64(18)`).
 </Callout>
 
 ---
@@ -173,16 +173,16 @@ graph TB
 
 ### 3. Smart Contract Compatibility
 
-**DERO Account Model:** Natural state storage, direct balance updates, encrypted state works
+**DERO Account Model:** Natural state storage, direct balance updates, contracts can move encrypted wallet balances homomorphically without seeing the amount
 
 | Feature | DERO Account Model |
 |---------|-------------------|
-| **State Storage** | ✅ Natural |
-| **Balance Updates** | ✅ Direct |
+| **State Storage** | ✅ Natural (`STORE`/`LOAD` to graviton tree, plaintext) |
+| **Balance Updates** | ✅ Direct (homomorphic on encrypted wallet balances) |
 | **Logic Complexity** | ✅ Full support |
-| **Encrypted State** | ✅ Works with DERO |
+| **Encrypted Wallet Token Balances** | ✅ Contract can transfer without decrypting the amount |
 
-**Advantage:** Rich smart contracts WITH privacy ✅
+**Advantage:** Rich smart contracts whose **token movements** preserve user privacy (contract logic and state itself are public).
 
 ---
 
@@ -193,7 +193,7 @@ graph TB
 **Account Structure:**
 - Address: `dero1qy...`
 - Encrypted balances stored in Graviton DB
-- Key: Address, Value: `E(amount)`
+- Key: the compressed public key (33 bytes — `tx.MinerAddress[:]` or the pubkey decoded from the bech32 address); the `dero1qy...` bech32 form is only the display encoding. Value: `E(amount)` (ElGamal `(Left, Right)` pair)
 - Supports multiple assets: DERO, tokens, etc.
 
 **Balance Updates:**
@@ -272,6 +272,10 @@ sequenceDiagram
 
 ## Privacy Guarantees
 
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
+</Callout>
+
 ### What Account Model Doesn't Compromise
 
 ```mermaid
@@ -281,20 +285,20 @@ graph TB
     P --> U["Transaction Unlinkability"]
     P --> SC["Smart Contract Privacy"]
     
-    S --> S1["Ring Signatures: Hidden among 8 potential senders (ring size 16)"]
+    S --> S1["Anonymity-set proof: 1 sender hidden among 8 (ring size 16, 8+8 parity split — the parity assignment itself is cryptographically hidden from observers, see proof_verify.go:130-141)"]
     A --> A1["Encrypted Balances: Homomorphic operations"]
     U --> U1["Different Rings: Encrypted amounts"]
-    SC --> SC1["Encrypted State: Unique to DERO"]
+    SC --> SC1["Wallet token balances encrypted; contract state public"]
 ```
 
 | Privacy Aspect | DERO Account Privacy |
 |----------------|---------------------|
-| **Sender** | ✅ Ring signatures (hidden among 8 potential senders at ring size 16) |
+| **Sender** | ✅ Anonymity-set proof (hidden among 8 potential senders at ring size 16) |
 | **Amount** | ✅ Encrypted (homomorphic operations) |
 | **Unlinkability** | ✅ Different rings per transaction |
-| **Smart Contracts** | ✅ Encrypted state (unique!) |
+| **Smart Contracts** | ⚠️ Contract code and `STORE`/`LOAD` state are **public**; what's private is the **token balances in user wallets** that a contract can move homomorphically without seeing the amount (see [Private Smart Contracts](/privacy/private-smart-contracts)) |
 
-**Result:** Complete privacy guarantees, plus smart contract privacy!
+**Result:** Strong privacy guarantees on transfers and balances; contract logic is openly auditable.
 
 ---
 
@@ -332,7 +336,7 @@ graph TB
 |---------|---------|--------|
 | **⚡ Target Block Time** | 18 seconds | Consensus target |
 | **🔍 Encrypted Balance** | Query encrypted balance | No sync needed |
-| **🔐 Smart Contract Privacy** | Encrypted state | Unique to DERO |
+| **🔐 Smart Contract Privacy** | Contract state is public; wallet token balances stay encrypted across SC transfers | Unique to DERO |
 | **📦 Simple Wallets** | Lightweight clients | Easy adoption |
 | **🎯 Account Simplicity** | One balance per account | Lower complexity |
 | **✅ Complete Privacy** | All guarantees maintained | Best of both |

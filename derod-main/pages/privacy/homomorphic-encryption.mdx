@@ -76,7 +76,7 @@ Magic way:
   3. Safe NEVER opened
   
 Result: Nobody ever sees $500, not even for a second
-    Privacy: ✅ Perfect
+    Privacy: amount stays encrypted end-to-end
 ```
   </Tabs.Tab>
 </Tabs>
@@ -112,17 +112,14 @@ Generator:   G (elliptic curve point - public constant)
 
 ### Encrypting an Amount
 
-**From Source Code** (`cryptography/crypto/algebra_elgamal.go`):
+**Conceptual flow** (actual implementation: `CommitElGamal` at `cryptography/crypto/algebra_elgamal.go:44-50`; the numbered steps below are docs annotations, not source comments):
 
 ```go
-// Encrypt 100 DERO:
-// 1. Pick random number 'r'
-// 2. Calculate Left:  L = 100×G + r×P
-// 3. Calculate Right: R = r×G
+// Encrypt 100 DERO (illustrative):
+// 1. Pick random number 'r'    (RandomScalarFixed)
+// 2. Calculate Left:  L = 100 × G_value + r × P_recipient
+// 3. Calculate Right: R = r × G_randomness
 // 4. Ciphertext: E(100) = (L, R)
-
-// Result: Looks like random elliptic curve points
-// Network cannot determine the amount
 ```
 
 | Step | What Happens | What Network Sees |
@@ -187,6 +184,10 @@ sequenceDiagram
     
     Note over BC: Network never learned:<br/>Amounts, balances, or any values
 ```
+
+<Callout type="info" emoji="📘">
+  **Teaching abstraction, not literal verifier flow.** The diagram above shows the *intuition* — value conservation across encrypted balances. The actual verifier does not perform explicit ciphertext arithmetic like `E(500) + E(200) = E(400) + E(300)` at consensus. Balance conservation is enforced by the sigma proof structure: `A_b` (one of the six sigma commitments) commits to the balance-update polynomial relation, and the prover must produce a valid proof that the relation holds for the encrypted before/after values. The verifier checks the proof, not the arithmetic. See `proof_verify.go:98` for the actual `Verify()` entry point and `proof_generate.go` for what `A_b` commits to.
+</Callout>
 
 ### What Happens at Each Step
 
@@ -328,18 +329,22 @@ graph TB
 
 **Key Points:**
 
-**From Source Code** (`dvm/dvm_functions.go:80`):
+**Source** (verbatim from `tests/normal/multi_deposit_test/asset.bas:11-15`):
 
 ```basic
-// Issue tokens to user
-Function IssueAsset() Uint64
-    10 SEND_ASSET_TO_ADDRESS(SIGNER(), amount, SCID())  
-       // Sends without knowing user's current balance - homomorphic!
-End Function
+    // Issue Asset after depositing DERO (Convert DERO to TOKENX)
+    Function IssueAsset() Uint64
+    10  SEND_ASSET_TO_ADDRESS(SIGNER(), DEROVALUE(),SCID())   // send asset without knowing original balance, this is done homomorphically
+    20  RETURN 0
+    End Function
+```
 
-// Result in user's wallet:
-User's token balance: E(1000)  ← Encrypted, only user can decrypt
-User's DERO balance:  E(500)   ← Also encrypted
+The `SEND_ASSET_TO_ADDRESS` DVM function is registered at `dvm/dvm_functions.go:80`; the BASIC sample above is the canonical example contract in the test suite.
+
+```
+Result in user's wallet:
+  User's token balance: E(1000)  ← Encrypted, only user can decrypt
+  User's DERO balance:  E(500)   ← Also encrypted
 ```
 
 **Traditional tokens (ERC-20):** Balances public in contract  
@@ -369,31 +374,39 @@ Public sees:
 
 Every DERO transaction contains encrypted commitments:
 
-**C Commitment (Pedersen Commitment):**
+**C Commitment (per ring member — ElGamal-style, not Pedersen):**
 
 ```go
-C = amount×G + blinding×H
-
+// One C[i] per ring slot; pubkey[i] is the slot's public key.
+C[i] = ±amount × G + r × pubkey[i]   // sender slot: -amount; receiver slot: +amount; decoys: 0
+                                     // (see walletapi/transaction_build.go:152-206)
 Where:
-  amount = Transfer amount (hidden)
-  G, H = Generator points (public)
-  blinding = Random factor (secret)
-  
+  amount     = Transfer amount in atomic units (hidden)
+  G          = Pedersen value generator (global_pedersen_values.G)
+  r          = Transaction-wide blinding scalar (same r across the ring)
+  pubkey[i]  = Ring slot's public key — this is the second generator, NOT a global H
+
 Properties:
-  • Binding: Cannot change amount after creating C
-  • Hiding: Cannot determine amount from C
-  • Homomorphic: C₁ + C₂ = C(amount₁ + amount₂)
+  • Binding: Cannot change amount after creating C[i] (discrete-log hard)
+  • Hiding: Cannot determine amount or which slot is real from C[i] alone
+  • Homomorphic on accepted balance: nb.Balance.Add(echanges) at
+    blockchain/transaction_execute.go:239 sums an ElGamal change
+    ciphertext into the receiver's encrypted balance.
 ```
 
-**D Commitment (Randomness):**
+> **Why this is not Pedersen.** Pedersen uses a fixed generator pair `(G, H)`. DERO's per-ring construction reuses each ring member's public key as the second generator (`r × pubkey[i]`), which is what makes the same encryption serve both as an anonymity-set commitment and as a per-receiver decryption hint. The two families share the homomorphic add property; the security argument differs.
+
+**D Commitment (shared across the whole anonymity set, not per recipient):**
 
 ```go
-D = r×G
+D = r × G  // single value for the entire payload (one D field on Statement,
+           // see cryptography/crypto/protocol_structures.go:38)
 
 Purpose:
-  • Provides randomness for ElGamal encryption
-  • Prevents amount correlation attacks
-  • Enables decryption for intended recipient
+  • Acts as the public "Right" half of the ElGamal triple
+  • Combined with the receiver's secret key to recover the shared secret
+  • Same D for all ring members — the receiver-specific shared key is
+    derived from D plus the receiver's own secret
 ```
 
 **Together they enable:**
@@ -401,7 +414,7 @@ Purpose:
 - ✅ Verifiable without revealing amounts
 - ✅ Homomorphic balance updates
 
-**Source:** `cryptography/crypto/algebra_elgamal.go` - ElGamal encryption implementation
+**Source:** `cryptography/crypto/algebra_elgamal.go` — ElGamal encryption implementation. Key entry points: `CommitElGamal` at `algebra_elgamal.go:44` (encryption / commitment construction) and `Add` at `algebra_elgamal.go:69` (homomorphic ciphertext addition).
 
 ### Technical Specifications
 

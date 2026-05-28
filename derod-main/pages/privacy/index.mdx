@@ -21,12 +21,16 @@ import { Callout } from 'nextra/components'
 
 **Core Principles:**
 - Privacy by default (no opt-in required)
-- Multiple independent layers (defense in depth)
+- Layered privacy (TLS + anonymity set + homomorphic encryption) with a single verifier-enforced integrity gate (bulletproof soundness + balance proofs)
 - Mathematical guarantees (proven cryptography, not security through obscurity)
 - Conscious trade-offs (transparent about limitations)
 
 <Callout type="success" emoji="🎯">
 **The Breakthrough:** DERO achieved something no other blockchain has accomplished: combining account-based architecture with strong privacy guarantees through homomorphic encryption. This enables private smart contracts, instant transactions, and encrypted balances - all while maintaining complete privacy.
+</Callout>
+
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
 </Callout>
 
 ## Privacy Technologies Overview
@@ -83,9 +87,7 @@ Proves your transaction values are valid **without revealing what they are**. DE
 
 **Key properties:**
 - Logarithmic-size proof (7 rounds for 128-bit range)
-- Triple-layer defense against negative transfers
-
-Privacy + Security = Perfect.
+- Bulletproof soundness rejects any committed value outside the proven range — including the `uint64` wraparound of a negative — at the verifier, on every node.
 
 **[Explore Bulletproofs →](/privacy/bulletproofs)**
 
@@ -134,7 +136,7 @@ Privacy by design: Only YOU (with your private keys) can prove you sent a transa
 **Privacy in Action:**
 - [Transaction Privacy](/privacy/transaction-privacy) - Complete end-to-end flow
 - [Account-Based Privacy](/privacy/account-based-privacy) - Unique architectural achievement
-- [Private Smart Contracts](/privacy/private-smart-contracts) - Contract privacy with encrypted state
+- [Private Smart Contracts](/privacy/private-smart-contracts) - Contract code and state variables are PUBLIC; token balances **in user wallets** stay encrypted, transferable peer-to-peer without the contract seeing the amount
 
 **Understanding Proofs:**
 - [Payload Proofs](/privacy/payload-proofs) - Wallet-level verification mechanisms

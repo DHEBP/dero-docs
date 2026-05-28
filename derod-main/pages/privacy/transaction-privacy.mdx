@@ -22,7 +22,11 @@ import { Tabs } from 'nextra/components'
 
 ## How Privacy Layers Work Together
 
-DERO's privacy isn't a single feature—it's four independent layers that work together. Each layer protects different aspects of your transaction, and they're designed so that even if one layer weakens, others maintain your privacy.
+DERO's privacy is layered. Network encryption (TLS), anonymity-set membership, amount encryption, and zero-knowledge proofs each address a different observer and a different question. They are **not** four interchangeable locks against the same attack — they cover different surfaces.
+
+<Callout type="info" emoji="📖">
+**Naming note:** "Ring signature" is the user-facing name DERO uses for what the source actually implements as an Anonymous Zether-style anonymity-set ZK proof (see `cryptography/crypto/proof_generate.go` and `proof_verify.go`). The user-facing term is colloquial; the construction is not a classical (Schnorr/LSAG/MLSAG) ring signature.
+</Callout>
 
 **The Flow:**
 ```mermaid
@@ -50,7 +54,7 @@ flowchart TD
 
 **How They Interact:**
 
-When you send a transaction, each layer adds privacy at a different stage. Network encryption protects your traffic from ISPs. Ring signatures hide which address sent the transaction. Homomorphic encryption keeps all amounts secret. Bulletproofs prove validity without revealing anything. Together, they create defense in depth—multiple barriers that protect your privacy even if one layer is compromised.
+When you send a transaction, each layer addresses a different observer at a different stage. Network encryption protects your traffic from ISPs. Anonymity-set membership hides which address sent the transaction. Homomorphic encryption keeps all amounts secret. Bulletproofs prove validity without revealing the underlying values — and, at the integrity layer, **bulletproof soundness is the single cryptographic gate that prevents negative-transfer / wraparound mints**. The privacy layers and the integrity gate are not "defense in depth" against the same attack; they cover different surfaces.
 
 **Source Code References:**
 - Network: `p2p/controller.go` (TLS encryption)
@@ -66,7 +70,7 @@ Understanding what different parties can and cannot see helps illustrate how DER
 
 | Observer | Can See | Cannot See | Why Privacy Maintained |
 |----------|---------|-----------|----------------------|
-| **ISP/Network** | Encrypted traffic to DERO | Transaction details, amounts, addresses | TLS encryption hides all content |
+| **ISP/Network** | Encrypted traffic to DERO | Transaction details, amounts, addresses | TLS encryption hides content from **passive** observers. Caveat: the p2p layer uses `tls.Config{InsecureSkipVerify: true}` with self-signed certs (`p2p/controller.go:398`, cert at `:551`), so an **active** MITM (e.g., a hostile ISP that can intercept and present its own self-signed cert) is *not* defended against by TLS alone. |
 | **Blockchain** | Ring (2-128 members), encrypted commitments | Real sender, actual amounts, balances | Ring signatures + homomorphic encryption |
 | **Chainalysis** | Transaction patterns, metadata | Definitive sender, amounts, proof of sending | Cannot prove specific sender identity |
 | **Bob (receiver)** | Amount, comment, sender position | Alice's balance, other transactions | Only sees his own transaction details |
@@ -148,10 +152,11 @@ graph LR
 |-------|--------------|-------------|
 | **Creation** | Local only | `walletapi/wallet_transfer.go:62` |
 | **Ring Formation** | Sender hiding | `cryptography/crypto/proof_generate.go` |
-| **Encryption** | Amount hiding | `cryptography/crypto/algebra_elgamal.go:69` |
+| **Encryption (ciphertext construction)** | Amount hiding | `cryptography/crypto/algebra_elgamal.go:44` (`CommitElGamal`) |
+| **Homomorphic addition (during balance update)** | Update encrypted balance without decrypting | `cryptography/crypto/algebra_elgamal.go:69` (`Add`) |
 | **Proofs** | ZK validation | `cryptography/crypto/proof_generate.go` + `cryptography/crypto/proof_innerproduct.go` |
-| **Broadcast** | Network encryption | `p2p/controller.go` (TLS) |
-| **Verification** | Homomorphic check | `blockchain/transaction_execute.go:239` |
+| **Broadcast** | Network encryption | `p2p/controller.go:398` (TLS — self-signed, no client/server auth) |
+| **Verification** | Homomorphic balance update applied to ciphertexts | `blockchain/transaction_execute.go:239` (`nb.Balance.Add(echanges)`) |
 
 ---
 

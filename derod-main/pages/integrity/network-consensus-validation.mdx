@@ -90,13 +90,13 @@ sequenceDiagram
 
 **Each node performs complete verification.**
 
-The core verification logic lives in `cryptography/crypto/proof_verify.go` in the `Verify()` function. Each node independently runs through the same sequence:
+The core verification logic lives in `cryptography/crypto/proof_verify.go` in the `Verify()` function (`proof_verify.go:98`). Each node independently runs through the same sequence:
 
-1. **Overflow check** -- Reject if `fees + extra_value` overflows (`proof_verify.go:108-110`)
+1. **Overflow check** -- Reject if `fees + extra_value` overflows (`proof_verify.go:108-111`)
 2. **Parity check** -- Verify the secret parity is well-formed (`proof_verify.go:136-141`)
-3. **Polynomial recovery** -- Verify B^w × A recovery (`proof_verify.go:177-179`)
+3. **Polynomial recovery** -- Verify B^w × A recovery (`proof_verify.go:162-180`)
 4. **Challenge hash** -- Recompute and compare challenge `c` from all six sigma proof components (`proof_verify.go:410-425`)
-5. **Inner product** -- Final cryptographic consistency check (`proof_verify.go:457-459`)
+5. **Inner product** -- Final cryptographic consistency check (`proof_verify.go:457-460`)
 
 If any step fails, `Verify()` returns `false` and the transaction is rejected.
 

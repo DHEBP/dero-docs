@@ -97,16 +97,16 @@ But WITHOUT revealing:
 
 ```mermaid
 flowchart TD
-    A["Alice: Send 100 DERO"] --> B["Create Commitment<br/>C = amount×G + r×H"]
-    B --> C["Bit Decomposition<br/>100 = binary: 1100100"]
-    C --> D["Commit to Each Bit<br/>commit1, commit1, commit0, ..."]
-    D --> E["Generate Inner Product Proof<br/>Proves bits are 0 or 1"]
-    E --> F["Assemble Bulletproof<br/>Logarithmic-size proof"]
+    A["Alice: Send 100 DERO"] --> B["Pack packed = transfer + balance &lt;&lt; 64<br/>(128-bit value bound by one bulletproof)"]
+    B --> C["Bit-decompose the packed 128-bit value<br/>(aL_i, aR_i = aL_i - 1) at proof_generate.go:478-486"]
+    C --> D["A_t commits to range-proof polynomial coefficients"]
+    D --> E["Inner Product Proof folds A_t in 7 rounds (log_2 128)"]
+    E --> F["Assemble Bulletproof<br/>(BA + BS + T_1 + T_2 + that + mu + IP)"]
     F --> G["Broadcast to Network"]
-    G --> H["Network Verifies"]
+    G --> H["Every node runs proof_verify.go: Verify()"]
     H --> I{Valid?}
-    I -->|Yes| J["Transaction Accepted<br/>Amount hidden"]
-    I -->|No| K["Transaction Rejected"]
+    I -->|Yes| J["Transaction accepted<br/>(amount hidden, range guaranteed)"]
+    I -->|No| K["Transaction rejected at consensus"]
 ```
 
 **What Network Sees:**
@@ -162,7 +162,7 @@ graph LR
 | **A_D** | Encrypted balance update correct | 🔒 Homomorphic validation |
 | **A_b** | Balance commitment valid | 🔒 Binding & hiding |
 | **A_X** | Additional protocol constraints | 🔒 Protocol-specific |
-| **A_t** | Combined 128-bit value valid (transfer + balance) | 🔒 Range proof (bulletproof) |
+| **A_t** | Range-proof commitment for the packed 128-bit value (`transfer + balance << 64`) — **closed by the inner product proof** below | 🔒 Bulletproof — soundness under DL on bn256 (random oracle model) |
 | **A_u** | No double-spending | 🔒 Unspent validation |
 
 **All Bound Together:**
@@ -175,13 +175,17 @@ If ANY proof fails:
   → Transaction rejected
 ```
 
-**Source:** `cryptography/crypto/proof_verify.go` - Verifies all six sigma proofs + inner product
+**Source:** `cryptography/crypto/proof_verify.go:98` — `Verify()` recomputes the challenge hash from all six recovered sigma components (lines 410-425), then closes A_t via the inner product proof at line 457.
 
 ---
 
-## Inner Product Proof (The Core Algorithm)
+## Inner Product Proof — Closing A_t
 
-### Recursive Halving - How Logarithmic Scaling Works
+The inner product proof is **not a seventh independent check**. It is the recursive closure of the **A_t** bulletproof above: A_t commits to polynomial coefficients of the range-proof relation; the inner product argument shows those coefficients fold consistently with the committed value, proving (with the rest of the bulletproof scaffolding) that the packed `transfer + balance << 64` lies in `[0, 2^128)`.
+
+A failed inner product check is a failed A_t — and therefore a failed transaction. There is one bulletproof gate, with two named pieces.
+
+### Recursive Halving — How Logarithmic Scaling Works
 
 **The Algorithm:**
 
@@ -210,7 +214,7 @@ graph TB
 
 **Total:** log₂(128) = 7 iterations
   
-**Source:** `cryptography/crypto/proof_innerproduct.go` - Recursive halving algorithm
+**Source:** `cryptography/crypto/proof_innerproduct.go:71` hardcodes `length := 7` for the 128-bit range (note: this lives in `Deserialize`, so the 128-bit range size is fixed at the wire level — an attacker cannot submit a proof of a different range); the verifier closure call is `proof.ip.Verify(...)` at `cryptography/crypto/proof_verify.go:457`. The bulletproof input vector itself is packed at `proof_innerproduct.go:41` (the "7 entries" structure).
 
 ---
 
@@ -244,7 +248,7 @@ graph TB
 |------------|------------------|------------|
 | **Transaction Amounts** | Combined 128-bit value (transfer + remaining balance) | Prevents negative transfers |
 | **Balance Sufficiency** | Both transfer and remaining balance in [0, 2^64) | Prevents overdrafts |
-| **Smart Contract State** | State transitions valid, no negative balances | Ensures contract integrity |
+| **Asset (token) transfers via `tx.Payloads[t]`** | Range-proves the same packed value for each non-DERO asset moved in the transaction | Same negative/overflow protection applied per asset payload (note: smart-contract `STORE`/`LOAD` state is stored plaintext in the graviton tree — it is *not* bulletproof-protected) |
 
 **All three use the same bulletproof mechanism:**
 - ✅ Prove value is in valid range

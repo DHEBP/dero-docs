@@ -250,7 +250,7 @@ Properties:
 
 **[Detailed explanation →](/integrity/range-proof-integrity)**
 
-**Source:** `cryptography/crypto/proof_generate.go:473-487`
+**Source:** the A_t commitment itself is constructed at `cryptography/crypto/proof_generate.go:1120-1121` (a single sigma element `-k_b·G + k_tau·H`). The bulletproof input that A_t commits to is built earlier: packing `number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))` at `proof_generate.go:468-471`, and bit decomposition (`number_string` reversal + `aL` / `aR` for-loop) at `proof_generate.go:473-487`.
 
 ### A_u: Key Image Proof
 
@@ -304,13 +304,13 @@ sequenceDiagram
 
 **Verification flow** (see `cryptography/crypto/proof_verify.go`):
 
-The `Verify()` function performs all checks in sequence. The key checkpoints are:
+The `Verify()` function (`proof_verify.go:98`) performs all checks in sequence. The key checkpoints are:
 
-1. **Overflow check** (`line 108-110`) -- Reject if fees overflow
+1. **Overflow check** (`line 108-111`) -- Reject if fees overflow
 2. **Parity check** (`line 136-141`) -- Verify the secret parity is well-formed
-3. **B^w × A recovery** (`line 177-179`) -- Verify polynomial commitment structure
+3. **B^w × A recovery** (`line 162-180`) -- Verify polynomial commitment structure
 4. **Challenge hash** (`line 410-425`) -- Recompute `c` from all six sigma components and compare to `proof.c`
-5. **Inner product** (`line 457-459`) -- `proof.ip.Verify(hPrimes, u_x, P, o, gparams)`
+5. **Inner product** (`line 457-460`) -- `proof.ip.Verify(hPrimes, u_x, P, o, gparams)`
 
 If any checkpoint returns `false`, the entire transaction is rejected. See [Proof Verification Flow](/integrity/proof-verification-flow) for the full walkthrough.
 

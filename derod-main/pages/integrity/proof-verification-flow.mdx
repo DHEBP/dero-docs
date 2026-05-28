@@ -90,7 +90,7 @@ flowchart TD
 The proof generation function builds all components in sequence:
 
 1. **Create commitments** for each sigma proof component (A_y, A_D, A_b, A_X, A_t, A_u)
-2. **Bit decomposition** occurs during A_t construction (lines 468-487) -- the wallet encodes the packed 128-bit value as a bit vector for the bulletproof
+2. **Packing + bit decomposition** during the bulletproof input setup: the packing step `number := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))` is at `proof_generate.go:468-471`; the bit-decomposition loop (`number_string` reversal + `aL` / `aR` `for`-loop) is at `proof_generate.go:473-487`. Together they encode the packed 128-bit value as the bit vectors the bulletproof commits to.
 3. **Compute challenge hash** binding all six components together via `reducedhash()`
 4. **Generate responses** (s_y, s_D, etc.) using the challenge `c` and secret values
 5. **Generate inner product proof** for the bulletproof range verification
@@ -162,7 +162,7 @@ flowchart TD
 
 ### Checkpoint 1: Overflow Protection
 
-**Location:** `proof_verify.go:108-110`
+**Location:** `proof_verify.go:108-111`
 
 ```go
 // Prevent integer overflow attacks on fees
@@ -362,7 +362,7 @@ flowchart TD
 
 Before a transaction enters the mempool, the node:
 
-1. **Full verification** -- Runs the complete `Verify()` function from `proof_verify.go` (all checkpoints must pass)
+1. **Full verification** -- Runs the complete `Verify()` function from `proof_verify.go:98` (all checkpoints must pass)
 2. **Duplicate check** -- Ensures the transaction isn't already in the mempool
 3. **State check** -- Confirms the transaction is valid against current chain state
 4. **Add to mempool** -- Transaction is queued for inclusion in a future block
@@ -444,7 +444,7 @@ Transaction Accepted ⟺ ALL of:
 
 **Security Suite:**
 - [Transaction Proofs](/integrity/transaction-proofs) - The six sigma system
-- [Range Proof Integrity](/integrity/range-proof-integrity) - Triple-layer defense
+- [Range Proof Integrity](/integrity/range-proof-integrity) - 128-bit range proof closed at the verifier
 - [Network Consensus](/integrity/network-consensus-validation) - Distributed validation
 
 **Technical Reference:**
