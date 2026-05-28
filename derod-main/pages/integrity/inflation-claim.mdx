@@ -341,7 +341,8 @@ func main() {
 	txHex := "<paste txs_as_hex[0] from curl tab>" // serialized TX bytes (not the hash)
 	ring := [][]string{{ /* 16 addresses from curl tab */ }}
 
-	amount := uint64(int64(-100_000)) // -1 DERO in atomic units → uint64 wrap
+	negAtoms := int64(-100_000)       // -1 DERO in atomic units
+	amount := uint64(negAtoms)        // uint64 wrap (two-step form — Go rejects negative-to-uint64 in one constant expression)
 	slot := 0                         // ring position 0–15
 
 	txBytes, _ := hex.DecodeString(txHex)
@@ -387,7 +388,7 @@ The proof asserts consensus accepted a negative-amount transfer — that the pro
 
 Could negative transfers pass consensus — separate from the submitted proof string?
 
-**No — and the guarantee is cryptographic, not a string-parsing quirk.** Every DERO transfer carries a **Bulletproof range proof**. The protocol packs the **transfer amount** and the sender's **remaining balance** into one 128-bit value and proves, in zero knowledge, that it lies in `[0, 2^128)` — i.e. that *both* the amount sent and the balance left over are valid **non-negative** 64-bit numbers (`number = transfer + (balance << 64)`, `cryptography/crypto/proof_generate.go`).
+**No — and the guarantee is cryptographic, not a string-parsing quirk.** Every DERO transfer carries a **Bulletproof range proof**. The protocol packs the **transfer amount** and the sender's **remaining balance** into one 128-bit value and proves, in zero knowledge, that it lies in `[0, 2^128)` — i.e. that *both* the amount sent and the balance left over are valid **non-negative** 64-bit numbers (`num := btransfer.Add(btransfer, bdiff.Lsh(bdiff, 64))` at `cryptography/crypto/proof_generate.go:471`).
 
 A "negative" transfer is the `uint64` wraparound of a huge value, and it cannot satisfy that proof:
 
@@ -409,7 +410,7 @@ That closes the *mechanism* question. The *outcome* question is what the chain p
 
 The report's conclusion is that ~2.2M DERO was **minted from nothing** on October 17, 2022 (topoheight **1,081,893**). To support that, it would need to show abnormal coin creation at consensus — a multi-million DERO step in the block itself, or a supply audit against something other than the emission schedule. It publishes neither: only a payload proof string and an interpretation of the **corresponding transaction** ([Part 1](#part-1-the-claim-and-its-foundation)).
 
-Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go`: `PREMINE + CalcBlockReward(topoheight) × topoheight`) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
+Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go:81-82`: `PREMINE + CalcBlockReward(topoheight) × topoheight`, then divided by `100,000` to convert atomic units to whole DERO) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
 
 <Callout type="info" emoji="📊">
 **Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so cumulative supply at any height is exactly **premine + scheduled block rewards**. `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
