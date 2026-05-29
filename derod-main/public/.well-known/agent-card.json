@@ -1,0 +1,106 @@
+{
+  "schemaName": "a2a-agent-card",
+  "schemaVersion": "0.2-draft",
+  "name": "DERO Blockchain Documentation",
+  "description": "Read-only agent surface for the DERO privacy blockchain — daemon RPC, wallet RPC, DVM-BASIC smart contracts, privacy primitives (homomorphic encryption, ring signatures, bulletproofs), and integrity audits. Backed by a Markdown-mirrored docs corpus and the DERO MCP server.",
+  "url": "https://derod.org",
+  "version": "2026.05.28",
+  "provider": {
+    "organization": "DERO Project",
+    "url": "https://derod.org"
+  },
+  "documentationUrl": "https://derod.org/llms.txt",
+  "iconUrl": "https://derod.org/favicon.ico",
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/markdown", "application/json"],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "skills": [
+    {
+      "id": "query_dero_chain",
+      "name": "Query the DERO chain",
+      "description": "Read tip metadata, blocks, transactions, mempool, encrypted balances, and smart contract state from the DERO Stargate daemon over JSON-RPC.",
+      "tags": ["blockchain", "rpc", "daemon", "read-only"],
+      "examples": [
+        "What is the current DERO chain height?",
+        "Get block at topo-height 3,000,000.",
+        "Read the state of SCID 0000…0001 (DERO Name Service)."
+      ]
+    },
+    {
+      "id": "inspect_smart_contracts",
+      "name": "Inspect DVM-BASIC smart contracts",
+      "description": "Fetch contract code, classify the contract pattern, surface function signatures and stored variables, and route to the relevant DVM docs.",
+      "tags": ["smart-contracts", "dvm", "dvm-basic"],
+      "examples": [
+        "Explain the DERO Name Service contract.",
+        "What functions does this SCID expose?",
+        "How do I deploy a TELA-DOC-1 contract?"
+      ]
+    },
+    {
+      "id": "audit_chain_claims",
+      "name": "Audit on-chain claims end-to-end",
+      "description": "Verify chain-related assertions (supply integrity, transaction confirmation, contract behavior) against authoritative daemon state and curated docs citations.",
+      "tags": ["audit", "integrity", "verification"],
+      "examples": [
+        "Verify the DERO supply integrity claim at the current tip.",
+        "Trace transaction <hash> with context.",
+        "Has block <hash> reached stable confirmation?"
+      ]
+    },
+    {
+      "id": "navigate_dero_docs",
+      "name": "Search and navigate DERO documentation",
+      "description": "Full-text search across the curated DERO docs corpus (derod, tela, hologram, deropay) and recommend doc paths from natural-language intent. Every doc page has a `.md` mirror for direct agent ingestion.",
+      "tags": ["docs", "search", "navigation"],
+      "examples": [
+        "Find docs on homomorphic encryption.",
+        "What should I read to understand DVM gas costs?",
+        "List all privacy primitive pages."
+      ]
+    }
+  ],
+  "securitySchemes": {
+    "none": {
+      "type": "none",
+      "description": "Public read-only documentation; site content requires no authentication. Daemon RPC and hosted MCP HTTP transport apply their own authentication where configured."
+    }
+  },
+  "extensions": {
+    "dero": {
+      "chain": "DERO Stargate Mainnet",
+      "mcp_server": {
+        "name": "io.github.DHEBP/dero-mcp-server",
+        "card": "https://derod.org/.well-known/mcp-server-card.json",
+        "repository": "https://github.com/DHEBP/dero-mcp-server",
+        "npm": "dero-mcp-server",
+        "transport": ["stdio", "http"]
+      },
+      "sister_sites": [
+        { "name": "TELA", "url": "https://tela.derod.org" },
+        { "name": "Hologram", "url": "https://hologram.derod.org" },
+        { "name": "DeroPay", "url": "https://pay.derod.org" }
+      ],
+      "discovery": {
+        "llms_txt": "https://derod.org/llms.txt",
+        "llms_full_txt": "https://derod.org/llms-full.txt",
+        "agents_md": "https://derod.org/agents.md",
+        "skill_md": "https://derod.org/SKILL.md",
+        "agentroot": "https://derod.org/.well-known/agentroot.json",
+        "services": "https://derod.org/.well-known/services.json",
+        "openapi": "https://derod.org/api/openapi.json"
+      },
+      "privacy_posture": {
+        "site_logs": "none",
+        "telemetry": "none",
+        "tracking": "none",
+        "docs_mirror_format": "markdown",
+        "rationale": "DERO is a privacy-first chain; its docs surface honors the same posture."
+      }
+    }
+  }
+}

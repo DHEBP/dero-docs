@@ -1,0 +1,102 @@
+{
+  "schemaName": "a2a-agent-card",
+  "schemaVersion": "0.2-draft",
+  "name": "DeroPay Documentation",
+  "description": "Read-only agent surface for DeroPay and DeroAuth — DERO-native payment processing, wallet authentication, on-chain escrow, and HTTP 402 (x402) payment-required guards. Covers Next.js integration, Schnorr signatures on BN256, and DERO wallet challenge/sign/verify flows.",
+  "url": "https://pay.derod.org",
+  "version": "2026.05.28",
+  "provider": {
+    "organization": "DERO Project",
+    "url": "https://derod.org"
+  },
+  "documentationUrl": "https://pay.derod.org/llms.txt",
+  "iconUrl": "https://pay.derod.org/favicon.ico",
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/markdown", "application/json"],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "skills": [
+    {
+      "id": "integrate_dero_payments",
+      "name": "Integrate DERO-native payments",
+      "description": "Add DERO payment processing to a web application — invoice generation, payment monitoring, settlement, and reconciliation against on-chain state.",
+      "tags": ["payments", "dero", "integration", "next-js"],
+      "examples": [
+        "Add DeroPay to a Next.js checkout flow.",
+        "How does DeroPay detect a paid invoice?",
+        "What is the settlement model for DeroPay?"
+      ]
+    },
+    {
+      "id": "implement_dero_auth",
+      "name": "Implement DeroAuth wallet login",
+      "description": "Wire challenge/sign/verify wallet authentication using the `dero-auth` package. Covers Schnorr signatures on BN256, custom generator point, Keccak-256 hashing, and Bech32 address encoding.",
+      "tags": ["auth", "wallet-login", "schnorr", "cryptography"],
+      "examples": [
+        "Implement Sign In with DERO on my web app.",
+        "How does DeroAuth verify a wallet signature server-side?",
+        "What is the challenge/sign/verify flow?"
+      ]
+    },
+    {
+      "id": "gate_with_x402",
+      "name": "Gate routes with HTTP 402 (x402)",
+      "description": "Use DeroPay's x402 guard to charge per-request access to API routes and resources, denominated in DERO and settled on-chain.",
+      "tags": ["x402", "http-402", "pay-per-request", "api-gating"],
+      "examples": [
+        "Add an x402 guard to a Next.js API route.",
+        "How does x402 settle payment on-chain?",
+        "What headers does the x402 challenge response include?"
+      ]
+    },
+    {
+      "id": "search_deropay_docs",
+      "name": "Search and navigate DeroPay documentation",
+      "description": "Full-text search across the DeroPay docs corpus — payments, auth, escrow, x402. Every page has a `.md` mirror for direct agent ingestion.",
+      "tags": ["docs", "search", "navigation"],
+      "examples": [
+        "Find docs on the DeroPay escrow contract.",
+        "List DeroAuth cryptography references.",
+        "How do I test DeroPay against a local simulator?"
+      ]
+    }
+  ],
+  "securitySchemes": {
+    "none": {
+      "type": "none",
+      "description": "Public read-only documentation; site content requires no authentication. Daemon RPC, wallet RPC, and hosted MCP HTTP transport apply their own authentication where configured."
+    }
+  },
+  "extensions": {
+    "dero": {
+      "chain": "DERO Stargate Mainnet",
+      "mcp_server": {
+        "name": "io.github.DHEBP/dero-mcp-server",
+        "card": "https://pay.derod.org/.well-known/mcp-server-card.json",
+        "repository": "https://github.com/DHEBP/dero-mcp-server",
+        "npm": "dero-mcp-server",
+        "transport": ["stdio", "http"]
+      },
+      "sister_sites": [
+        { "name": "DERO Blockchain", "url": "https://derod.org" },
+        { "name": "TELA", "url": "https://tela.derod.org" },
+        { "name": "Hologram", "url": "https://hologram.derod.org" }
+      ],
+      "discovery": {
+        "llms_txt": "https://pay.derod.org/llms.txt",
+        "agents_md": "https://pay.derod.org/agents.md",
+        "skill_md": "https://pay.derod.org/SKILL.md"
+      },
+      "privacy_posture": {
+        "site_logs": "none",
+        "telemetry": "none",
+        "tracking": "none",
+        "docs_mirror_format": "markdown",
+        "rationale": "DERO is a privacy-first chain; its docs surface honors the same posture."
+      }
+    }
+  }
+}

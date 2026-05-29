@@ -1,0 +1,102 @@
+{
+  "schemaName": "a2a-agent-card",
+  "schemaVersion": "0.2-draft",
+  "name": "TELA Documentation",
+  "description": "Read-only agent surface for TELA — the on-chain decentralized web platform on DERO. Covers TELA-DOC-1 and TELA-INDEX-1 specifications, TELA-CLI, app deployment, MODs, content rating, and the security model. Backed by a Markdown-mirrored docs corpus and the DERO MCP server.",
+  "url": "https://tela.derod.org",
+  "version": "2026.05.28",
+  "provider": {
+    "organization": "DERO Project",
+    "url": "https://derod.org"
+  },
+  "documentationUrl": "https://tela.derod.org/llms.txt",
+  "iconUrl": "https://tela.derod.org/favicon.ico",
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/markdown", "application/json"],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "skills": [
+    {
+      "id": "build_tela_app",
+      "name": "Build a TELA application",
+      "description": "Author HTML/CSS/JS to be deployed as TELA-DOC-1 and TELA-INDEX-1 smart contracts. Covers structure, sharding for large files, content rating, and version upgrades.",
+      "tags": ["tela", "dapp", "smart-contracts", "decentralized-web"],
+      "examples": [
+        "Walk me through deploying my first TELA app.",
+        "How do I shard a file larger than 18KB across multiple TELA-DOC-1 contracts?",
+        "What goes in a TELA-INDEX-1 manifest?"
+      ]
+    },
+    {
+      "id": "use_tela_cli",
+      "name": "Use TELA-CLI",
+      "description": "Install and operate the TELA-CLI for local testing, deployment, search, and Gnomon-indexed discovery of on-chain TELA content.",
+      "tags": ["tela-cli", "tooling", "gnomon"],
+      "examples": [
+        "Install TELA-CLI on macOS.",
+        "Search TELA contracts by docType using Gnomon.",
+        "Serve a deployed TELA INDEX locally."
+      ]
+    },
+    {
+      "id": "understand_tela_mods",
+      "name": "Understand TELA-MOD-1 extensions",
+      "description": "Reference for TELA-MOD-1 extensions — vsoo, txdwd, txto — that extend TELA-INDEX-1 contracts with versioning, ownership transfer, and tipping behaviors.",
+      "tags": ["tela-mod", "extensions", "smart-contracts"],
+      "examples": [
+        "What does the vsoo MOD do?",
+        "Compare txdwd and txto.",
+        "Which MOD do I add to allow ownership transfer?"
+      ]
+    },
+    {
+      "id": "search_tela_docs",
+      "name": "Search and navigate TELA documentation",
+      "description": "Full-text search across the TELA docs corpus and recommend reading paths from natural-language intent. Every page has a `.md` mirror for direct agent ingestion.",
+      "tags": ["docs", "search", "navigation"],
+      "examples": [
+        "Find docs on TELA content rating.",
+        "How does the TELA security model work?",
+        "List every TELA-CLI command reference."
+      ]
+    }
+  ],
+  "securitySchemes": {
+    "none": {
+      "type": "none",
+      "description": "Public read-only documentation; site content requires no authentication. Daemon RPC and hosted MCP HTTP transport apply their own authentication where configured."
+    }
+  },
+  "extensions": {
+    "dero": {
+      "chain": "DERO Stargate Mainnet",
+      "mcp_server": {
+        "name": "io.github.DHEBP/dero-mcp-server",
+        "card": "https://tela.derod.org/.well-known/mcp-server-card.json",
+        "repository": "https://github.com/DHEBP/dero-mcp-server",
+        "npm": "dero-mcp-server",
+        "transport": ["stdio", "http"]
+      },
+      "sister_sites": [
+        { "name": "DERO Blockchain", "url": "https://derod.org" },
+        { "name": "Hologram", "url": "https://hologram.derod.org" },
+        { "name": "DeroPay", "url": "https://pay.derod.org" }
+      ],
+      "discovery": {
+        "llms_txt": "https://tela.derod.org/llms.txt",
+        "agents_md": "https://tela.derod.org/agents.md",
+        "skill_md": "https://tela.derod.org/SKILL.md"
+      },
+      "privacy_posture": {
+        "site_logs": "none",
+        "telemetry": "none",
+        "tracking": "none",
+        "docs_mirror_format": "markdown",
+        "rationale": "DERO is a privacy-first chain; its docs surface honors the same posture."
+      }
+    }
+  }
+}

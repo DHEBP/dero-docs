@@ -4,7 +4,7 @@
 
 This file is the curated agent map for [tela.derod.org](https://tela.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).
 
-Companion files: [agents.md](https://tela.derod.org/agents.md) (operating runbook), [SKILL.md](https://tela.derod.org/SKILL.md) (DERO MCP per-tool reference), [mcp-server-card.json](https://tela.derod.org/.well-known/mcp-server-card.json) (MCP descriptor).
+Companion files: [agents.md](https://tela.derod.org/agents.md) (operating runbook), [SKILL.md](https://tela.derod.org/SKILL.md) (DERO MCP per-tool reference), [mcp-server-card.json](https://tela.derod.org/.well-known/mcp-server-card.json) (MCP descriptor), [agent-card.json](https://tela.derod.org/.well-known/agent-card.json) (A2A-shaped agent descriptor).
 
 Sister sites: [derod.org](https://derod.org) (DERO daemon + DVM), [hologram.derod.org](https://hologram.derod.org) (DERO web browser), [pay.derod.org](https://pay.derod.org) (payments).
 

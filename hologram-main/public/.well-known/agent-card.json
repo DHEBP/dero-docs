@@ -1,0 +1,102 @@
+{
+  "schemaName": "a2a-agent-card",
+  "schemaVersion": "0.2-draft",
+  "name": "Hologram Documentation",
+  "description": "Read-only agent surface for Hologram — the DERO decentralized web browser. Loads TELA dApps from chain, signs in to HTTPS sites with a DERO wallet, validates on-chain proofs, and runs offline-first with a built-in block explorer. 300+ API methods across 30 functional areas.",
+  "url": "https://hologram.derod.org",
+  "version": "2026.05.28",
+  "provider": {
+    "organization": "DERO Project",
+    "url": "https://derod.org"
+  },
+  "documentationUrl": "https://hologram.derod.org/llms.txt",
+  "iconUrl": "https://hologram.derod.org/favicon.ico",
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/markdown", "application/json"],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "skills": [
+    {
+      "id": "load_tela_dapp",
+      "name": "Load and browse TELA dApps",
+      "description": "Discover, fetch, and render TELA dApps directly from the DERO blockchain inside the Hologram browser, with on-chain proof validation and offline-first behavior.",
+      "tags": ["tela", "browser", "dapp", "decentralized-web"],
+      "examples": [
+        "How does Hologram load a TELA app from chain?",
+        "What proofs does Hologram validate before rendering content?",
+        "Can Hologram run offline?"
+      ]
+    },
+    {
+      "id": "sign_in_with_dero",
+      "name": "Sign in to any HTTPS site with a DERO wallet",
+      "description": "HOLOGRAM-exclusive: authenticate on any HTTPS website using a DERO wallet address — no extensions, no passwords, no seed phrases exposed to the browser.",
+      "tags": ["authentication", "wallet", "dero-auth"],
+      "examples": [
+        "How does Sign In with DERO work?",
+        "What signature scheme does Hologram use for wallet auth?",
+        "Can I integrate Sign In with DERO on my Next.js site?"
+      ]
+    },
+    {
+      "id": "use_block_explorer",
+      "name": "Use the built-in block explorer",
+      "description": "Inspect blocks, transactions, smart contracts, and DERO Name Service registrations from inside Hologram without leaving the browser.",
+      "tags": ["explorer", "blockchain", "inspection"],
+      "examples": [
+        "Look up block at height 3,000,000.",
+        "Show me the registered owner of a given DERO name.",
+        "Inspect SCID 0000…0001 inside Hologram."
+      ]
+    },
+    {
+      "id": "search_hologram_docs",
+      "name": "Search and navigate Hologram documentation",
+      "description": "Full-text search across the Hologram docs corpus — 300+ API methods across 30 functional areas. Every page has a `.md` mirror for direct agent ingestion.",
+      "tags": ["docs", "search", "navigation", "api-reference"],
+      "examples": [
+        "Find docs on Hologram TELA browser.",
+        "List Hologram API methods for wallet operations.",
+        "How do I run Hologram in offline mode?"
+      ]
+    }
+  ],
+  "securitySchemes": {
+    "none": {
+      "type": "none",
+      "description": "Public read-only documentation; site content requires no authentication. Daemon RPC and hosted MCP HTTP transport apply their own authentication where configured."
+    }
+  },
+  "extensions": {
+    "dero": {
+      "chain": "DERO Stargate Mainnet",
+      "mcp_server": {
+        "name": "io.github.DHEBP/dero-mcp-server",
+        "card": "https://hologram.derod.org/.well-known/mcp-server-card.json",
+        "repository": "https://github.com/DHEBP/dero-mcp-server",
+        "npm": "dero-mcp-server",
+        "transport": ["stdio", "http"]
+      },
+      "sister_sites": [
+        { "name": "DERO Blockchain", "url": "https://derod.org" },
+        { "name": "TELA", "url": "https://tela.derod.org" },
+        { "name": "DeroPay", "url": "https://pay.derod.org" }
+      ],
+      "discovery": {
+        "llms_txt": "https://hologram.derod.org/llms.txt",
+        "agents_md": "https://hologram.derod.org/agents.md",
+        "skill_md": "https://hologram.derod.org/SKILL.md"
+      },
+      "privacy_posture": {
+        "site_logs": "none",
+        "telemetry": "none",
+        "tracking": "none",
+        "docs_mirror_format": "markdown",
+        "rationale": "DERO is a privacy-first chain; its docs surface honors the same posture."
+      }
+    }
+  }
+}

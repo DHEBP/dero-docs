@@ -2,7 +2,7 @@
 
 > Privacy-first Layer 1 blockchain with homomorphic encryption, native private smart contracts (DVM-BASIC), and on-chain decentralized web apps (TELA).
 
-This file is the curated agent map for [derod.org](https://derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix). Companion files: [llms-full.txt](https://derod.org/llms-full.txt) (full corpus), [agents.md](https://derod.org/agents.md) (operating runbook), [SKILL.md](https://derod.org/SKILL.md) (per-tool reference for the DERO MCP server), [mcp-server-card.json](https://derod.org/.well-known/mcp-server-card.json) (machine-readable MCP descriptor).
+This file is the curated agent map for [derod.org](https://derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix). Companion files: [llms-full.txt](https://derod.org/llms-full.txt) (full corpus), [agents.md](https://derod.org/agents.md) (operating runbook), [SKILL.md](https://derod.org/SKILL.md) (per-tool reference for the DERO MCP server), [mcp-server-card.json](https://derod.org/.well-known/mcp-server-card.json) (machine-readable MCP descriptor), [agent-card.json](https://derod.org/.well-known/agent-card.json) (A2A-shaped agent descriptor).
 
 ## Getting Started
 

@@ -4,7 +4,7 @@
 
 This file is the curated agent map for [hologram.derod.org](https://hologram.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).
 
-Companion files: [agents.md](https://hologram.derod.org/agents.md), [SKILL.md](https://hologram.derod.org/SKILL.md), [mcp-server-card.json](https://hologram.derod.org/.well-known/mcp-server-card.json).
+Companion files: [agents.md](https://hologram.derod.org/agents.md), [SKILL.md](https://hologram.derod.org/SKILL.md), [mcp-server-card.json](https://hologram.derod.org/.well-known/mcp-server-card.json), [agent-card.json](https://hologram.derod.org/.well-known/agent-card.json).
 
 Sister sites: [derod.org](https://derod.org), [tela.derod.org](https://tela.derod.org), [pay.derod.org](https://pay.derod.org).
 
