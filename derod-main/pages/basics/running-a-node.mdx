@@ -3,7 +3,7 @@ title: "Running a DERO Node: Complete Setup Guide | DERO Blockchain"
 description: "Step-by-step guide to setting up and running your own DERO node on Linux, Windows, or Mac. Earn integrator rewards and support network decentralization."
 keywords: ["DERO node setup", "run DERO daemon", "blockchain node", "DERO installation", "node configuration", "integrator rewards", "DERO network", "decentralization"]
 date: "2025-10-19"
-lastUpdated: "2025-10-19"
+lastUpdated: "2026-05-29"
 authors: ["DHEBP"]
 image: "/assets/daemon.jpeg"
 slug: "running-a-node"
@@ -71,9 +71,18 @@ cd dero-darwin-*
 |-----------|---------|-------------|
 | **CPU** | 2 cores | 4+ cores |
 | **RAM** | 4GB | 8GB+ |
-| **Storage** | 20GB SSD | 50GB+ SSD |
+| **Storage** | see note below | see note below |
 | **Network** | Stable connection | 100+ Mbps |
 | **OS** | Linux/Windows/Mac | Linux (best performance) |
+
+**Storage depends on your sync mode** — this is the number that catches people out:
+
+| Sync mode | Disk | Use when |
+|-----------|------|----------|
+| **Full / archival** (default `derod`, no pruning) | **~230 GB+ today; plan for 500 GB** (grows continuously) | you need complete chain history and to answer queries about any past block or transaction |
+| **Fast sync + pruning** (`--fastsync --prune-history=100000`) | **~50 GB** | typical node or VPS — current state, recent history, validating new blocks |
+
+The full chain has grown from ~130 GB (early 2025) to 160+ GB (late 2025) and past 230 GB by mid-2026, and it keeps climbing — size a full node for the future, not for today. A pruned, fast-synced node stays light and is the recommended setup for a VPS or any node that does not need deep history.
 
 **Why SSD?** 
 - Blockchain requires fast random reads/writes
@@ -174,7 +183,7 @@ journalctl -u derod -f
 status
 
 Output:
-  Height: 6090778/6090778  ← Synced!
+  Height: 7115506/7115506  ← Synced!
          ^local   ^network
   Peers: 16
   Network: Mainnet
@@ -192,10 +201,10 @@ curl http://127.0.0.1:10102/json_rpc -d '{
 
 # Returns:
 {
-  "height": 6090778,
-  "stableheight": 6090770,
-  "topoheight": 6090778,
-  "difficulty": 100000000,
+  "height": 7115506,
+  "stableheight": 7115498,
+  "topoheight": 7115506,
+  "difficulty": 36457876,
   "network": "mainnet"
 }
 ```
@@ -240,23 +249,26 @@ sudo ufw allow 40401/tcp
 
 ### Sync Methods
 
-**1. Full Sync (Recommended)**
+**1. Full Sync — complete history**
 ```bash
 ./derod-linux-amd64
 
-# Downloads and validates entire blockchain
-# Time: 2-6 hours (depends on connection/CPU)
-# Result: Fully validated node
+# Downloads and validates the entire blockchain from genesis
+# Time: several hours (depends on connection/CPU)
+# Disk: full archival (~230 GB+, see System Requirements)
+# Result: fully validated node that can answer queries about any past block/tx
 ```
 
-**2. Fast Sync**
+**2. Fast Sync — recommended for most nodes**
 ```bash
 ./derod-linux-amd64 --fastsync
 
-# Downloads state snapshots
+# Downloads recent state snapshots instead of replaying from genesis
 # Time: 30-60 minutes
-# Result: Functional node, still secure
+# Result: functional, secure node. Pair with --prune-history to keep disk small.
 ```
+
+Most operators want **fast sync + pruning** (see "For VPS/Server" under Performance Optimization). Choose full sync only if you specifically need the complete historical chain.
 
 ### Monitoring Sync Progress
 
