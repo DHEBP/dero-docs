@@ -3,7 +3,7 @@ title: "DERO MCP Server | AI Assistant Integration for the DERO Blockchain"
 description: "Run a read-only, agent-ready DERO MCP server — stdio for local hosts, streamable-HTTP for remote agents. 21 daemon primitives + 7 composite tools that fuse live chain reads with the bundled DERO docs index, plus structured errors and curated citations — no middlemen, no API keys, no surveillance."
 keywords: ["MCP", "Model Context Protocol", "DERO", "AI assistant", "Claude Desktop", "Cursor", "OpenCode", "ChatGPT Custom Connectors", "agent", "composite tools", "read-only", "DVM", "smart contracts", "agent-ready", "streamable-HTTP", "stargate", "privacy-blockchain", "monero-alternative", "private-ethereum", "homomorphic-encryption", "ring-signatures", "bulletproofs"]
 date: "2025-10-19"
-lastUpdated: "2026-05-28"
+lastUpdated: "2026-05-29"
 authors: ["DHEBP"]
 slug: "mcp-server"
 canonicalUrl: "https://derod.org/tools/mcp-server"
@@ -160,7 +160,7 @@ Once connected, talk to your AI naturally — it will pick the right composite o
 - *"Which DERO docs page should I read to deploy a TELA app?"* → `recommend_docs_path`
 - *"Estimate the gas cost to deploy this DVM contract."* → `estimate_deploy_cost`
 - *"Verify the claim that DERO's total supply has been correctly minted at the current tip."* → `audit_chain_artifact_claim`
-- *"Generate a demo DERO proof string so I can exercise my SDK's decode path."* → `dero_forge_demo_proof`
+- *"Forge a payload proof showing any amount — to see why 'Verified ✓' on an explorer proves nothing."* → `dero_forge_demo_proof`
 - *"What's the current block height?"* → `dero_get_info` / `dero_get_height`
 - *"Show me the source code for contract `[SCID]`."* → `dero_get_sc`
 - *"Resolve the name `dero` to a wallet address."* → `dero_name_to_address`
@@ -178,7 +178,7 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 | `estimate_deploy_cost` | `GetGasEstimate` + manual surface extraction + manual gas interpretation | DVM deploy pre-flight — returns gas estimate + plain-text breakdown + parsed function surface |
 | `trace_transaction_with_context` | `GetTransaction` + (for SC installs) `GetSC` + manual classification | "What is this tx" — returns confirmation status, kind classification, ring stats, and parsed SC install surface inline |
 | `audit_chain_artifact_claim` | Multiple primitives + docs lookups + proof decode | End-to-end verifier for chain-related claims — returns narrative + cited daemon state + flagged-artifact analysis + optional bech32 proof round-trips. Backbone of the adversarial-context defense layer |
-| `dero_forge_demo_proof` | `dero_get_random_address` + `dero_decode_proof_string` | Generate a demo DERO proof string that round-trips through bech32 decode/encode — for exercising SDK proof-handling code paths in testing |
+| `dero_forge_demo_proof` | `dero_get_transaction` + manual commitment math + bech32 encode | Forge a `deroproof…` display object for any tx / ring slot / amount — the one-call reproduction of the [inflation-claim Part 3](/integrity/inflation-claim#part-3-forge-a-fake-proof-yourself) demo that **Verified ✓ proves nothing**: payload proofs are user-forgeable. Also exercises SDK proof-decode paths. |
 
 Each composite is fully documented in [`docs/composites.md`](https://github.com/DHEBP/dero-mcp-server/blob/main/docs/composites.md) (design contract, accepted/rejected designs, failure modes), and every composite ships with a green flow test in CI that runs against a live public daemon.
 

@@ -3,7 +3,7 @@ title: "The 2022 Inflation Claim: Claims vs. Evidence | DERO Blockchain"
 description: "Point-by-point technical rebuttal of the October 2022 DERO inflation claim, including circulated report claims, the submitted proof string, and protocol mechanics that bound what is and isn't possible."
 keywords: ["DERO inflation bug", "2022 exploit", "Derolytics", "payload proofs", "ring signatures", "negative transfer", "DERO security", "blockchain investigation"]
 date: "2026-05-25"
-lastUpdated: "2026-05-25"
+lastUpdated: "2026-05-29"
 authors: ["DHEBP"]
 slug: "inflation-claim"
 canonicalUrl: "https://derod.org/integrity/inflation-claim"
@@ -16,6 +16,8 @@ import { Tabs } from 'nextra/components'
 import { Screenshot } from '@components/screenshot'
 
 # The 2022 Inflation Claim: Claims vs. Evidence
+
+_Derolytics' "irrefutable proof" is a string anyone can forge — and even a genuine one describes a transfer the chain would have rejected._
 
 <Callout type="info" emoji="📋">
 **Scope:** This page tests **one** claim: that DERO minted ~2.2M coins in October 2022 by exploiting a bug in how transfers were validated. Laundering totals, dollar figures, and attribution to individuals all **derive from this single claim** — if it falls, they fall with it. Governance and wallet-holdings allegations are out of scope here.
@@ -164,7 +166,7 @@ On the cited TX with the [Part 1](#part-1-the-claim-and-its-foundation) string:
 
 **We forged one to show how trivial it is.** Below is a fake `deroproof…` built specifically for this page — accepts on unpatched explorers, shows an amount that never moved on-chain. It took minutes. No wallet, no private keys, no insider access. Everything needed is already public: the [Part 1](#part-1-the-claim-and-its-foundation) transaction, its 16 ring slots, and the commitment math.
 
-The point isn't that forgery is *theoretically possible* — it's that **the report's "Verified ✓" evidence is the same kind of object, built the same way**. We're showing the work so a skeptic can re-run it.
+The point isn't that forgery is *theoretically possible* — it's that **the report's "Verified ✓" evidence is the same kind of object, built the same way**.
 
 ### The trick, in plain English
 
@@ -175,6 +177,10 @@ The point isn't that forgery is *theoretically possible* — it's that **the rep
 5. **Paste the string** into an unpatched explorer with the same TX.
 
 If the display math fits → **Verified ✓** on an unpatched explorer. Nodes never saw the string; supply didn't change. The circulated report string ([Part 1](#part-1-the-claim-and-its-foundation)) is exactly one such pasted object.
+
+**Three ways to see it for yourself**, easiest first — paste ours, ask an agent, or build one from scratch with nothing but public data.
+
+### Tier 0 — Paste the one we already made
 
 <Callout type="warning" emoji="🧪">
 **Paste this forged demo** — built for this page, not from the report.
@@ -206,9 +212,26 @@ deroproof1qyvvfxzyfqtjm0lgyf5jncleh6cxmmfahgmekxpyrzhhsz832dv8qq9zvfyyskpqqqqqqq
 
 </Screenshot>
 
-### How the demo string was built
+### Tier 1 — Ask your agent to forge one (no setup)
 
-No wallet — public inputs, public math, one bech32 string.
+No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Two ways in:
+
+- **Nothing to install** — point an HTTP MCP client (ChatGPT custom connectors, Cursor hosted mode) at `https://mcp.derod.org/mcp`.
+- **Run it yourself** — `npx dero-mcp-server` and add it to Claude or Cursor. Either way it finds a node automatically: your own if you're running one (the local-first default as of v0.4.0), a public node otherwise.
+
+Then ask:
+
+> *"Forge a payload proof for TX `5bbe…e55`, ring slot 7, for −5,000,000 DERO."*
+
+Back comes a `deroproof…` string. Paste it into an unpatched explorer — it lights up **Verified ✓**, rendering your −5M as a ~184-trillion-DERO "mint." The chain never moved a coin. Change the slot, change the amount, go bigger; the "evidence" doesn't care what number you pick — *that's the whole point.*
+
+<Callout type="info" emoji="🤖">
+This tier goes live with the **v0.4.0** release — the hosted endpoint at `mcp.derod.org` plus the npm package (forge tool + local-first resolution). Until then, install from [source](https://github.com/DHEBP/dero-mcp-server).
+</Callout>
+
+### Tier 2 — Build one from scratch (no DERO tooling)
+
+No wallet — public inputs, public math, one bech32 string. Nothing here comes from DERO, so a skeptic can re-run the whole thing from public data and trust the result. We're showing the work so it can be reproduced, not taken on faith.
 
 **What we chose:** ring slot **0**, target **−1 DERO** (= −100,000 atoms). Encoded as the `uint64` wraparound **`18446744073709451616`**, the unpatched explorer renders it as a positive number → **`184,467,440,737,094.51616 DERO`** on screen — the −1 we picked never appears (same display-layer reading as [Part 2](#part-2-the-explorer-wraparound--what-it-actually-proves)).
 
@@ -276,8 +299,8 @@ curl -s http://127.0.0.1:10102/json_rpc \
     "params": {
       "txs_hashes": ["5bbe1b7eecfe3447cb045b1197a07a214b456968eda8a3d5a90f5fae9ce57e55"]
     }
-  }' | jq -r '.result.txs_as_hex[0]' | head -c 80
-# … (full hex string — several KB)
+  }' | jq -r '.result.txs_as_hex[0]' > tx.hex   # full serialized TX (several KB) — do NOT truncate; the Go tab needs all of it
+# peek at the start if you like:  head -c 80 tx.hex
 ```
 
 The explorer checks commitment math against these public values — not whether the amount was consensus-valid.
@@ -317,7 +340,16 @@ print(f"  tail .{int(claimed % ATOMIC):05d} — embedded integer; explorer DISPL
   </Tabs.Tab>
   <Tabs.Tab>
 
-Step 4 — encode a complete `deroproof…` string (needs TX bytes + ring from the **curl** tab). The proof embeds a **derived blinder point** (`C[slot] − amount×G`) so the explorer math fits — not the ring address string itself. Requires a [DEROHE](https://github.com/deroproject/derohe) checkout.
+Step 4 — encode a complete `deroproof…` string. **Building** the proof needs only the TX bytes (to read `C[slot]`); the **ring** is used solely by the optional `proof.Prove` self-check at the end. The proof embeds a **derived blinder point** (`C[slot] − amount×G`) so the explorer math fits — not the ring address string itself.
+
+**Setup once.** This imports `github.com/deroproject/derohe/...`, so either drop `forge_demo.go` *inside* a [DEROHE](https://github.com/deroproject/derohe) checkout, or make a folder beside one and wire a module to it:
+
+```bash
+mkdir forge && cd forge && go mod init forge
+go mod edit -replace github.com/deroproject/derohe=/path/to/derohe
+# put forge_demo.go here, then:
+go mod tidy && go run forge_demo.go
+```
 
 ```go
 // go run forge_demo.go
@@ -338,10 +370,15 @@ import (
 )
 
 func main() {
-	txHex := "<paste txs_as_hex[0] from curl tab>" // serialized TX bytes (not the hash)
-	ring := [][]string{{ /* 16 addresses from curl tab */ }}
+	txHex := "<contents of tx.hex from the curl tab>" // full serialized TX bytes (not the hash) — needed to read C[slot]
 
-	negAtoms := int64(-100_000)       // -1 DERO in atomic units
+	// Ring is ONLY for the self-check at the bottom. To skip it, leave this empty
+	// and delete the proof.Prove call — building the string does not need it.
+	ring := [][]string{{
+		"dero1qy...slot0", "dero1qy...slot1", // ...all 16 addresses from the curl tab, in order
+	}}
+
+	negAtoms := int64(-100_000)       // -1 DERO in atomic units — change THIS to pick any amount
 	amount := uint64(negAtoms)        // uint64 wrap (two-step form — Go rejects negative-to-uint64 in one constant expression)
 	slot := 0                         // ring position 0–15
 
@@ -351,6 +388,9 @@ func main() {
 
 	Ck := tx.Payloads[0].Statement.C[slot]
 	var amountG bn256.G1
+	// Two representations, on purpose: the SIGNED value is the curve scalar; the UNSIGNED
+	// wrap (`amount`, embedded as the display Value below) is NOT. Don't "simplify" to
+	// SetUint64(amount) — on the curve 2^64−k ≠ −k, so the proof would stop verifying.
 	amountG.ScalarMult(crypto.G, new(big.Int).SetInt64(int64(amount)))
 	blinder := new(bn256.G1).Set(Ck)
 	blinder.Add(blinder, new(bn256.G1).Neg(&amountG))
