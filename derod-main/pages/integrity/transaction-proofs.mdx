@@ -218,13 +218,15 @@ Without revealing: old_balance, amount, or new_balance
 
 **Mathematical Structure:**
 ```
-Pedersen Commitment:
-  C = amount×G + blinding×H
+Pedersen Commitment (textbook form):
+  C = amount × G + blinding × H
 
 Properties:
   - Cannot find different (amount', blinding') with same C (binding)
   - Cannot determine amount from C without blinding (hiding)
 ```
+
+> **DERO's instantiation differs.** The per-ring-member transaction commitment uses each ring slot's **public key** as the second generator rather than a global `H` (`C[i] = ±amount × G + r × pubkey[i]`, see `walletapi/transaction_build.go:152-206` and [Balance Mechanics](/integrity/balance-mechanics)). The textbook Pedersen form above is shown as background for the binding/hiding properties; the actual on-chain construction is ElGamal-style with the receiver-pubkey acting as the second generator. The binding/hiding properties carry over; the security argument differs in the details.
 
 **Source:** `cryptography/crypto/proof_generate.go` - A_b generation
 

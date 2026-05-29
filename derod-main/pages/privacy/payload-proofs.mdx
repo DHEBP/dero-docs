@@ -28,7 +28,7 @@ import { Tabs } from 'nextra/components'
 
 ## How payload-proof ambiguity works
 
-DERO uses **ring signatures** to hide the sender. When you send a transaction, your real output is hidden among ring_size/2 potential senders (rings are split evenly between senders and recipients), creating **plausible deniability** — observers cannot determine who actually sent the transaction.
+DERO uses **ring signatures** to hide the sender. When you send a transaction, your real sender slot is hidden among ring_size/2 potential senders (rings are split evenly between sender-parity and receiver-parity slots; DERO is account-based, so there are no outputs to hide — only signing positions within the anonymity set), creating **plausible deniability** — observers cannot determine who actually sent the transaction.
 
 That ambiguity is what makes payload-proof verification ambiguous. If a third party could verify exactly who sent what, ring signatures would not provide privacy.
 
@@ -63,7 +63,7 @@ graph LR
 ```mermaid
 flowchart TD
     A[User submits deroproof] --> B[Extract: amount, address, TXID]
-    B --> C[Calculate: x = amount × G + address]
+    B --> C[Calculate: x = amount × G + shared_key]
     C --> D{Check: Does x match any<br/>ring commitment?}
     D -->|Yes| E[✓ Display: Proof Verified]
     D -->|No| F[✗ Display: Proof Invalid]
@@ -150,7 +150,7 @@ The table below describes what the **receiver's wallet** sees after successful d
 
 ## Why Payload Proofs Can Be Faked
 
-The ambiguity that protects sender privacy comes at a cost: **any ring member can generate a verifying payload proof for the transaction.** This is not a defect — it is the visible consequence of how ring signatures work. The commitment check an explorer performs (`amount × G + address`) matches for every ring member by construction, because all ring members were constructed using the same amount (see [Why All Ring Members Use Same Amount](#why-all-ring-members-use-same-amount) below). If only the real sender could produce a verifying proof, ring-signature privacy would not exist.
+The ambiguity that protects sender privacy comes at a cost: **any ring member can generate a verifying payload proof for the transaction.** This is not a defect — it is the visible consequence of how the anonymity-set construction works. The explorer's verification (`proof.go:88-95`) recomputes `amount × G + shared_key` and checks for a match against any ring commitment `C[k]`; since `C[k] = ±amount × G + r × pubkey[k]` and `shared_key` is derived from the proof string itself, the equation can be made to fit for any `k` by choosing a compatible `shared_key` (see [Why Ring-Member Commitments Are Indistinguishable](#why-ring-member-commitments-are-indistinguishable) below). If only the real sender could produce a verifying proof, ring-signature privacy would not exist.
 
 Third parties cannot use payload-proof verification as cryptographic evidence of *who sent what*. **For the integrity-framed perspective** — why payload-proof "Verified ✓" in an explorer is not the same as consensus acceptance, and not evidence of chain state — see [Proof Types Explained](/integrity/payload-vs-transaction-proofs).
 
@@ -172,25 +172,29 @@ Third parties cannot use payload-proof verification as cryptographic evidence of
 
 ## Technical Deep Dive
 
-### Why All Ring Members Use Same Amount
+### Why Ring-Member Commitments Are Indistinguishable
 
 **Privacy Requirement:**
 
-```
-If different ring members showed different amounts:
-  → You could identify sender by amount
-  → Privacy would be broken
-  → Ring signature would be useless
+If ring-slot commitments had obviously identifying differences (different generator pairs, different randomness sources, missing terms), an observer could:
+  → identify the sender by inspection
+  → break ring-signature privacy
 
-Therefore, ALL commitments use same amount:
-  C[k] = (amount * G) + address[k]_pubkey
-  
-Same amount for ALL k (0 through 15)
+DERO's construction uses the **same algebraic shape** for every ring slot, with a single transaction-wide blinding scalar `r` (`walletapi/transaction_build.go:152-206`):
+
 ```
+C[k] = ±amount × G + r × pubkey[k]
+        ↑                  ↑
+        sender slot: -amount       same r for every k
+        receiver slot: +amount     pubkey[k] is THIS slot's key,
+        decoy slots: 0             not a global H generator
+```
+
+The amount sign and value differ per slot, but the **construction is identical** — an observer sees 16 commitments of the same algebraic form, computed against the same `r`. Without the secret keys, none of them is distinguishable as "the sender's" or "the receiver's."
 
 **Result:** Cannot identify sender by commitment inspection
 
-**Trade-off:** Any ring member can generate "valid" proof
+**Trade-off:** Any ring member's pubkey can be paired with an arbitrary amount + derived shared key to forge a "valid" payload proof — see [the forgery walkthrough](/integrity/inflation-claim#part-3-forge-a-fake-proof-yourself)
 
 ### DERO's privacy posture
 

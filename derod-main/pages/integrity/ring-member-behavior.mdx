@@ -342,7 +342,7 @@ Conclusion: Cannot determine sender from outside
 <Callout type="info" emoji="📐">
 **Mathematical Privacy:** The probability of correctly identifying the sender is exactly 1/(ring_size/2) (e.g., 12.5% for ring size 16). Rings are split evenly — half are potential senders, half are potential recipients — so the anonymity set for the sender is ring_size/2. This is not "hard to guess" - it's mathematically guaranteed randomness.
 
-**Source:** This split is enforced by a parity constraint in `walletapi/transaction_build.go:79-90` and by the P/Q polynomial structure in `cryptography/crypto/proof_generate.go:700-710`. See [The Parity Constraint](/privacy/ring-signatures#the-parity-constraint) for the full source-code-verified breakdown.
+**Source:** This split is enforced by a parity constraint in `walletapi/transaction_build.go:79-90` and by the P/Q polynomial structure in `cryptography/crypto/proof_generate.go:700-710`. See [The Parity Constraint](/privacy/ring-signatures#the-parity-constraint-how-the-ring-is-split) for the full source-code-verified breakdown.
 </Callout>
 
 ---

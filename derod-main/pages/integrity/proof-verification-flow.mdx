@@ -194,7 +194,7 @@ if anonsupport.w.Cmp(proof.f.vector[0]) == 0 || anonsupport.w.Cmp(proof.f.vector
 
 **What it catches:** Invalid sender index encoding. The parity check ensures the prover knows which ring member position they occupy without revealing it.
 
-**Why it matters:** In a ring signature, the real sender's position is hidden among decoys. The parity check cryptographically verifies the prover knows their position without revealing which one it is. This check is the verification-side counterpart of the parity constraint enforced at transaction build time — sender and receiver must occupy indices of different parity (one even, one odd), splitting the ring evenly between potential senders and potential recipients. See [The Parity Constraint](/privacy/ring-signatures#the-parity-constraint) for the full structural explanation.
+**Why it matters:** In a ring signature, the real sender's position is hidden among decoys. The parity check cryptographically verifies the prover knows their position without revealing which one it is. This check is the verification-side counterpart of the parity constraint enforced at transaction build time — sender and receiver must occupy indices of different parity (one even, one odd), splitting the ring evenly between potential senders and potential recipients. See [The Parity Constraint](/privacy/ring-signatures#the-parity-constraint-how-the-ring-is-split) for the full structural explanation.
 
 ---
 

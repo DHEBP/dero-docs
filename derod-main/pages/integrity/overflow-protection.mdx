@@ -239,10 +239,9 @@ func (proof *Proof) Verify(scid Hash, scid_index int, s *Statement, txid Hash, e
 | Check | What It Prevents | Location |
 |-------|-----------------|----------|
 | **Overflow check** | Arithmetic manipulation (fee wraparound) | `proof_verify.go:108-111` |
-| **Bulletproof range proof** | Out-of-range values, including negative/wraparound amounts | `proof_verify.go` (every node) |
-| **Inner product verification** | Proof forgery / cryptographic consistency | `proof_innerproduct.go` |
+| **Bulletproof range proof** (A_t commitment closed by the inner product proof) | Out-of-range values, including negative/wraparound amounts. The A_t commitment and the inner product proof are **one bulletproof gate with two named pieces**, not two separable checks — see [Bulletproofs § Inner Product Proof — Closing A_t](/privacy/bulletproofs#inner-product-proof--closing-a_t) | A_t commitment: `proof_verify.go` (every node); IP closure: `proof_innerproduct.go:71` + `proof_verify.go:457` |
 
-### Defense in Depth
+### Order of Verifier Operations
 
 ```
 Transaction submitted
@@ -253,14 +252,14 @@ Proof structure validation
     ↓
 Parity check
     ↓
-Sigma proof verification
+Sigma proof verification (A_y, A_D, A_b, A_X, A_t, A_u)
     ↓
-Range proof verification
-    ↓
-Inner product verification
+Bulletproof gate (A_t commitment + IP recursive closure)
     ↓
 ✅ Transaction accepted
 ```
+
+> The verifier runs these steps sequentially; each is a precondition for proceeding to the next. They are **not** "layers of defense in depth against the same attack" — each catches a different malformation. The cryptographic guarantee against negative-transfer / wraparound mints is the bulletproof gate alone.
 
 ---
 

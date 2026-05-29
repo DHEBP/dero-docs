@@ -183,6 +183,8 @@ Conclusion: Payload proofs can show impossible amounts
 
 **This is not a bug — it's the consequence of an object built to read, not to prove.**
 
+> *The TX above (`c4fbc0d5…`) is an independent security-research example. The forgery walkthrough used throughout the rest of this suite — including the reproducible Go code, the bech32 decode, and the patched-vs-unpatched explorer screenshots — is built around a different transaction (`5bbe1b7e…`) and lives at [Inflation Claim § Part 3 — Forge a Fake Proof Yourself](/integrity/inflation-claim#part-3-forge-a-fake-proof-yourself). Both transactions illustrate the same phenomenon: a payload proof is a user-supplied display object, not consensus state.*
+
 ---
 
 ## Technical Cause: The int64 Cast Issue

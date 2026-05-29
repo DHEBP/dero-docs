@@ -149,7 +149,7 @@ graph LR
     C["A_b:<br/>Balance Commitment"] --> H
     D["A_X:<br/>Constraints"] --> H
     E["A_t:<br/>Range Proof"] --> H
-    F["A_u:<br/>Unspent"] --> H
+    F["A_u:<br/>Key Image"] --> H
     
     H --> V{"All Valid?"}
     V -->|Yes| ACC["Accepted"]
@@ -163,7 +163,7 @@ graph LR
 | **A_b** | Balance commitment valid | 🔒 Binding & hiding |
 | **A_X** | Additional protocol constraints | 🔒 Protocol-specific |
 | **A_t** | Range-proof commitment for the packed 128-bit value (`transfer + balance << 64`) — **closed by the inner product proof** below | 🔒 Bulletproof — soundness under DL on bn256 (random oracle model) |
-| **A_u** | No double-spending | 🔒 Unspent validation |
+| **A_u** | Key image (linking tag) is correctly derived from the sender's secret key — ties tx to the sender within the anonymity-set without revealing which slot is the sender | 🔒 Anti-replay, account-model linking (see [Transaction Proofs § A_u](/integrity/transaction-proofs#a_u-key-image-proof)) |
 
 **All Bound Together:**
 ```
