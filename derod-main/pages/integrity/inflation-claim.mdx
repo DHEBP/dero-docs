@@ -36,7 +36,7 @@ _Derolytics' "irrefutable proof" is a string anyone can forge — and even a gen
 
 ---
 
-At the center of every inflation accusation is a string. About a hundred characters of base32, prefixed `deroproof1...`, pasted into an unpatched DERO explorer where it lights up as **Verified ✓** for an amount the explorer renders as `184,467,438,537,095.51434 DERO` — roughly eleven million times the entire DERO supply.
+At the center of every inflation accusation is a string. About a hundred characters of base32, prefixed `deroproof1...`, pasted into an unpatched DERO explorer where it lights up as **Verified ✓** for an amount the explorer renders as `184,467,438,537,095.51434 DERO` — roughly fourteen million times the entire DERO supply.
 
 That string is the foundation of the [Derolytics "DERO Heist" report](https://web.archive.org/web/20250903162339/https://derolytics.com/) and its follow-ups — the source of the **2.2-million-DERO** figure, the cited evidence for every downstream claim of laundering, theft, and attribution. It is also a *payload proof*: a wallet-side display object the protocol gives no third party any way to verify. By design. Ring signatures rely on exactly this ambiguity — if outsiders could verify payload proofs, plausible deniability would die with them.
 
@@ -83,7 +83,7 @@ flowchart TD
 
 **The technical claim** (as stated in public exploit reports) rests on a single assumption — that the payload proof above is cryptographic evidence, and what verifies on an explorer also represents what consensus accepted:
 
-1. The transfer amount was **−2,200,000.00181 DERO** (fee included in the negative value).
+1. The transfer amount was **−2,200,000.00181 DERO** — `−220,000,000,181` atoms when the bech32 is decoded ([Part 2](#part-2-the-explorer-wraparound--what-it-actually-proves)).
 2. Stored as `uint64` (an unsigned 64-bit integer, no negatives), that negative value wraparound displays as **~184 trillion DERO** on explorers — roughly **14 million× total supply**.
 3. Post-2024 deanonymization is cited to name a fresh wallet as the **sender** — and to read the wraparound as a **~2.2M DERO** credit to that sender, not the **~184 trillion** figure on screen.
 4. **Conclusion:** consensus failed → **~2.2M DERO** minted from nothing.
@@ -417,7 +417,6 @@ Change `amount` and `slot` to forge any display value for any ring position. If 
 
 ---
 
-<a id="part-4-what-consensus-actually-enforces"></a>
 ## Part 4: The Chain's Account at the Exploit Block
 
 The proof asserts consensus accepted a negative-amount transfer — that the protocol minted ~2.2M DERO from nothing. The chain testifies otherwise on two independent counts.
@@ -570,7 +569,7 @@ Part 4 closes the consensus side: the alleged mechanism cannot pass range-proof 
 
 **The ~2.2M is not a deanonymization result.** It is the [circulated proof string](#part-1-the-claim-and-its-foundation) — a forgeable display object ([Part 3](#part-3-forge-a-fake-proof-yourself)) whose embedded `uint64` reads as −2,200,000.00181 only if you take a wraparound as negative. The report sources the figure there itself: *"use the proof string on the official explorer to confirm."*
 
-**A faithful deanonymization reads the chain — and the chain was constrained in advance.** Deanonymizing recovers the value actually committed in the transaction, not a pasted string. Whatever that value is, the range proof already pinned what it *can* be ([Part 4](#part-4-the-chains-account-at-the-exploit-block)): the sender provably **held** the amount and the balances **conserved**. A committed transfer of ~184 trillion DERO is impossible — the sender would have had to hold it, and the proof would not have verified. So a faithful deanonymization of this transaction recovers an **ordinary transfer of coins that already existed** — not a mint.
+**A faithful deanonymization reads the chain — and the chain was constrained in advance.** Deanonymizing recovers the value actually committed in the transaction, not a pasted string. Whatever that value is, the range proof already pinned what it *can* be ([Part 4](#part-4-the-chains-account-at-the-exploit-block)): the sender provably **held** the amount and the balances **conserved**. A committed transfer that wraps either way — the on-screen ~184 trillion DERO or the report's signed −2.2M read as a credit — is impossible: the first exceeds the 64-bit range bound, and the second requires the sender's remaining balance to go negative, which the range proof also forbids ([Part 4](#negative-transfers-fail-range-proof-validation)). So a faithful deanonymization of this transaction recovers an **ordinary transfer of coins that already existed** — not a mint.
 
 The payload structure backs this up: in both pre-fix and post-fix wallet code (`walletapi/transaction_build.go`), the only address-bound byte serialized into the payload is the **receiver index** (`witness_index[1]`) — the sender is never written into the payload in either era. What Release 142 changed was the **key derivation**, from the global blinding scalar `r` to a per-payload ephemeral scalar an outside observer can't reconstruct. A faithful read of either era's payload surfaces a receiver index and the committed value — exactly what a deanonymization can return, and nothing more.
 
