@@ -3,7 +3,7 @@ title: "The 2022 Inflation Claim: Claims vs. Evidence | DERO Blockchain"
 description: "Point-by-point technical rebuttal of the October 2022 DERO inflation claim, including circulated report claims, the submitted proof string, and protocol mechanics that bound what is and isn't possible."
 keywords: ["DERO inflation bug", "2022 exploit", "Derolytics", "payload proofs", "ring signatures", "negative transfer", "DERO security", "blockchain investigation"]
 date: "2026-05-25"
-lastUpdated: "2026-05-29"
+lastUpdated: "2026-05-30"
 authors: ["DHEBP"]
 slug: "inflation-claim"
 canonicalUrl: "https://derod.org/integrity/inflation-claim"
@@ -226,7 +226,7 @@ Then ask:
 Back comes a `deroproof…` string. Paste it into an unpatched explorer — it lights up **Verified ✓**, rendering your −5M as a ~184-trillion-DERO "mint." The chain never moved a coin. Change the slot, change the amount, go bigger; the "evidence" doesn't care what number you pick — *that's the whole point.*
 
 <Callout type="info" emoji="🤖">
-This tier goes live with the **v0.4.0** release — the hosted endpoint at `mcp.derod.org` plus the npm package (forge tool + local-first resolution). Until then, install from [source](https://github.com/DHEBP/dero-mcp-server).
+Live now — `npx dero-mcp-server` (v0.4.0+) or the hosted endpoint at `mcp.derod.org`, both shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
 </Callout>
 
 ### Tier 2 — Build one from scratch (no DERO tooling)
@@ -592,7 +592,7 @@ That artifact fails on four independent grounds — in the order established abo
 The display-layer bug that made this confusion possible was real. It is being remediated — [DEROFDN/derohe `community-dev`](https://github.com/DEROFDN/derohe/tree/community-dev) ([PR #14](https://github.com/DEROFDN/derohe/pull/14)), [HOLOGRAM](https://hologram.derod.org), and patched explorers now reject proofs like this one; `main` and other unpatched explorers may still show **Verified**. That is a display-layer problem worth fixing. It is not evidence that the chain minted coins; the range proofs do not permit it.
 
 <Callout type="warning" emoji="💬">
-**"Irrefutable" is only as strong as its evidence.** [Derolytics' executive summary](https://web.archive.org/web/20250903162339/https://derolytics.com/) calls the case *"irrefutable"* and invites readers to *"verify yourself"* by pasting the proof string into an explorer. But that string is a user-supplied display object — one [anyone can forge for any amount](#part-3-forge-a-fake-proof-yourself), describing a transfer that [consensus could never accept](#part-4-the-chains-account-at-the-exploit-block).
+**"Don't Trust, Verify" — exactly. So verify the chain, not a string someone hands you.** [Derolytics' executive summary](https://web.archive.org/web/20250903162339/https://derolytics.com/) calls the case *"irrefutable"* and tells you to *"verify yourself"* by pasting the proof into an explorer. But a payload proof's **Verified ✓** only confirms the display object's own math is self-consistent — it never touched consensus. That's not *Don't Trust, Verify* — it's *trust the checkmark.* The string is [forgeable for any amount](#part-3-forge-a-fake-proof-yourself), describing a transfer [consensus could never accept](#part-4-the-chains-account-at-the-exploit-block). **Verify the chain** — run a node, decode the transaction, check the range proofs — and the "mint" disappears.
 </Callout>
 
 The artifact at the center of every accusation is a display object anyone can forge. The chain neither records the event the report describes nor permits the mechanism it alleges. Every downstream claim — laundering, attribution, dollar figures — requires that artifact to function as cryptographic evidence. It does not.
