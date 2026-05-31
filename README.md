@@ -1,168 +1,51 @@
-# DERO Documentation Monorepo
-
-Community-maintained documentation for DERO blockchain and TELA web3 platform - covering privacy-focused smart contracts, homomorphic encryption, decentralized applications, and developer resources.
-
-🌐 **Live Sites:**
-- **DERO Docs:** [derod.org](https://derod.org)
-- **TELA Docs:** [tela.derod.org](https://tela.derod.org)
-
-## About This Monorepo
-
-This repository contains comprehensive documentation for:
-
-### DERO Documentation (derod-main)
-- DERO blockchain basics, features, and privacy suite
-- DERO Virtual Machine (DVM) and smart contract development
-- Mining, wallets, and node operations
-- RPC APIs and integration guides
-- Privacy features: homomorphic encryption, ring signatures, bulletproofs
-
-### TELA Documentation (tela-main)
-- TELA web3 platform and architecture
-- Building decentralized applications
-- TELA CLI and development tools
-- XSWD protocol and wallet integration
-- Templates and code examples
-
-## Repository Structure
-
-```
-dero-docs/
-├── derod-main/          # DERO Documentation (derod.org)
-│   ├── pages/           # MDX documentation files
-│   ├── components/      # React components
-│   ├── public/          # Static assets
-│   └── package.json     # Dependencies
-│
-├── tela-main/           # TELA Documentation (tela.derod.org)
-│   ├── pages/           # MDX documentation files
-│   ├── components/      # React components
-│   ├── public/          # Static assets & examples
-│   └── package.json     # Dependencies
-│
-├── package.json         # Monorepo configuration
-├── CONTRIBUTING.md      # Contribution guidelines
-└── README.md            # This file
-```
-
-## Tech Stack
-
-- **Framework**: [Next.js](https://nextjs.org/) 15.5+
-- **Documentation**: [Nextra](https://nextra.site/) 2.13+
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4+
-- **Deployment**: Vercel
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- npm >= 9.0.0
-
-### Install Dependencies
-
-```bash
-# Install all dependencies for both projects
-npm run install:all
-```
-
-### Development
-
-Run either documentation site locally:
-
-```bash
 # DERO Documentation
-npm run dev:derod
-# Opens at http://localhost:3000
 
-# TELA Documentation
-npm run dev:tela
-# Opens at http://localhost:3000
-```
+**The DERO ecosystem, documented for humans and shipped as an API for agents.**
 
-### Build for Production
+Four production docs sites for [DERO](https://derod.org) — the privacy-first L1 with homomorphic-encrypted payments, DVM-BASIC smart contracts, and an on-chain web platform. Every page renders in your browser, mirrors itself as Markdown, indexes through `llms.txt`, and routes through a hosted MCP server so any LLM or agent can read it natively.
+
+## Read the docs
+
+| | Covers | Live at |
+|---|---|---|
+| **DERO** | Privacy suite, DVM-BASIC smart contracts, mining, wallets, daemon RPC | [derod.org](https://derod.org) |
+| **TELA** | On-chain web platform — TELA apps, XSWD wallet protocol, CLI, templates | [tela.derod.org](https://tela.derod.org) |
+| **Hologram** | Desktop client — wallet, TELA browser, explorer, Studio, simulator, telaHost Bridge API | [hologram.derod.org](https://hologram.derod.org) |
+| **DeroPay** | Payments + auth — dero-pay SDK, payment router, escrow, dero-auth SDK | [pay.derod.org](https://pay.derod.org) |
+
+The sites are the product. This repo is just where they live.
+
+## Agent-ready, by default
+
+Same surfaces on every domain. Point any LLM, MCP client, or A2A runtime at them and skip the HTML.
+
+| Path | What it is |
+|---|---|
+| `/llms.txt` | Link-list index of every public page |
+| `/<page>.md` | Markdown twin of every URL |
+| `/SKILL.md` | Skill descriptor for skill-aware agents |
+| `/agents.md` | Discovery doc for AI-first crawlers |
+| `/.well-known/agent-card.json` | A2A agent card |
+| `/.well-known/mcp-server-card.json` | MCP descriptor — points at the hosted server |
+| `/robots.txt` | AI-crawler-aware (GPTBot, ClaudeBot, PerplexityBot, …) |
+
+The hosted MCP server lives at **[mcp.derod.org/mcp](https://mcp.derod.org/mcp)** — Streamable HTTP transport over DERO daemon RPC and the bundled docs index. Wire it into Claude Desktop, Cursor, or any MCP client and query the docs and chain directly.
 
 ```bash
-# Build both sites
-npm run build:all
-
-# Or build individually
-npm run build:derod
-npm run build:tela
+curl https://mcp.derod.org/health       # liveness check
+npx dero-mcp-server                     # run it yourself
 ```
 
-## Available Scripts
-
-From the root directory:
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev:derod` | Start DERO docs dev server |
-| `npm run dev:tela` | Start TELA docs dev server |
-| `npm run build:derod` | Build DERO docs for production |
-| `npm run build:tela` | Build TELA docs for production |
-| `npm run build:all` | Build both sites |
-| `npm run install:all` | Install dependencies for both projects |
-| `npm run clean` | Remove build artifacts |
-| `npm run clean:all` | Remove all build artifacts and node_modules |
-
-## Deployment
-
-Both sites are deployed independently on Vercel:
-
-- **derod-main** → [derod.org](https://derod.org)
-- **tela-main** → [tela.derod.org](https://tela.derod.org)
-
-Each deployment uses its respective directory as the root via Vercel's monorepo configuration.
+Source: [`dero-mcp-server`](https://github.com/DHEBP/dero-mcp-server) · [npm](https://www.npmjs.com/package/dero-mcp-server)
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
-
-### Quick Contribution Guide
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and test locally
-4. Commit with clear messages: `git commit -m "Add feature"`
-5. Push to your fork: `git push origin feature/your-feature`
-6. Open a Pull Request
-
-### What to Contribute
-
-- 🐛 Fix typos or errors
-- 📝 Improve existing documentation
-- ✨ Add new guides or examples
-- 🎨 Enhance UI/UX components
-- 🔗 Fix broken links or outdated info
-
-## Project Status
-
-- ✅ DERO Documentation: Active
-- ✅ TELA Documentation: Active
-- ✅ Monorepo: Configured
-- ✅ CI/CD: Vercel
-
-## Community & Support
-
-- **Discord**: [discord.gg/H95TJDp](https://discord.gg/H95TJDp)
-- **Twitter**: [@DeroProject](https://twitter.com/DeroProject)
-- **GitHub**: [deroproject/derohe](https://github.com/deroproject/derohe)
-- **Explorer**: [explorer.derofoundation.org](https://explorer.derofoundation.org)
+Bug fixes, doc improvements, new guides — all welcome. Fork, branch, PR. Setup, scripts, and house rules live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-MIT License - See [LICENSE](./LICENSE) file.
-
-Individual projects also have their own LICENSE files:
-- [derod-main/LICENSE](./derod-main/LICENSE)
-- [tela-main/LICENSE](./tela-main/LICENSE)
+MIT — see [LICENSE](./LICENSE) at the monorepo root; each site ships its own LICENSE alongside.
 
 ## Disclaimer
 
-This is community-maintained documentation and is not officially affiliated with the DERO project. Always verify critical information with official DERO sources.
-
----
-
-**Made with ❤️ by the DERO & TELA Community**
+Community-maintained documentation, not officially affiliated with the DERO project. Verify critical information against the on-chain reality and official DERO sources.
