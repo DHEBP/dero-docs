@@ -3,7 +3,7 @@
   "name": "io.github.DHEBP/dero-mcp-server",
   "title": "DERO MCP Server",
   "description": "Read-only MCP server for the DERO privacy blockchain. 21 daemon-read primitives + 7 composite tools (intent-shaped flows). Bundled DERO docs index, structured _meta.error codes, curated docs citations on every response.",
-  "version": "0.2.2",
+  "version": "0.4.1",
   "websiteUrl": "https://derod.org",
   "repository": {
     "url": "https://github.com/DHEBP/dero-mcp-server",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "dero-mcp-server",
-      "version": "0.2.2",
+      "version": "0.4.1",
       "transport": {
         "type": "stdio"
       }
