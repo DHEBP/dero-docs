@@ -1,26 +1,29 @@
 {
   "name": "dero-docs-monorepo",
   "version": "1.0.0",
-  "description": "Monorepo for DERO, TELA, and DeroPay documentation sites",
+  "description": "Monorepo for DERO, TELA, Hologram, and DeroPay documentation sites",
   "private": true,
   "workspaces": [
     "derod-main",
     "tela-main",
+    "hologram-main",
     "deropay-main"
   ],
   "scripts": {
     "dev:derod": "cd derod-main && npm run dev",
     "dev:tela": "cd tela-main && npm run dev",
+    "dev:hologram": "cd hologram-main && npm run dev",
     "dev:deropay": "cd deropay-main && npm run dev",
     "build:derod": "cd derod-main && npm run build",
     "build:tela": "cd tela-main && npm run build",
+    "build:hologram": "cd hologram-main && npm run build",
     "build:deropay": "cd deropay-main && npm run build",
-    "build:all": "npm run build:derod && npm run build:tela && npm run build:deropay",
+    "build:all": "npm run build:derod && npm run build:tela && npm run build:hologram && npm run build:deropay",
     "validate:boundaries": "bash ./scripts/validate-boundaries.sh",
     "check:llms-links": "node ./scripts/check-llms-link-health.mjs",
-    "install:all": "cd derod-main && npm install && cd ../tela-main && npm install && cd ../deropay-main && npm install",
-    "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out deropay-main/.next deropay-main/out",
-    "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules deropay-main/node_modules node_modules"
+    "install:all": "cd derod-main && npm install && cd ../tela-main && npm install && cd ../hologram-main && npm install && cd ../deropay-main && npm install",
+    "clean": "rm -rf derod-main/.next derod-main/out tela-main/.next tela-main/out hologram-main/.next hologram-main/out deropay-main/.next deropay-main/out",
+    "clean:all": "npm run clean && rm -rf derod-main/node_modules tela-main/node_modules hologram-main/node_modules deropay-main/node_modules node_modules"
   },
   "repository": {
     "type": "git",
