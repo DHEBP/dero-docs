@@ -44,14 +44,17 @@ done
 
 echo
 echo "2) Checking internal docs for forbidden derod.org links..."
+# sessions/ excluded: session notes capture raw tool output (MCP, RPC) that
+# legitimately contains derod.org canonical_url fields. The boundary still
+# applies to curated trove docs elsewhere.
 if [[ -d "$INTERNAL_DOCS_DIR" ]]; then
   if [[ "$SEARCH_TOOL" == "rg" ]]; then
-    if rg -n 'https?://(www\.)?derod\.org' "$INTERNAL_DOCS_DIR"; then
+    if rg -n --glob '!**/sessions/**' 'https?://(www\.)?derod\.org' "$INTERNAL_DOCS_DIR"; then
       echo "ERROR: Internal docs must not link to derod.org"
       FAIL=1
     fi
   else
-    if grep -RInE 'https?://(www\.)?derod\.org' "$INTERNAL_DOCS_DIR"; then
+    if grep -RInE --exclude-dir=sessions 'https?://(www\.)?derod\.org' "$INTERNAL_DOCS_DIR"; then
       echo "ERROR: Internal docs must not link to derod.org"
       FAIL=1
     fi
