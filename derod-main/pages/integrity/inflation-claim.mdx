@@ -3,7 +3,7 @@ title: "The 2022 Inflation Claim: Claims vs. Evidence | DERO Blockchain"
 description: "Point-by-point technical rebuttal of the October 2022 DERO inflation claim, including circulated report claims, the submitted proof string, and protocol mechanics that bound what is and isn't possible."
 keywords: ["DERO inflation bug", "2022 exploit", "Derolytics", "payload proofs", "ring signatures", "negative transfer", "DERO security", "blockchain investigation"]
 date: "2026-05-25"
-lastUpdated: "2026-05-30"
+lastUpdated: "2026-05-31"
 authors: ["DHEBP"]
 slug: "inflation-claim"
 canonicalUrl: "https://derod.org/integrity/inflation-claim"
@@ -31,7 +31,7 @@ _Derolytics' "irrefutable proof" is a string anyone can forge — and even a gen
 | Is negative-transfer wraparound possible on consensus? | **No.** Range proofs bind every transfer to a non-negative range; a negative/out-of-range amount cannot produce a verifying proof. [Part 4](#part-4-the-chains-account-at-the-exploit-block) |
 | Is the circulated payload proof cryptographic evidence of a mint? | **No.** It is a user-supplied **display object**; "Verified" means its own math is consistent, not that consensus accepted it. [Part 3](#part-3-forge-a-fake-proof-yourself) |
 | Can explorer **Verified** on inflated proofs be reproduced? | **Yes** on unpatched explorers (`MAX_INT64_SAFE` bypass). [Part 3](#part-3-forge-a-fake-proof-yourself) |
-| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output; a faithful deanonymization recovers an ordinary transfer of coins already held. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
+| Does the deanonymization support the ~2.2M? | **No — it refutes it.** The figure is the forgeable proof string, not a deanonymization output. Read the chain directly and what you see is an **ordinary transfer of coins the sender already held**. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | **Bottom line on the keystone?** | **The artifact at the center of every accusation is a display object anyone can forge — and consensus could not have accepted the transfer it depicts.** [Part 6](#part-6-the-keystone-collapses) |
 
 ---
@@ -96,7 +96,7 @@ Each step is load-bearing. The rest of this page evaluates them on three indepen
 |---|---|
 | *"Protocol failed to validate transaction proofs"* | They mean **payload proofs** (display layer). **Transaction proofs** are verified by every node. [Proof Types](/integrity/payload-vs-transaction-proofs) |
 | *"Verify yourself… proof string … on the official explorer"* | **Verified** = pasted object math checks out, not node acceptance. The string decodes to exactly **−2,200,000.00181** and the explorer's display-layer consistency check passes — because that is all a display proof does. [Part 3](#part-3-forge-a-fake-proof-yourself) |
-| *"Sender actually received 2.2M DERO"* | The ~2.2M is the [forgeable proof string](#part-3-forge-a-fake-proof-yourself), not a deanonymization result; a faithful deanonymization reads a **conserved transfer of coins already held**. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
+| *"Sender actually received 2.2M DERO"* | The ~2.2M is the [forgeable proof string](#part-3-forge-a-fake-proof-yourself), not a deanonymization result. Read the chain directly and what you see is an **ordinary transfer of coins the sender already held**. [Part 5](#part-5-what-deanonymization-can-and-cannot-establish) |
 | *"Both wallets freshly created and empty"* | Ring members **always** show encrypted balance changes — including decoys who did not send. [Ring Member Behavior](/integrity/ring-member-behavior) |
 | *"$8.34M laundered over 781 transactions"* | **Assumes the mint happened.** No keystone → the graph is unmotivated. Out of scope here. |
 
@@ -217,7 +217,7 @@ deroproof1qyvvfxzyfqtjm0lgyf5jncleh6cxmmfahgmekxpyrzhhsz832dv8qq9zvfyyskpqqqqqqq
 No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Two ways in:
 
 - **Nothing to install** — point an HTTP MCP client (ChatGPT custom connectors, Cursor hosted mode) at `https://mcp.derod.org/mcp`.
-- **Run it yourself** — `npx dero-mcp-server` and add it to Claude or Cursor. Either way it finds a node automatically: your own if you're running one (the local-first default as of v0.4.0), a public node otherwise.
+- **Run it yourself** — `npx dero-mcp-server` and add it to Claude or Cursor, or to a privacy-first client like [OpenCode](https://opencode.ai) or [Goose](https://block.github.io/goose) running on a local model via [Ollama](https://ollama.com). Either way it finds a node automatically: your own if you're running one, a public node otherwise.
 
 Then ask:
 
@@ -226,7 +226,7 @@ Then ask:
 Back comes a `deroproof…` string. Paste it into an unpatched explorer — it lights up **Verified ✓**, rendering your −5M as a ~184-trillion-DERO "mint." The chain never moved a coin. Change the slot, change the amount, go bigger; the "evidence" doesn't care what number you pick — *that's the whole point.*
 
 <Callout type="info" emoji="🤖">
-Live now — `npx dero-mcp-server` (v0.4.0+) or the hosted endpoint at `mcp.derod.org`, both shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
+Live now — `npx dero-mcp-server` (v0.4.0+) or the hosted endpoint at `mcp.derod.org/mcp`, both shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
 </Callout>
 
 ### Tier 2 — Build one from scratch (no DERO tooling)
