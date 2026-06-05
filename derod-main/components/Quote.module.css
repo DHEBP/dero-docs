@@ -1,0 +1,190 @@
+.quote {
+  margin: 2rem 0;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid hsl(0 0% 88%);
+  background: hsl(0 0% 98%);
+  box-shadow: 0 1px 0 hsl(0 0% 0% / 0.02);
+}
+
+:global(.dark) .quote {
+  border-color: hsl(270 12% 18%);
+  background: linear-gradient(
+    180deg,
+    hsl(270 14% 9%) 0%,
+    hsl(270 12% 7%) 100%
+  );
+  box-shadow:
+    0 0 0 1px hsl(270 100% 50% / 0.08) inset,
+    0 4px 24px hsl(0 0% 0% / 0.3);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid hsl(0 0% 92%);
+  background: hsl(0 0% 96%);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(0 0% 40%);
+  line-height: 1;
+}
+
+:global(.dark) .header {
+  border-bottom-color: hsl(270 12% 18%);
+  background: hsl(270 14% 11%);
+  color: hsl(270 8% 60%);
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: hsl(270 100% 50%);
+  opacity: 0.7;
+}
+
+.channel {
+  color: hsl(0 0% 20%);
+  font-weight: 600;
+}
+
+:global(.dark) .channel {
+  color: hsl(270 100% 75%);
+}
+
+.date {
+  color: hsl(0 0% 45%);
+}
+
+:global(.dark) .date {
+  color: hsl(270 8% 70%);
+}
+
+.sep {
+  opacity: 0.4;
+}
+
+.archival {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid hsl(38 90% 50% / 0.4);
+  border-radius: 3px;
+  background: hsl(38 90% 50% / 0.1);
+  color: hsl(38 80% 35%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+:global(.dark) .archival {
+  border-color: hsl(38 90% 60% / 0.4);
+  background: hsl(38 90% 50% / 0.12);
+  color: hsl(38 90% 70%);
+}
+
+.source {
+  margin-left: auto;
+  color: hsl(0 0% 45%);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.source:hover {
+  color: hsl(0 0% 10%);
+}
+
+:global(.dark) .source {
+  color: hsl(270 8% 60%);
+}
+
+:global(.dark) .source:hover {
+  color: hsl(270 100% 75%);
+}
+
+.body {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: hsl(0 0% 15%);
+  border-left: none;
+  font-style: normal;
+}
+
+:global(.dark) .body {
+  color: hsl(0 0% 92%);
+}
+
+.body p {
+  margin: 0.6rem 0;
+}
+
+.body p:first-child {
+  margin-top: 0;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+.body pre {
+  background: hsl(0 0% 94%);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+:global(.dark) .body pre {
+  background: hsl(270 16% 5%);
+  border: 1px solid hsl(270 12% 18%);
+}
+
+.body code {
+  font-size: 0.85em;
+}
+
+.body ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.body ul li {
+  margin: 0.25rem 0;
+}
+
+.body a {
+  color: hsl(270 80% 45%);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:global(.dark) .body a {
+  color: hsl(270 100% 75%);
+}
+
+/* Override the site's global figcaption rule */
+.author {
+  display: block !important;
+  margin-top: 0 !important;
+  padding: 0.5rem 1.5rem 0.75rem !important;
+  border-top: 1px solid hsl(0 0% 92%) !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.75rem !important;
+  text-align: left !important;
+  color: hsl(0 0% 45%) !important;
+}
+
+:global(.dark) .author {
+  border-top-color: hsl(270 12% 18%) !important;
+  color: hsl(270 8% 60%) !important;
+}

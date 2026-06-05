@@ -1,0 +1,993 @@
+---
+title: "Captain Archive: DERO in His Own Words | DERO Blockchain"
+description: "Primary-source archive of Captain's statements on DERO's design — homomorphic encryption, DVM-BASIC, consensus, governance, and protocol integrity. Sourced directly from Discord and Bitcointalk."
+keywords: ["Captain DERO", "CaptDero", "DERO history", "DERO-HE", "DHEBP", "DVM-BASIC", "AstroBWT", "DERO architecture", "homomorphic encryption", "DERO governance", "DERO Research License", "DERO Atlantis", "bulletproofs", "Captain quotes", "DERO founding"]
+date: "2026-06-04"
+lastUpdated: "2026-06-04"
+authors: ["DHEBP"]
+slug: "captain"
+canonicalUrl: "https://derod.org/captain"
+tags: ["captain", "archive", "history", "design", "primary-source", "DERO-HE", "DVM", "governance", "integrity"]
+ogTitle: "Captain Archive: DERO in His Own Words"
+ogDescription: "Captain's own statements on DERO design — homomorphic encryption, DVM-BASIC, consensus, governance, integrity. Sourced from Discord and Bitcointalk."
+ogType: "article"
+twitterCard: "summary_large_image"
+twitterTitle: "Captain Archive: DERO in His Own Words"
+twitterDescription: "Primary-source archive of Captain's statements on DERO's design and integrity."
+robots: "index, follow"
+priority: 0.8
+changefreq: "monthly"
+schemaType: "Article"
+---
+
+import Quote from '../components/Quote'
+
+# Captain Archive: DERO in His Own Words
+
+*Captain (CaptDero / captain030317) on Discord and Bitcointalk, 2017–2024. Pre-2022 quotes predate the DERO-HE architectural transition.*
+
+---
+
+## Origins: Founding Doctrine (2017-2018)
+
+DERO's first public year on Bitcointalk reads like a project manifesto being written in real time. Between late 2017 and mid-2018, Captain (posting as CaptDero) laid out the original thesis — a CryptoNote-derived chain rewritten from scratch in Go, with bulletproofs, TLS across the P2P layer, and a DAG that swallowed reorgs instead of orphaning them — and made the strategic calls that shaped the project's early identity: refusing to emergency-fork away an ASIC invasion, and pivoting from the original Cryptonote codebase to the "DERO Atlantis" network.
+
+These posts predate every architectural milestone DERO is known for today. Smart contracts were still on the roadmap. Homomorphic encryption (DERO-HE) was four years away. Ring signatures, mixins, and the CryptoNote heritage described here were retired in the 2022 migration. Read this section as founding-era doctrine — the engineering posture and design instincts that survived, even after the substrate they were built on did not.
+
+### The Original ANN Thesis
+
+The Bitcointalk announcement thread is the closest thing to a founding charter. Captain frames DERO as the first chain to combine a specific stack of primitives, and commits the project to a 2018 roadmap. Bitcointalk ANN OPs are edited in place over time — the version quoted here reflects the consolidated thread as it stood by mid-2018 (the same post contains a 'Full Premine intact as of 12 July 2018' line and references the post-April Atlantis network), not the verbatim December 2017 first post.
+
+<Quote channel="Bitcointalk [ANN] thread OP" date="2017-12-05 → mid-2018" author="CaptDero" archival>
+The Dero Project has written a unique new blockchain technology that is based on the Dag and CryptoNote protocol with double spend protection. Dero's goal is to create a unique state of the art blockchain technology with enhanced reliability, privacy, security, usability, and portability by bringing together some of the best proven technologies like the CryptoNote protocol and smart contracts, thereby allowing for the creation of truly private smart contracts.
+
+The Dero development team has implemented complete SSL across the Dero network which is a first on any blockchain. [...]
+
+First blockchain to have: DeroDAG + Cryptonote + Bulletproofs + Complete SSL + POW.
+Blocktime 12 secs + Confirmation times 2 mins.
+Traditional 51% attacks are not possible on DERO network.
+Dero is one of the very few blockchains built from scratch [...]
+
+DERO blockchain has the following salient features:
+- DAG Based: No orphan blocks, No soft-forks.
+- 12 Second Block time.
+- Extremely fast transactions with 2 minutes confirmation time.
+- SSL/TLS P2P Network.
+- CryptoNote: Fully Encrypted Blockchain
+- BulletProofs: Zero Knowledge range-proofs (NIZK).
+- Ring signatures.
+- Fully Auditable Supply.
+- DERO blockchain is written from scratch in Golang.
+</Quote>
+
+Two design commitments here outlived everything else in the post: the from-scratch Go rewrite, and the insistence on auditable supply. The CryptoNote substrate, ring signatures, and the 12-second block time were all replaced in the DERO-HE migration (2022), which moved DERO to homomorphic encryption with an 18-second block time. The roadmap dates in the original post are obviously historical.
+
+### Status Report: 44 Days Into the Go Rewrite
+
+Six weeks after the announcement, Captain posted a component-by-component status update on the from-scratch Go daemon — wire protocol, consensus, the ringct primitives, BoltDB. Read it as a checklist of what "built from scratch" actually meant in practice.
+
+<Quote channel="Bitcointalk DERO thread" date="2018-01-18" author="CaptDero" archival>
+In the status update release 1, Following parts of cryptonote has been rewritten in golang.
+
+At present, Golang DERO daemon can sync and verify blockchain with the existing DERO network. [...]
+
+**Cryptonight Hash:** This is an ASIC resistant, memory-bound algorithm. [...]
+
+**Wire protocol (90% completed):** This protocol is used to exchange data between 2 DERO daemon nodes. At this point, Go daemon can connect to C daemon and vice-versa, sync blockchain and exchange, already possible. Complete interoperability has been achieved. [...]
+
+**Pederson Commitment** (Part of ring confidential transactions): [...] a cryptographic primitive that allows user to commit to a chosen value while keeping it hidden to others. [...]
+
+**Borromean Signature** (Part of ring confidential transactions): Borromean Signatures are used to prove that the commitment has a specific value, without revealing the value itself.
+
+**Additive Homomorphic Encryption:** [...] used to prove that sum of encrypted Input transaction amounts is EQUAL to sum of encrypted output amounts. [...]
+
+**MLSAG** (Work-in-Progress): MLSAG gives DERO untraceability and increases privacy and fungibility. [...]
+
+**BOLT Database:** DERO Blockchain uses BoltDB for future scalability and low latency reads.
+</Quote>
+
+### Engineering Self-Description: Bulletproofs, Batched and Optimized
+
+Inviting the community to audit the source, Captain attached a self-description of the bulletproofs work. It is one of the rare moments where the project's engineering posture — measure, optimize, batch, attribute — is laid out in his own voice.
+
+<Quote channel="Bitcointalk source-review invitation" date="2018-07-21" author="CaptDero" archival>
+Secure and fast crypto is the basic necessity of this project and adequate amount of time has been devoted to develop/study/implement/audit it. [...] As far as the Bulletproofs are considered, since DERO is the first one to implement/deploy, they have been given a more detailed look.
+
+First, a bare bones bulletproofs was implemented, then implementations in development were studied (Benedict Bunz, XMR, Dalek Bulletproofs) and thus improving our own implementation. Some new improvements were discovered and implemented [...]. Major improvements are in the Double-Base Double-Scalar Multiplication while validating bulletproofs. A typical bulletproof takes ~15-17 ms to verify. Optimized bulletproofs takes ~1 to ~2 ms (simple bulletproof, no aggregate/batching). Since, in the case of bulletproofs the bases are fixed, we can use precompute table to convert 64*2 Base Scalar multiplication into doublings and additions (NOTE: We do not use Bos-Coster/Pippienger methods). This time can be again easily decreased to .5 ms with some more optimizations. With batching and aggregation, 5000 range-proofs (~2500 TX) can be easily verified on even a laptop.
+
+The implementation for bulletproofs is in `github.com/deroproject/derosuite/crypto/ringct/bulletproof.go`, optimized version is in `github.com/deroproject/derosuite/crypto/ringct/bulletproof_ultrafast.go`.
+</Quote>
+
+### Absorbing the ASIC Invasion as a Free Stress Test
+
+When ASICs landed on the early DERO network, the obvious response was to fork the algorithm immediately. Captain made the opposite call: treat the attack as a load test, ship the next milestone on schedule, and announce a pivot to "DERO Atlantis" instead of a panic patch.
+
+<Quote channel="Bitcointalk DERO ANN thread" date="2018-04-22" author="CaptDero" source="https://bitcointalk.org/index.php?topic=2525508.msg35314263#msg35314263" archival>
+Thanks [Speedie] for your time and efforts for understanding and explaining the same.
+
+Everyone was more than happy and satisfied with Golang Alpha release and no one would have ever required/asked for more than what was already being offered. Everything was moving ahead of schedule and smooth.
+
+But we decided to go for **DERO Atlantis** as we can see clearly the journey ahead.
+</Quote>
+
+### What the Privacy Layer Was Actually For
+
+Replying to a community essay (by the user *fellestreum*) that articulated DERO's privacy thesis better than any whitepaper line, Captain endorsed it openly. This is one of the few places where the project's social purpose — not the engineering — gets stated in his voice.
+
+<Quote channel="Bitcointalk DERO thread" date="2018-02-19" author="CaptDero" source="https://bitcointalk.org/index.php?topic=2525508.msg30585516#msg30585516" archival>
+This post deserves much more than thank you and sMerit. thank you [fellestreum].
+
+You have expressed the IDEA behind Dero.
+
+We hope to create a Blockchain which will affect the entire society from increasing the privacy to daily utilities. Users will have confidence that no copy/access of his data exists on the shops/counters/merchants/agents he has visited since start of the day. He lives a private life and he knows who has access/copy of his data.
+
+This is a very big and huge impacting topic. In parallel to technological development of DERO Blockchain we are also working for practical life example to express the DERO concept.
+</Quote>
+
+### Why DERO exists — the 2023 retrospective
+
+This one quote breaks the section's 2017-2018 framing on purpose. In April 2023, with five years of DERO development behind him and the founding thesis having played out across the Atlantis-to-Stargate migration, Captain compressed the original *why* into two numbered bullets — a retrospective restatement that maps cleanly onto the ANN OP at the top of this section. It is included here because it answers the same question the 2017 thread opened with, in 2023's vocabulary.
+
+<Quote channel="#dero-discussion" date="2023-04-15" author="captain030317" source="https://discord.com/channels/419781880632836096/419781880632836098/1096719975370194984">
+DERO was designed due to short comings of Bitcoin, particularly:
+1] Bitcoin has no privacy, missing non-fungibility & no ability to hide/protect it's senders & receivers from public records.
+2] Lack of programmability(Smart Contracts).
+Also it was impossible to push privacy feature in BTC code due to lack of interest in core DEVS with respect to privacy.
+</Quote>
+
+The two-point indictment is straightforward — privacy and programmability are the gaps the project was built to fill. The third sentence is the one worth pausing on: it is Captain saying, in plain language, that he did not believe privacy could ever be added *upstream* of where DERO already sat. The implication is not that Bitcoin is the wrong tool for some users; the implication is that the people maintaining Bitcoin would not accept the change DERO is, so the change had to ship as a separate chain.
+
+---
+
+## Protocol Design Decisions
+
+The three quotes in this section come from different years (2018, 2022, 2023) but share a single posture: when a feature feels obviously missing — HTTPS on the daemon, a chain-side search API, looser query limits — the answer is usually that the absence is the design, not the omission. Each post argues from the threat model down, not from convenience up.
+
+### Why the daemon doesn't ship HTTPS
+
+A recurring request from newcomers was that the daemon JSON-RPC should be served over HTTPS. Captain's standing reply, posted in `#technical-questions` in late 2022, treats HTTPS as a misplaced trust anchor rather than a security upgrade.
+
+<Quote channel="#technical-questions" date="2022-12-21" source="https://discord.com/channels/419781880632836096/419798461039509504/1054919216400175104">
+https is not supported intentionally. HTTPS gives false sense of security as certificate issuer has the private key to decrypt the traffic. And issuer can share the private-keys to others also when required. https can only help with local ISP/telecom sniffing, In that case use vpn etc..
+</Quote>
+
+The argument is the CA-trust critique: a CA-issued certificate gives the issuer (and anyone they hand the key to) the ability to decrypt the traffic. For an RPC endpoint that you should already trust at the wire level — your own daemon, on your own machine, behind your own VPN — HTTPS adds an additional trusted party rather than removing one.
+
+### DAG propagation, uncles, and where conflict rules live
+
+In the project's first year, a deep-dive Q&A in `#technical-questions` walked through six questions about DERO's then-architecture. Three of Captain's answers are still operative today: where conflict resolution lives (the client protocol, not the consensus rule), how side blocks count, and an honest admission about the proof-of-work search.
+
+<Quote channel="#technical-questions" date="2018-09-11" source="https://discord.com/channels/419781880632836096/419798461039509504/489052835573399563" archival>
+Ans 2: Dero DAG like other chains requires block propgation time to propgate blocks. Block propgation times AVGs 99.99% ~15 seconds.
+Ans 3: By client protocol.
+Ans 4: 2 uncles (Dero side blocks if you are referring to them only) are allowed depending on NW.
+Ans 5: RingCT is core part of Dero architecture.
+Ans 6: We are still searching better algo than POW.
+</Quote>
+
+"Ans 5" is the time-locked line — RingCT was the privacy primitive of pre-2022 DERO and was retired in the DERO-HE migration. "Ans 3" and "Ans 4" are still load-bearing: conflict resolution lives in the client protocol layer, and DERO still treats side blocks as first-class citizens (not orphans) up to a network-determined cap.
+
+### Resource exhaustion is not a bug to patch
+
+When the Bitcoin Ordinals surge stressed node operators in early 2023, the question came up in `#dero-discussion`: shouldn't DERO just raise its limits so clients can request larger ranges of chain data? Captain's answer reframed the request as a category error.
+
+<Quote channel="#dero-discussion" date="2023-05-09" source="https://discord.com/channels/419781880632836096/419781880632836098/1105507901331742840">
+As with the Bitcoin Network issue recently in news if you will ask entire chain of data then nodes are being going to be overloaded eventually. There is no good fix to solve this permanently. We can increase the RAM/resources limit however keep in mind they are finite & can be consumed by asking for more & more data to consume the increased resources. It is like just asking the webserver to serve more users beyond capacity.
+</Quote>
+
+Captain treats unbounded query limits as the bug, not the limit itself. Any resource ceiling is a moving target as long as the network is willing to fulfill arbitrary-size requests — the only stable answer is to bound what clients can ask for in the first place. This is the same philosophy that lives in DERO's current `--mine-block-uncle-limit`, `--p2p-tx-batch`, and similar knobs: hard ceilings rather than dynamic scaling.
+
+---
+
+## Privacy & Homomorphic Encryption
+
+The defining bet behind DERO-HE is that privacy should not be a layer of obfuscation bolted onto a transparent ledger, but a property of the cryptography itself. Across late 2021 and 2022 — spanning the testnet rollout of the new account-model chain and the year that followed mainnet migration — Captain returned again and again to the same point: balances and transfers live as ElGamal ciphertexts, every operation runs over encrypted data, and there is no master key, view key, or audit hatch that lets anyone other than the seed-holder read an account.
+
+The quotes below trace that thesis from its highest-level statement down to the specific mechanics: why the account model is itself a privacy feature, what the wallet actually does when it opens, how DHEBP nonces prevent double-spends without outputs to track, and how the same homomorphic guarantees extend to every native asset on the chain.
+
+### Homomorphic encryption replaces the entire obfuscation stack
+
+Two weeks before the DERO-HE mainnet upgrade, Captain spelled out the thesis in a single paragraph: nothing on the chain is ever observable in plaintext, not even briefly.
+
+<Quote channel="#technical-questions" date="2021-10-20" source="https://discord.com/channels/419781880632836096/419798461039509504/900312094157705217">
+Yes absolutely. HE encryption replacing all obfuscation stack completely. No more obfuscations on DERO network now. No one will be able to see/confirm your data on DERO blockchain without your seed/wallet. All operations will be on encrypted data only. So no requirement/gimmick to ask for your data to be in decrypted state ever. Not even once your data will ever be in decrypted state.
+</Quote>
+
+This is the cleanest one-paragraph statement of the DERO-HE design goal. "Obfuscation stack" is the ring-signatures / stealth-addresses / view-keys approach used by Monero-family chains; Captain's claim is that HE makes that whole apparatus unnecessary because the ciphertexts themselves are the privacy boundary.
+
+### Even the wallet has to compute to know its own balance
+
+In a #dapps thread comparing DERO to public-ledger smart-contract platforms, Captain pushed back on the comparison by pointing at what "private balance" actually costs the wallet itself.
+
+<Quote channel="#dapps" date="2022-05-12" source="https://discord.com/channels/419781880632836096/947922694387679262/974347052794384464">
+There is no point in comparing DERO with ADA/ETH as DERO balances are private unlike public blockchains. There is no way in DERO you can know any other account balances. DERO-wallet has to run lots of computations to know it's own balance. So basically there is no way you can know balances of other DERO wallets. There would be no point of DERO privacy if thats possible.
+</Quote>
+
+The line "DERO-wallet has to run lots of computations to know it's own balance" is the tell. The wallet receives an encrypted balance and has to decrypt it locally using the spend key — there is no plaintext figure cached anywhere on the network to read. If the wallet could shortcut that, so could everyone else.
+
+### No master key, and only 66 bytes from the network to open a wallet
+
+Responding to a recurring "who holds the keys" question in #dero-discussion, Captain laid out what a wallet actually needs from the chain to function.
+
+<Quote channel="#dero-discussion" date="2022-12-08" source="https://discord.com/channels/419781880632836096/419781880632836098/1050433141875155064">
+There is no concept of any master private/secret key on DERO.
+DERO creates a elgamal balance ciphertext associated to any wallet-account.
+The private key is NOT broken or distributed among other nodes in any way or form.
+When user opens wallet, no communication with DERO network except 66 bytes are required. This process is completely done within wallet and is not linked with DERO network.
+As DERO is account model, Only 66 bytes are required by wallet from DERO blockchain to operate. Blocks & transactions are required to create & maintain history on DERO network.
+</Quote>
+
+Captain does not spell out what the 66 bytes are in this message — only that the wallet needs that much from the chain, and nothing else, to operate. The size is consistent with an ElGamal balance ciphertext (two compressed curve points), but treat that as inference rather than Captain's claim. The structural point stands either way: full blocks and transactions exist to maintain network history, not to make a wallet functional.
+
+### The account model is itself a privacy feature
+
+A few months after mainnet, Captain framed the account-vs-UTXO choice as a privacy decision, not just an engineering one.
+
+<Quote channel="#dero-discussion" date="2022-08-29" source="https://discord.com/channels/419781880632836096/419781880632836098/1013849719073681468">
+Another privacy enhancing part of DERO is it's account model. You can drop the entire transactions logs anytime from DERO database like(--fastsync) & DERO will still work unlike Monero which requires scanning/tracking/recording of key-images from first transaction.
+After dropping you will never abile to do any statistical analysis as there will be no such data.
+</Quote>
+
+Because state lives in account ciphertexts rather than a forever-growing set of unspent outputs and key-images, history is disposable from a node's point of view. A pruned node can still validate and transact; anyone hoping to do retroactive chain analysis on the dropped data simply has nothing to analyze.
+
+### DHEBP: building on Zether, then past it
+
+During the DERO-HE testnet, the contributor vanitas was reading the transaction-build code and asking how proofs bind to height. Captain confirmed the mechanism and named the protocol.
+
+<Quote channel="#dero-he-testnet" date="2021-10-04" source="https://discord.com/channels/419781880632836096/737351309396541471/894611662303293541">
+[vanitas asked, paraphrased: u and u1 in transaction_build.go appear to be curve points tied to height and a sender secret; u1 also includes block batch size. How is this used to prevent double-spends, and how does it interact with the DAG?]
+
+Yes, u and u1 are set to a curve point represent height at which TX was build. Height is mentioned in the TX.
+This value is calculated at run-time by blockchain to verify the the claim by the TX originator.
+DHEBP protocol and design is an improvement over zether/anonymous zether.
+</Quote>
+
+DHEBP — DERO Homomorphic Encryption Blockchain Protocol — is the in-house protocol that ships in DERO-HE. Captain situates it as a descendant of Bunz et al.'s Zether and Anonymous Zether work. The u/u1 curve points bind each transaction to the height it was built at, and the chain recomputes the expected value at verification time to confirm the originator's claim.
+
+### What "double-spend" even means without outputs
+
+vanitas followed up with the right structural question: in an account model with no UTXOs, what does double-spend prevention actually look like? Captain answered with the bank analogy.
+
+<Quote channel="#dero-he-testnet" date="2021-10-04" source="https://discord.com/channels/419781880632836096/737351309396541471/894612571863265400">
+[vanitas asked, paraphrased: if the nonce ties to height plus a secret, can the same tx repeat at a different height with a different nonce? Or is the question moot under an account model — and what is a double-spend attack when there are no outputs to double-spend?]
+
+Nonce prevents not only the same TX but also any other TX from the same secret owner at the same time.
+In DHEBP basically TX is just an entry with deductions and additions. Nonces are used to prevent duplicate and/or double spend attacks.
+In simple terms, Assume that DERO blockchain acts as bank to which users submit TXs and the DERO blockchain filters out invalid/incorrect/stale TXs and processes only valid TXs that too one at a time.
+</Quote>
+
+The mental model is double-entry bookkeeping under encryption: a transaction is a deduction-plus-addition pair, and the height-bound nonce ensures only one transaction per account can be admitted per slot. There is nothing to "spend twice" because there are no outputs — just an account ciphertext that the chain refuses to mutate more than once at a time.
+
+### Same homomorphic guarantees for every native asset
+
+Earlier in the same testnet conversation, vanitas noticed that `Payloads[0]` looked special and wondered if it represented the native DERO asset. Captain confirmed and generalized.
+
+<Quote channel="#dero-he-testnet" date="2021-10-04" source="https://discord.com/channels/419781880632836096/737351309396541471/894610789292445697">
+[vanitas observed: Payloads[0] is referenced in multiple places — possibly the native DERO asset, or something about the tx itself; the payloads appear to map to specific SC assets.]
+
+DERO supports multiple (~ 2 ^ 256 ) native assets. DERO itself is a native asset with SCID "000000..000000". However, most users will use the native DERO asset. Also all assets are backed by the same homomorphic guarantees and cryptography..
+Eg. We need to write DERO if we are using native "DERO" asset, For others we need to write "TOKEN" etc.
+</Quote>
+
+Worth holding onto: any token issued on DERO inherits the same encrypted-balance semantics as DERO itself. There is no "transparent token" tier — every native asset, identified by its 256-bit SCID, ships with the same ElGamal/HE protection. The zero SCID is just the convention for the base asset.
+
+---
+
+## DVM, Smart Contracts, and DVM-BASIC
+
+The DERO Virtual Machine has always been a deliberately small target. Where most smart-contract platforms ship a sprawling instruction set and let developers reach for whatever abstraction feels natural, Captain stripped DVM-BASIC down to a handful of types, a single jump primitive, and a tight contract for how calls land in a block. The quotes below — drawn mostly from 2019 through 2022, spanning the original mainnet contract experiments and the DERO-HE testnet that became Stargate — lay out the reasoning behind those constraints.
+
+Read them as a worldview rather than a feature list: GOTO is enough because everything compiles to it anyway, fund movement into a contract is a burn rather than a transfer, search belongs on your node and not on consensus, and ordering inside a block is a guarantee the protocol owes you. The language reference in the middle is the closest thing to an official DVM-BASIC spec Captain published in chat.
+
+### GOTO is the building block, not a smell
+
+DVM-BASIC ships with `GOTO` and no `for`, `while`, or `switch`. Newcomers regularly read this as a missing feature. Captain's standing reply is that the criticism mistakes a high-level convenience for a primitive.
+
+<Quote channel="#mainnet" date="2019-12-22" source="https://discord.com/channels/419781880632836096/530654307624943616/658142960910598185" archival>
+GOTO is basic building block of any computing CHIP atm. if you cannot see it directly it doesn't mean it doesn't exists. Every switch-case, break, loop etc. all are implemented in form of GOTO. Rest all is propganda.
+</Quote>
+
+The design choice is enduring: every DVM-BASIC contract written today still expresses loops and branches as labeled `GOTO` targets, and the verifier benefits from the smaller surface. If the absence of `for` loops feels wrong, the lesson is to write the jump explicitly rather than wait for sugar that is not coming.
+
+### The DVM-BASIC language contract
+
+During the DERO-HE testnet, Captain posted what amounts to a one-screen language reference for DVM-BASIC, pointing at the in-repo guide on GitHub at the time.
+
+<Quote channel="#dero-he-testnet" date="2021-02-24" source="https://discord.com/channels/419781880632836096/737351309396541471/814071165869621248">
+https://github.com/deroproject/derohe/tree/main/guide#dvm-interprets-the-smart-contract-and-processes-the-sc-line-line
+
+```
+DVM interprets the smart-contract and processes the SC line-line
+
+ uint64 supports almost all operators namely +,-,*,/,%
+
+ uint64 support following bitwise operators & ,|, ^, ! , >> , <<
+
+ uint64 supports following logical operators >, >= , <, <=, == , !=
+
+ string supports only + operator. string support concatenation with a uint64.
+
+ string supports ==, != logical operators.
+
+ All DVM variables are mandatory to define and are initialized to default values namely 0 and "".
+
+A SC execution must return 0 to persist any changes made during execution. During execution, no panics should occur.
+```
+</Quote>
+
+The behavior described here still holds on Stargate: two types (`Uint64` and `String`), mandatory declaration with zero/empty defaults, line-by-line interpretation, and the rule that a non-zero return — or any panic — rolls back every state change in the call. The `derohe/guide` path Captain linked in 2021 no longer resolves; the equivalent material today lives in the `dvm/` package source and in the DVM-BASIC reference on the dero-docs site.
+
+### Funds sent to a contract are burned, not deposited
+
+A recurring point of confusion on the DERO-HE testnet was what it means to "send DERO to a smart contract." Captain reframed the mental model away from the EVM-style deposit.
+
+<Quote channel="#dero-he-testnet" date="2021-02-25" source="https://discord.com/channels/419781880632836096/737351309396541471/814444034302410793">
+It's more of burning than deposit or transfer because when you transfer some DERO from any wallet to SC this amount gets burned from the DERO Network and comes into the Smart Contract universe where it is open and visible to all. And this transferred amount is not accounted in DERO network unless it gets back to DERO Network from SC.
+</Quote>
+
+This is one of the most important conceptual differences between DVM and EVM. Funds inside the contract universe are public and accounted to the contract; they only re-enter the encrypted DERO supply when a contract explicitly sends them out via `SEND_DERO_TO_ADDRESS`. The model still governs how contracts handle escrow, payouts, and reserve accounting on Stargate.
+
+### Ordering guarantees inside a block
+
+When developers started building higher-throughput dApps, the question of what the chain actually promises about call ordering came up. Captain laid out the contract in four lines.
+
+<Quote channel="#dapps" date="2022-04-18" source="https://discord.com/channels/419781880632836096/947922694387679262/965456557431214130">
+A contract can accept n contract calls per block.
+A single txn can only dispatch a single call.
+Contract can accept n calls per signer per block.
+Above are guarantees of order.
+</Quote>
+
+These are the rules contract authors should design against: one call per transaction, multiple calls per signer per block, and ordered execution within the block. Anything that requires batching multiple state mutations atomically has to be expressed as a single call inside the contract — not assembled out of several transactions.
+
+### Keep search off-chain
+
+Asked about adding richer query and search capabilities at the protocol layer, Captain pushed back on the premise.
+
+<Quote channel="#mainnet" date="2019-06-27" source="https://discord.com/channels/419781880632836096/530654307624943616/593689771994513417" archival>
+It will bring lots of complexities if we bring extra processing to blockchain. It would be better if we do all search/similar operations on your local node. Anyways will dig deep if we can add some small and less complex functions.
+</Quote>
+
+This is the philosophy that produced the local-node-first tooling we have today: Gnomon indexing on the operator's machine, TELA discovery via the publisher bridge, and clients that walk the chain themselves rather than asking consensus to do it for them. The chain stays small; the smarts live at the edge.
+
+### Some features are missing on purpose
+
+A user, lifetyper, asked whether arbitrary message payloads could be stuffed into transactions to deliver private messages. Captain answered with a posture rather than a feature flag.
+
+<Quote channel="#mainnet" date="2019-01-19" source="https://discord.com/channels/419781880632836096/530654307624943616/536228750128578570" archival>
+How long do you expect Dero Network will survive after such features are implemented before everyone comes after it. Let me speak today almost all of the missing features discussed/asked above in this channel are not due to lack of technical exoertise/capabilities.
+</Quote>
+
+Read in context, this is less a feature-gap admission than a survival-posture statement: in 2019 Captain weighed feature additions against how the network would be perceived and attacked, not just against design cleanliness. Stargate later shipped encrypted RPC arguments and account-bound messaging patterns under a very different threat model — not a direct fulfillment of the plaintext message-stuffing the questioner asked about here.
+
+---
+
+## Consensus, DAG Ordering & Mining Policy
+
+This section covers two related-but-distinct strands of DERO's chain design. The first is how the ledger is *ordered*: not as a strictly linear chain, but as a DAG in which side blocks are first-class citizens counted into a separate topological height. The second is how the team approaches *mining* — specifically, a stated willingness to change the proof-of-work algorithm when they judge it necessary, as demonstrated by the Stargate-95 hard fork and Captain's follow-up to miners who pushed back on it.
+
+The quotes span 2018 through mid-2022. The earliest message predates the 2022 DERO-HE migration; the mechanics it describes (chain height, topo height, side blocks) survived that migration largely intact, but the prompt output and block numbers it references are from the pre-Stargate codebase.
+
+### Reading the daemon prompt: chain height, topo height, and side blocks
+
+Early node operators were confused by the four numbers DERO's daemon printed at the prompt. In mid-2018 Captain walked through them in #technical-questions and used the explanation to introduce the DAG concept that distinguishes DERO from a strictly linear chain.
+
+<Quote channel="#technical-questions" date="2018-07-24" source="https://discord.com/channels/419781880632836096/419798461039509504/471358881533132801" archival>
+Explanation DERO prompt:
+`DERO:A->100861/B->101420 [C->100861/D->101420]`
+where
+A-> Current chain height of local node.
+B-> Current chain Topo height of local node.
+C-> Network median chain height of connected/visible peers to local node.
+D-> Network median chain Top height of connected/visible peers to local node.
+
+Topo height: Dag topological ordered height.
+Dero side blocks: D-C or B-A. Contributes to chain security and increased scalability. Expected 10-15%.
+</Quote>
+
+The distinction between *chain height* (the main sequence) and *topo height* (the DAG-ordered count including side blocks) is the load-bearing concept here: side blocks are not orphans to be thrown away, they are first-class citizens that contribute hashpower to security. The specific block numbers and prompt format belong to the pre-Stargate (pre-2022) daemon, but the height/topo-height/side-block model still describes how DERO orders its ledger today.
+
+### Stargate-95: the AstroBWT v3 hard fork
+
+In June 2022, Captain announced a mandatory hard fork at block 481600. The release rotated DERO's PoW to AstroBWT v3 and temporarily restricted mining to the official CPU miner until third-party miners (XMRig and the GPU ports) could catch up.
+
+<Quote channel="#dero-mining" date="2022-06-10" source="https://discord.com/channels/419781880632836096/427613001537814540/984677734716416000">
+@here New version of DERO Stargate-95 released. Update is mandatory as this release is HardFork. Please update your DERO daemon and official miner.
+No need to delete any file, Just update the derod-daemon (exit the daemon, miner & wallet gracefully. Download, extract & replace the files. After replace start again.).
+POW is changed to AstroBWT v3.
+Use official miner only for next few days till other/GPU miners are updated.
+Only CPU miner is released atm. XMRig etc. are not updated atm.
+https://github.com/deroproject/derohe/releases/tag/Release95
+HardFork will happen in next few hrs at block 481600 .
+</Quote>
+
+Stargate-95 is the canonical example of DERO's mining policy in motion: a PoW change shipped as a hard fork on a few hours' notice, with the explicit expectation that the third-party miner ecosystem would catch up afterward rather than gate the rollout. The Release95 tag and the AstroBWT v3 algorithm are still live on mainnet.
+
+### Why the algorithm keeps moving
+
+Six days after the Stargate-95 fork, miners who had built around the old algorithm pushed back in #dero-mining. Captain's response framed the change as a deliberate policy choice: DERO will keep experimenting, and will rotate the algorithm again when the team judges it necessary.
+
+<Quote channel="#dero-mining" date="2022-06-16" source="https://discord.com/channels/419781880632836096/427613001537814540/986970804484984852">
+Yes we are well aware of above scenarios. But we would like to make very clear that just because someone is not happy with new updates/changes/releases DERO will not stop experimenting new ideas/technologies. We are at very early stage & we need to fix/upgrade lots of things. There was no point in continuing old ALGO when only few were taking advantage of that. We will change the ALGO again if required.
+</Quote>
+
+Captain doesn't specify who the "few" were — whether they were running optimized private miners, dominant pools, specialized hardware, or something else — only that the previous algorithm had narrowed to a small group's benefit and that this was reason enough to rotate it. The closing line ("We will change the ALGO again if required") is the durable statement of policy: the design surface is treated as in-progress, and the willingness to fork again is the feature, not the bug.
+
+---
+
+## Governance & Community Contributions
+
+DERO's development has always run through a small core team, but in May 2023 Captain formalized a path for outside contributors. The mechanism was deliberately narrow — two named branches, a clear split between "fits the current vision" and "requires a hardfork," and a single license under which any external code would be accepted.
+
+The statements below are from that May 20, 2023 announcement, posted in parallel to `#dero-discussion` and `#announcement` (the two messages are duplicates of each other). They remain the most explicit public description of how Captain intended community code to enter the project. No follow-up governance document has been published since Captain went MIA in January 2024, so this framing is what's on the record — as a 2023 plan, not as a workflow that ever visibly operated.
+
+### The two-branch model for community contributions
+
+Captain laid out the structure in a single message, distinguishing minor improvements from changes that would require a hardfork. The same text went up in `#dero-discussion` first and then in `#announcement` about 37 minutes later — the version below is the announcement-channel post.
+
+<Quote channel="#announcement" date="2023-05-20" source="https://discord.com/channels/419781880632836096/419798745811779586/1109506858869346344">
+Respected DERO Members,
+To incoporate community development in DERO Project two community branches has been planned.
+Community-mainnet(for mainnet) & community-testnet(for testnet) branches.
+DERO Community DEVs can create commits for above branches and after testing & discussions commits will be migrated/merged to main mainnet branch.
+Community-mainnet(for mainnet) branch will be used for commits that are minor & doesn't require hardfork or substantial change in the current codebase/vision.
+Community-testnet(for testnet) branch will be used for commits like that are entirely new concept, experimental in nature & require hardfork. This branch can be used to test ideas like removal of account registration requirement or support of Inter communication between Smart Contracts on DERO network.
+
+Any code published/committed will be accepted under DERO Research License only.
+
+Thank you all of you.
+Captain
+</Quote>
+
+The split is the substantive part: `community-mainnet` is the on-ramp for changes that fit the existing protocol, and `community-testnet` is a sandbox for ideas big enough to need a hardfork. The two examples Captain names for the testnet branch — dropping mandatory account registration, and inter-contract communication — are concrete signals about what he considered protocol-level open questions in 2023, not casual asides. In practice, this branch model never produced a visible community-contribution pipeline before Captain went MIA in January 2024, and no merges from those branches into mainnet were ever announced. Read this as the 2023 plan of record, not as an active intake path a contributor can use today.
+
+---
+
+## Protocol Integrity: Captain in His Own Words
+
+DERO's economics have been the target of recurring claims about a hidden dev tax, premine, or skimmed block rewards. The clearest rebuttal isn't a third-party doc — it's Captain directly addressing the question in `#technical-questions` and pointing readers back at the code.
+
+This section anchors the integrity record on a primary source: Captain's own statement of how main-block and side-block rewards actually work. The quote below is from late 2021, before the DERO-HE migration, but the reward structure it describes is the same one operating on mainnet today.
+
+### No Dev Tax — 100% to Miners, 8% on Side Blocks as a Time-Sync Incentive
+
+Asked in `#technical-questions` about the existence of a developer tax baked into block rewards, Captain answered bluntly and pointed at the code:
+
+<Quote channel="#technical-questions" date="2021-10-21" source="https://discord.com/channels/419781880632836096/419798461039509504/900801463511572580">
+There is no such thing as DEV TAX etc. , Pls read the code carefully again. Main block rewards are full 100% and side block reward are 8% and both rewards goes fully to to miners. Side block has 8% rewards to force miners to sync their time and update/submit their job on time.
+</Quote>
+
+Two things to take away. First: main-block rewards are 100% miner, side-block rewards are 8% miner, and nothing is siphoned off to a developer address — this is verifiable directly in the consensus code. Second: the 8% side-block reward isn't charity, it's a mechanism. It pays miners to keep their clocks synced and submit jobs on time, which matters for a chain that uses a DAG-aware structure rather than a strict longest-chain rule. This statement predates the late-2022 DERO-HE migration, but the reward structure it describes — main 100%, side 8%, no dev cut — is the same one in force on mainnet today.
+
+---
+
+## Philosophy & Inspirational Quotes
+
+The technical work has its own page. This one is for the posture behind it — why Captain built DERO the way he did, what he expected of the community, and the values he kept restating across seven years of public messages. The lines collected here are not slogans drafted for a website. They are answers given inside development channels, in support threads, in replies to skeptics and well-wishers alike.
+
+Read in sequence, a coherent project ethos emerges: privacy is not optional, the network is not anyone's property, the work is hard on purpose, and the community — not the core devs — is the long-term guardian.
+
+### We choose the hard way
+
+Day one of the bitcointalk announcement thread. A poster thanks Captain for the work, and Captain answers with what reads, in hindsight, as the project's founding posture.
+
+<Quote channel="Bitcointalk DERO thread" date="2017-12-05" source="https://bitcointalk.org/index.php?topic=2525508.msg25787409#msg25787409" archival>
+thanks, you are welcome, we have the skills and we choose the hard way its better for whole crypto community if there are any advancements.
+</Quote>
+
+The frame is set in one sentence: the team is capable, the path is deliberately hard, and the justification is that the broader ecosystem benefits when somebody actually pushes the cryptography forward. Every later design choice — Bulletproofs, homomorphic encryption, no optional-privacy toggle — is downstream of this line.
+
+### Not an ICO. A community project.
+
+Ten days into the bitcointalk thread, with the usual ICO-era questions arriving, Captain draws the line on what DERO is and is not.
+
+<Quote channel="Bitcointalk DERO thread" date="2017-12-15" source="https://bitcointalk.org/index.php?topic=2525508.msg26400734#msg26400734" archival>
+Will be updated in details and this is not ICO. Community project where everyone is invited to contribute.
+</Quote>
+
+The contributor-led framing is staked out before there is much of a community to lead it. This becomes the structural reason DERO never had a foundation, a treasury, or a token sale to point at.
+
+### Why DERO, in plain language
+
+Two months in, Captain writes out the canonical answer to the question that would follow the project for years: why does a smart-contract chain need privacy at all? He skips the jargon and reaches for a door.
+
+<Quote channel="Bitcointalk DERO thread" date="2018-01-30" source="https://bitcointalk.org/index.php?topic=2525508" archival>
+WHY DERO AND WHY SMART CONTRACTS NEED PRIVACY ? In very simple and few words: Assume you design a smart contract and integrate to access/authorize a building/open a door or any other service like asset-management/tickets/shares distribution based on smart contract. Many would not like like to share/view details of all other users/customers who used/participated/access that contract/service. I hope you too would like transparency in contract details but would not like to share/disclose your details to rest of the world. On DERO blockchain smart contracts details are transparent on blockchain but not user details.
+</Quote>
+
+The split he names — transparent contract logic, private user data — is the architecture DERO eventually shipped. The mission was articulated before the engine to deliver it existed.
+
+### A blockchain that affects society
+
+Three weeks later in the same thread, Captain expands on the social vision in the most sweeping mission statement of the early archive.
+
+<Quote channel="Bitcointalk DERO thread" date="2018-02-19" source="https://bitcointalk.org/index.php?topic=2525508.msg30585516#msg30585516" archival>
+You have expressed the IDEA behind Dero. We hope to create a Blockchain which will affect the entire society from increasing the privacy to daily utilities. Users will have confidence that no copy/access of his data exists on the shops/counters/merchants/agents he has visited since start of the day. He lives a private life and he knows who has access/copy of his data. This is a very big and huge impacting topic. In parallel to technological development of DERO Blockchain we are also working for practical life example to express the DERO concept.
+</Quote>
+
+The scope is deliberately wider than crypto: a person walks through their day and knows who has copies of their data. Privacy as a daily-life property, not a coin feature.
+
+### No permission needed, no mercy asked
+
+September 2020, in technical-questions. A user asks about official cooperation or partnership for a business that wants to integrate DERO. The answer is short.
+
+<Quote channel="#technical-questions" date="2020-09-19" source="https://discord.com/channels/419781880632836096/419798461039509504/756772084192903258">
+In Crypto DERO doesn't need/expect any mercy or so of any kind. Also you don't need DERO permission for any cooperation to use DERO in your business as DERO is opensource and you can find all code/API on github.
+</Quote>
+
+Permissionless on both sides — the project asks nothing from anyone, and nobody needs to ask anything of the project. The codebase is the API; that is the entire relationship.
+
+### Not anti-anyone. Pro-users.
+
+April 2022, in #random. A familiar question surfaces — is DERO trying to replace X, beat Y, kill Z? Captain reframes the entire posture.
+
+<Quote channel="#random" date="2022-04-22" source="https://discord.com/channels/419781880632836096/420040002878308352/967086547600048179">
+DERO have no interested in fear or making somone obsolete . Objective is very clear that users using DERO should have max privacy & security.
+</Quote>
+
+The mission is not competitive. It is internal: maximum privacy and security for the people who use the chain. Everything else is noise.
+
+### No optional privacy
+
+The next day, in error-support, a user worries they might leak information by misusing the wallet. Captain answers with what is essentially the design ethos of the protocol in one sentence.
+
+<Quote channel="#error-support" date="2022-04-23" source="https://discord.com/channels/419781880632836096/419798691088695318/967442505371099196">
+There is no concept of optional privacy in DERO. So don't worry of loosing/degrading privacy in DERO if you are doing something wrong.
+</Quote>
+
+Privacy is not a toggle, a tier, or a careful-mode. It is structural — you cannot use the chain incorrectly in a way that leaks user data, because there is no shielded/transparent split to misuse.
+
+### On false privacy and VCs
+
+A week later, in #suggestions, the discussion turns to projects that market themselves as private but are closed-source or VC-backed. Captain states the values position directly.
+
+<Quote channel="#suggestions" date="2022-04-30" source="https://discord.com/channels/419781880632836096/557277155436789760/969882713022685184">
+DERO would never risk its users in false sense of privacy. Secret blockchain is blackbox-closed source technology with VCs. And VCs have only one goal.
+</Quote>
+
+The bar is not whether something is marketed as private. It is whether the user can verify it. Two sentences capture the anti-blackbox, anti-extractive-funding stance of the project.
+
+### Privacy as a requirement
+
+February 2023, in #trading, against a backdrop of tightening surveillance regimes and exchange collapses. Captain offers one of his shorter and more pointed lines.
+
+<Quote channel="#trading" date="2023-02-24" source="https://discord.com/channels/419781880632836096/419799315079364609/1078656523875659806">
+We will soon see the requirement of privacy & freedom.
+</Quote>
+
+Eight words. Privacy and freedom not framed as features to offer, but as requirements to meet. The reframing is the whole point.
+
+### Core devs will never be part of some centralized thing
+
+April 2023, in #dero-mining. A user asks about seed nodes and whether they create a centralization risk. Captain uses the answer to draw a wider line.
+
+<Quote channel="#dero-mining" date="2023-04-08" source="https://discord.com/channels/419781880632836096/427613001537814540/1094238692203315281">
+DERO seed nodes are not required except to bootstrap network. DERO is actual decentralized network & will remain so. DERO core devs will never be part of some centralized thing. There are so many other protocols & chains which can be freezed/halted/selective, feel free to join those networks.
+</Quote>
+
+Seed nodes are convenience, not control. The closing line — that other protocols exist for anyone who wants freezable, halted, or selective behavior — is the project's posture in one breath.
+
+---
+
+---
+
+## Quantum Resistance & DERO-QR
+
+Quantum resistance is one of the few topics where Captain spoke about a future DERO upgrade in concrete engineering terms. The plan, surfaced in a March 2022 exchange with community member Robyer, is DERO-QR — a quantum-resistant scheme that lands on the existing DERO network, with GravitonDB acting as the migration substrate from DERO-HE to DERO-QR.
+
+The supporting context stretches back to 2020, when Captain first pointed at Graviton as the reason DERO could move state under cryptographic proofs at all, and forward into mid-2022, when he kept the threat surface in view by quietly sharing news of broken "quantum-safe" schemes. Captain's posture is consistent throughout: quantum is a "when needed" problem, the real threat is selective and hidden, and the migration tooling is already in the tree.
+
+### State tracking with crypto-backed proofs
+
+Two minutes later in the same thread, Captain names Graviton's actual design intent — not just storage, but verifiable state.
+
+<Quote channel="technical-questions" date="2020-10-18" source="https://discord.com/channels/419781880632836096/419798461039509504/767413032783183913">
+So GravitonDB was written for state tracking with crypto backed proofs.
+</Quote>
+
+This is the property that makes the later DERO-QR migration plausible. A database that already commits to state under cryptographic proofs can re-map that state under a different cryptographic scheme without breaking the chain of custody.
+
+### Opening posture: not a big deal
+
+Jump forward to March 31, 2022. A discussion about quantum threats opens in #trading, and Captain sets the tone with a single line.
+
+<Quote channel="trading" date="2022-03-31" source="https://discord.com/channels/419781880632836096/419799315079364609/959090674379149382">
+DERO will have Quantum Tech when it will be required. It's not a big deal.
+</Quote>
+
+The framing is deliberate. Quantum is a when-needed problem, not a panic — but the rest of the thread shows he is already engineering for it.
+
+### Threat surface: hacker's garage, IBM, Intel
+
+Robyer pushes back with the standard academic timeline argument — large-scale quantum computers are years away. Captain redirects to where the real threat actually lives.
+
+<Quote channel="trading" date="2022-03-31" source="https://discord.com/channels/419781880632836096/419799315079364609/959097200871342221">
+Robyer you may be right but Pls don't underestimate hacker's garage. And also go though IBM/Intel's recent innovations list.
+</Quote>
+
+Two threat vectors in one line — corporate R&D pipelines and unannounced private capability. Neither shows up in conference papers, and both can be operational long before the public timeline says they should be.
+
+### DERO-QR on the current network
+
+Fifteen minutes later, Captain drops the keystone announcement. This is the most concrete public statement of DERO's quantum-resistance plan.
+
+<Quote channel="trading" date="2022-03-31" source="https://discord.com/channels/419781880632836096/419799315079364609/959100735893700639">
+Robyer, We are ready, You will have DERO-QR(Quantum-Resistant) on current DERO-NW. GravitonDB will help to internal-map exisitng DERO-HE to DERO-QR.
+</Quote>
+
+Three engineering claims compressed into one sentence: DERO-QR will run on the existing network (no fork, no new chain), the upgrade path is DERO-HE to DERO-QR, and GravitonDB is the substrate that does the internal mapping between the two cryptographic regimes. The 2020 Graviton work is what makes this an upgrade rather than a migration.
+
+### Enigma-cracking: you won't know until you do
+
+Later in the same thread Captain reaches for a historical analog to explain why quantum capability will not announce itself.
+
+<Quote channel="trading" date="2022-03-31" source="https://discord.com/channels/419781880632836096/419799315079364609/959117179259871292">
+Exactly, Most things will be down. But expect attacks to be very selective and occasional just like as Robyer said above Eg:  Enigma cracking so you will never know till mass attacks in open.
+</Quote>
+
+The Enigma analogy is the load-bearing one. Bletchley Park's capability stayed secret for decades while it was used selectively to avoid revealing the break. A real quantum capability would behave the same way — visible only when the operator decides the strategic value of using it openly exceeds the value of keeping it hidden. By then the migration window is closed.
+
+### GravitonDB is a complete project in itself
+
+September 2022, in #dero-discussion, Captain reframes how to think about Graviton's scope inside the DERO codebase.
+
+<Quote channel="dero-discussion" date="2022-09-14" source="https://discord.com/channels/419781880632836096/419781880632836098/1019408924321009734">
+GravitonDB which is complete project in itself is side project for DERO-HE.
+</Quote>
+
+Read alongside the March quotes, this lands differently than it might in isolation. Graviton is a standalone project that happens to currently serve DERO-HE — which is exactly what you would want if you planned to swap the cryptographic layer above it for something quantum-resistant without rewriting the storage and proof substrate underneath.
+
+---
+
+## Current & Coming Times: What Ships vs What's Ready
+
+There is a recurring theme in Captain's posts that is easy to miss if you only read DERO's release notes: what ships is deliberately less than what is built. Stargate, in his telling, is a *downgrade* — tuned for the machines on the network today and for users who need to understand what they are running. The harder primitives sit behind it, waiting.
+
+Read together, these messages frame DERO not as a finished product but as a design horizon. The privacy is sized for "current & coming times," the architecture is backed by "decades of experience," and the AI-agent future Captain described in 2022 reads, in 2026, less like speculation and more like a roadmap.
+
+### Downgrades for current times and weak machines
+
+Asked in August 2022 about homomorphically encrypting addresses, Captain answers in a single beat — it is not the hard part. The hard part is restraint.
+
+<Quote channel="random" date="2022-08-27">
+``How hard would it be to Homomorphically encrypt addresses?`` Not a big deal, Lots of downgrades have been done to DHEBP for keeping in view of current times & computational powers of weak machines on NW.
+</Quote>
+
+The line to sit with is *Lots of downgrades have been done to DHEBP*. The shipped protocol is not the ceiling of what was designed — it is the floor that the weakest machine on the network can still keep up with.
+
+### Designed from scratch, because the field stalled
+
+Four minutes later, Captain explains why those downgrades exist in the first place: there was nothing serious to build on.
+
+<Quote channel="random" date="2022-08-27">
+Lots of new things have to be designed in DERO from scratch for maximum privacy. There is nothing in existing blockchain tech world to develop something serious. Blockchain research & progress haven been neglected/over-taken due to hype & scams.
+</Quote>
+
+This is the frame for every other quote in this section. DERO is not assembling other people's primitives. It is building the primitives, and shipping a tuned-down version of them so the network can actually run.
+
+### AI making private transactions
+
+Thirteen minutes later, the picture sharpens. The AI is not just *aligned with* privacy — it is transacting.
+
+<Quote channel="dero-discussion" date="2022-10-13">
+It would be interesting to see AI making private transactions/payments in different meta/games/real world etc.
+</Quote>
+
+Agentic payments across games, virtual worlds, and the real world — described in 2022, on a chain that already has the encrypted-balance and SC primitives to support them.
+
+### Decades of experience for current & coming times
+
+In December 2022, Captain compresses the entire design philosophy into one sentence.
+
+<Quote channel="dero-discussion" date="2022-12-08">
+In-addition to above DERO uses decades of experience to make sure DERO offers best privacy possible required in current & coming times.
+</Quote>
+
+*Decades of experience*, *best privacy possible*, *current & coming times* — the triad Captain returns to whenever someone asks why DERO looks the way it does. The chain is not optimized for today's threat model alone.
+
+### Stargate is the explainable version
+
+By April 2023, Stargate is live and people are reading the protocol. Captain wants the record clear about what they are reading.
+
+<Quote channel="dero-discussion" date="2023-04-15">
+Current DERO Stargate is heavily downgraded so that people can understand it easily.
+</Quote>
+
+The companion to the 2022 downgrade quote, and arguably the more pointed of the two. Stargate is the version of DERO that fits in a developer's head. There is more behind it.
+
+### Why his heart still doesn't allow SC interactions
+
+August 2023. Asked why DERO still does not allow smart contracts to interact with each other, Captain reaches for the same phrase he used eight months earlier.
+
+<Quote channel="random" date="2023-08-03">
+Just for such & similar reasons, My heart doesn't allow SCs interactions. Till current state each & every part has been designed & backed by decades of experience.
+</Quote>
+
+The second invocation of *decades of experience*, used this time to defend a missing feature rather than a shipped one. The restraint is the design.
+
+---
+
+## Blackbox DERO: The Long-Term Vision
+
+A recurring pattern in Captain's public messages is the hint that Stargate — the protocol you can run today — is a deliberately constrained subset of a larger design. The quotes below are the moments where Captain steps furthest forward, sketching a future "entirely blackbox" DERO with no visible TXIDs, no mining-reward visibility, and no explorer.
+
+Read these as statements of design intent, not as committed roadmap. The credo is six words: *Before Protocol you need Vision/Future.* What ships at any given moment is the slice of that vision the protocol can carry now.
+
+### HE scope is intentionally limited "for now"
+
+Asked why DERO-HE applies homomorphic encryption only to balances and transfers rather than the full state, Captain frames the current scope as a starting point, not a destination.
+
+<Quote channel="dero-he-testnet" date="2021-09-24" source="https://discord.com/channels/419781880632836096/737351309396541471/890889061466791956">
+No, DERO is using HE for just balances etc. for now because it more than the enough for the current requirement. Also it will help to learn more. In future this will change based on the requirements and use cases.
+</Quote>
+
+The first hint that what's shipped is not what's planned — HE coverage is sized to current needs, with explicit room to grow.
+
+### Everything floating in DERO-sea is encrypted
+
+Later the same day, Captain restates the invariant in its most poetic form — wallets exist only to prove ownership over data the network itself never sees in cleartext.
+
+<Quote channel="dero-he-testnet" date="2021-09-24" source="https://discord.com/channels/419781880632836096/737351309396541471/890894489609199667">
+In DERO-HE user balances/transfers etc. are never decrypted and all logics operate on encrypted data only. Wallets are just required to prove your ownership to the encrypted data. Everyone and everything floating in DERO-sea is encrypted.
+</Quote>
+
+The always-encrypted invariant, stated as a property of the medium rather than a feature of the wallet.
+
+### CryptoNote is outdated for DERO
+
+Minutes later, Captain publicly retires the old privacy stack — not as a value judgement on CryptoNote itself, but as a statement about which protocol family DERO belongs to going forward.
+
+<Quote channel="technical-questions" date="2021-10-20" source="https://discord.com/channels/419781880632836096/419798461039509504/900253989646532648">
+DERO has moved beyond outdated CryptoNote Protocol . Not interested in any new developments /improvements/exploits in CryptoNote Protocol. Good if [user] has done some improvements on CryptoNote Protocol but for DERO it is outdated protocol.
+</Quote>
+
+The moment the old privacy stack is publicly retired — improvements there are someone else's project, not DERO's.
+
+### Obfuscation out, HE in, plaintext never
+
+Asked to spell out the substitution, Captain gives the replacement thesis in one paragraph: obfuscation is a workaround, HE is the actual primitive.
+
+<Quote channel="technical-questions" date="2021-10-20" source="https://discord.com/channels/419781880632836096/419798461039509504/900256409818640425">
+CryptoNote Protocol is full of obfuscation only. DERO is migrating to Homomorphic Encryption which supports operations/audit etc. on encrypted data only, No need of any plaintext data/balance/TXs calculations. DATA/Balances/TXs will always stay in encrypted state on DERO network and only user/wallet can decrypt balances/data.
+</Quote>
+
+The contrast is the point: obfuscation hides plaintext that still exists; HE removes the plaintext from the network's view entirely.
+
+### "Most of these projects will be seen running on DERO network"
+
+Responding to critics who couldn't see what DERO was building, Captain reframes the disagreement as a vision gap rather than a technical one.
+
+<Quote channel="technical-questions" date="2021-10-20" source="https://discord.com/channels/419781880632836096/419798461039509504/900262241876725780">
+Looks these people/DEV seems have no idea what DERO is building and aiming for. 
+Coming times No surprises if most of these projects will be seen running on DERO network.
+</Quote>
+
+The thesis: if the substrate is right, the applications migrate. Said in 2021, before most of the surface area existed.
+
+### Entirely blackbox DERO
+
+Eighteen months later, Captain sketches the endgame explicitly. Ring members go away; so does the explorer, the mining-channel reward visibility, and the very concept of external audit.
+
+<Quote channel="dero-discussion" date="2023-04-15" source="https://discord.com/channels/419781880632836096/419781880632836098/1096733857824383029">
+Also DERO design can also be upgraded to remove concept of ring members entirely. In upgraded design there will no visible TXIDs, no mining rewards visibilty, no fuss in mining channel & no concept of explorer. And of-course no concept of audit etc. Entirely blackbox DERO. 🙂
+</Quote>
+
+This is the anchor the section is named for. Every other quote points at this end-state from a different angle.
+
+---
+
+## Broadcasts & Slogans
+
+Captain wrote in compressed declaratives. When he wanted a principle to stick, he stripped it to a single line and let it land as identity rather than argument — the kind of phrasing that doubles as a status message, a channel broadcast, and a community password.
+
+The lines below are the recurring anchors: short, repeatable, and structurally identical across years. They are the slogans the network rallied around, in his own words.
+
+### Not your keys, not your coins
+
+Dropped into #trading during exchange-listing chatter. The most iconic crypto custody mantra, repeated by Captain across years as a project-level anchor.
+
+<Quote channel="trading" date="2022-03-09" source="https://discord.com/channels/419781880632836096/419799315079364609/950960399090589759">
+Not your keys, Not your coins.
+</Quote>
+
+The canonical self-custody line, stated without elaboration. Captain treated it as load-bearing — the precondition for everything else DERO claimed about privacy.
+
+### Actual decentralized blockchain
+
+Answering a question in #technical-questions, Captain reframed the conversation away from feature comparison and toward a binary choice.
+
+<Quote channel="technical-questions" date="2022-04-01" source="https://discord.com/channels/419781880632836096/419798461039509504/959251609429344378">
+Welcome to actual decentralized blockchain else pls stay with Central Banking systems.
+</Quote>
+
+A dichotomy slogan — either you are running an actually decentralized chain or you are inside the system DERO was built to refuse. No middle category.
+
+### Mine on your own node
+
+A mining-channel one-liner that fuses three of Captain's recurring positions — solo mining, decentralization, and self-hosting — into a single sentence.
+
+<Quote channel="dero-mining" date="2022-10-13" source="https://discord.com/channels/419781880632836096/427613001537814540/1029974224829415434">
+Best thing for network security, decentralization is to mine on your own node.
+</Quote>
+
+Mining policy stated as security policy. The slogan format hides the load-bearing claim: pool mining and network security are not the same goal.
+
+### No heroes, only community
+
+Posted into #dero-discussion in response to attempts to lionize individual contributors. Captain rejected the framing outright.
+
+<Quote channel="dero-discussion" date="2023-03-18" source="https://discord.com/channels/419781880632836096/419781880632836098/1086701086770999388">
+There are no HERO/S in decentralized network. Community is the actual guardian in decentralized network.
+</Quote>
+
+A pure aphorism, and a direct rebuke of personality-cult thinking. The guardian of a decentralized network is, by definition, plural.
+
+### Run your own node
+
+Two weeks after the no-heroes line, Captain returned to operational ground. The refined wallet-and-node mantra he repeated in many variations.
+
+<Quote channel="dero-discussion" date="2023-04-02" source="https://discord.com/channels/419781880632836096/419781880632836098/1092114303722725527">
+For best security & privacy, run your own node & connect wallet to your own node.
+</Quote>
+
+Security and privacy collapsed into one action. The slogan is short enough to fit in a status message and specific enough to function as a configuration instruction.
+
+---
+
+## Biographical Notes
+
+Captain rarely talked about himself. When he did, it came in fragments — a sentence about upbringing, a reference to writing compilers decades ago, a note that he was traveling. No timeline, no biography, no resume. What we have is what slipped out around the technical work.
+
+Read together, these fragments include a reference to compiler work decades ago, a sentence about upbringing, named acknowledgments of contributors, notes about travel, and the occasional cost admission. We draw no portrait beyond what he wrote.
+
+### Nature, discipline, values
+
+January 2018 on Bitcointalk, weeks after the DERO mainnet launch. Someone had offered praise and, implicitly, the suggestion that DERO should chase ICO money like everyone else that cycle. Captain answered with what reads as a personal credo.
+
+<Quote channel="Bitcointalk DERO ANN thread" date="2018-01-06" source="https://bitcointalk.org/index.php?topic=2525508.msg27600667#msg27600667" archival author="CaptDero">
+...thanks for your words but It depends more on the nature, discipline, values in your life. We will work and build together a strong community slowly our own in hard way. We don't need anything big in millions or so like ICO. We will work hard and produce something & if remarkable DERO will get its success. Thank you.
+</Quote>
+
+The refusal of ICO money and the framing of character — nature, discipline, values — sets the posture the rest of the archive keeps returning to. "Slowly our own in hard way" is close to a thesis statement for how the project would be run.
+
+### The teacher called Experience
+
+July 2018. Serena, a long-time contributor, had left the project after an incident. Captain's first public reply to her after the departure is reconciliatory rather than defensive. No stable per-message permalink survives — only the thread context.
+
+<Quote channel="Bitcointalk DERO ANN thread" date="2018-07-20" author="CaptDero">
+Hello @Serena, My first reply to you since you left. I believe you have contributed lots of efforts and time for the DERO Community. Thanks for that. For me you are still the same kind and sweet person. Pls don't allow this incident to affect you any way. Let the good and positive in you be more powerful. I have seen and handle lots of such in life, thanks to the teacher called Experience. You will always have my good wishes. Feel free for anything else. Thanks. Regards.
+</Quote>
+
+"The teacher called Experience" is the older-mentor register that surfaces throughout the archive. The phrasing — formal, deliberate, slightly archaic — is also a recognizable voice fingerprint.
+
+### Environment and society
+
+June 2022 in #random, mid-conversation about beliefs and worldview. This is the closest Captain ever comes to placing himself culturally on the map.
+
+<Quote channel="#random" date="2022-06-27" source="https://discord.com/channels/419781880632836096/420040002878308352/990884968722993162" author="captain030317">
+Perhaps most of my view/beliefs are due to the enviroment/society I have been raised.
+</Quote>
+
+One sentence, no elaboration. He never named a country, a language, or a tradition. He attributed his worldview to where he came from and left it there.
+
+### Traveling, meeting friends
+
+Mid-December 2022, posted to #dero-discussion. A rare note about being away from the desk.
+
+<Quote channel="#dero-discussion" date="2022-12-14" source="https://discord.com/channels/419781880632836096/419781880632836098/1052601797002399775" author="captain030317">
+As I am traveling & meeting some friends atm. Would like to say that world is changing/evolving faster than our beliefs. Lots of extra-ordinary achievements in medical,astrophysics & other sciences. I am also surprised to see the developments. Looks coming times will be totally different.
+</Quote>
+
+He names medical and astrophysics alongside other sciences. He does not elaborate on where he was traveling or whom he was meeting.
+
+### First specialized compilers, two decades back
+
+August 2023 in #random, explaining why DVM uses an interpreter instead of a compiler. The aside is the closest Captain comes to dating his own professional origin.
+
+<Quote channel="#random" date="2023-08-03" source="https://discord.com/channels/419781880632836096/420040002878308352/1136657488037548162" author="Captain">
+That's why DERO has interpreter instead of compiler. Even though team has experience of writing some of the first specialized compilers more than 2 decades back.
+</Quote>
+
+Compiler work "more than 2 decades back" places the team's systems-engineering roots in the 1990s or earlier — long before crypto. It also fits a pattern that recurs across the archive: we know how to do it the other way, we chose this on purpose.
+
+### Exchange listings, time, and money lost
+
+December 11, 2023, in #dero-discussion — a rare cost admission.
+
+<Quote channel="#dero-discussion" date="2023-12-11" source="https://discord.com/channels/419781880632836096/419781880632836098/1183793445949689937" author="captain030317">
+We lost several $100K & lot's of precious time in this exchange listings.
+</Quote>
+
+A rare admission of cost — both money and time — from someone who almost never talked about either.
+
+---
+
+## The Trail: Cryptic Clues and Last Words
+
+What follows is a curated arc of messages from Captain that, in retrospect, read differently than they did in the moment. Most are short. Several are signoffs. A few are practical announcements where the word choice lands harder than it needed to. The collection opens with his first public Christmas in 2017, then picks up again in his late period from late 2022 through his last message on New Year's Day 2024. Together they trace a shift in voice — from technical build updates to short broadcast greetings — visible in the last stretch before he went MIA in January 2024.
+
+This page draws no conclusions about what happened to him. The pattern is the point: certain phrases recur ("tomorrow never comes," "coming times," "rest & peace," "bless"), and the rhythm of his presence changes. Read them as Captain wrote them. The community has continued without him since.
+
+### Tomorrow never comes (Christmas 2017)
+
+Captain's first public Christmas message on the original Bitcointalk DERO thread, six months into the project. Signed 'Capt. Dero' — the handle that would stick for seven years. The phrase he opens with here will echo, in different forms, until his final week.
+
+<Quote channel="Bitcointalk — Re: DERO: A secure, private blockchain with Smart Contracts." date="2017-12-25" author="captain030317" archival>
+Happy Holidays to everyone, Live your life and enjoy it to the fullest.
+
+Tomorrow never comes. Be safe and responsible.
+
+Capt. Dero.
+</Quote>
+
+'Tomorrow never comes' is the anchor phrase of this collection. It appears here on his first public Christmas and bookends a seven-year arc.
+
+### Third person — 'captain's msgs'
+
+From #random in September 2022, in a thread about community waiting on his replies. Captain answers in the third person about himself — a register he uses rarely, and almost always when redirecting attention away from his own role.
+
+<Quote channel="#random" date="2022-09-11" source="https://discord.com/channels/419781880632836096/420040002878308352/1018550416558018630">
+Thats the real issue, why depend/wait for captain's msgs. 🙂
+</Quote>
+
+Sixteen months before the messages stopped, he was already nudging the community to not depend on them. This 'don't wait for me' theme repeats elsewhere in the same period.
+
+### Rest & peace only
+
+Two weeks later, in #dero-discussion, someone asked him a question that required a longer answer than he had energy for. He demurred in a way he almost never did.
+
+<Quote channel="#dero-discussion" date="2022-09-28" source="https://discord.com/channels/419781880632836096/419781880632836098/1024739074856202250">
+Complex to answer . ATM looking for some rest & peace only.
+</Quote>
+
+Captain rarely spoke about his own state. This is one of the few times the word 'rest' surfaces in first person.
+
+### Higher level of peace
+
+A December 2022 message in #random about wallet-side ring configuration. The technical content is unremarkable; the closing phrase is what makes it sit in this collection.
+
+<Quote channel="#random" date="2022-12-27" source="https://discord.com/channels/419781880632836096/420040002878308352/1057300776084578304">
+Feel free to optimize/update Rings/wallets etc. This is purely wallet-side & independent of core. Advance users can define their own private logic also in wallet for higher level of peace.
+</Quote>
+
+The word 'peace' recurs across this period.
+
+### Coming times
+
+From #dero-discussion in mid-January 2023, in a conversation about why anyone should care about privacy tech now. Captain's answer reframes the question as a survival skill rather than a feature.
+
+<Quote channel="#dero-discussion" date="2023-01-13" source="https://discord.com/channels/419781880632836096/419781880632836098/1063269415237472318">
+Better to start learning more about privacy now. Because in coming times that knowledge will be required anyhow to survive & maintain edge with respect to others.
+</Quote>
+
+'Coming times' is the most urgent register Captain uses in this period. The phrase recurs in adjacent messages through 2023.
+
+### Down forever
+
+A February 2023 announcement that the hosted browser wallet at wallet.dero.io would be shut down. The substance is operational; the word choice is the part that registers in this list.
+
+<Quote channel="#dero-discussion" date="2023-02-19" source="https://discord.com/channels/419781880632836096/419781880632836098/1076869262511185931">
+wallet.dero.io will be down forever in coming weeks. Pls familiarize yourself with cli or Engram wallet.
+</Quote>
+
+Part of a pattern in this stretch where Captain routes users toward self-sufficient tooling — CLI, Engram, local nodes — over anything he himself hosts.
+
+### Severely disconnected
+
+Mid-March 2023, in #dero-discussion. Someone had asked, again, about his periodic disappearances. This is one of the few times he explained them directly.
+
+<Quote channel="#dero-discussion" date="2023-03-18" source="https://discord.com/channels/419781880632836096/419781880632836098/1086696541080797305">
+I always travel to parts which are severely disconnected to rest of the world both physically & with network capabilities. All good ,Nothing new. 🙂
+</Quote>
+
+Addressed to the community as a whole, in passing. The line stands out because Captain almost never described his own movements.
+
+### Bless you all
+
+New Year's Eve into New Year's Day 2024, in #dero-discussion. A broadcast greeting, addressed to everyone.
+
+<Quote channel="#dero-discussion" date="2024-01-01" source="https://discord.com/channels/419781880632836096/419781880632836098/1191443862232604752">
+Very Very Happy New year to everyone. Bless you all.
+</Quote>
+
+His last message. The seven-year arc that opened with 'Tomorrow never comes' on Christmas 2017 closes here, with 'Bless you all' on New Year's 2024.
