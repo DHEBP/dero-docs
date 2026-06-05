@@ -13,6 +13,7 @@ tags: ["basics", "daemon", "node", "P2P", "infrastructure"]
 
 import { Callout } from 'nextra/components'
 import Image from 'next/image'
+import CaptainNote from '../../components/CaptainNote'
 
 # DERO Daemon (Node)
 
@@ -77,6 +78,103 @@ graph TB
 
 ---
 
+## Verify your binaries
+
+Before running `derod` or `dero-wallet-cli` from a download, confirm the binary matches Captain's published GPG signature and the release sha512sum:
+
+```bash
+gpg --verify checksum.txt.asc
+sha512sum dero_linux_amd64.tar.gz
+```
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/419781880632836098/1056519143932829716"
+  date="2022-12-25"
+  channel="#dero-discussion"
+>
+  Please every-time verify checksum of DERO binaries/source after downloading from github.
+</CaptainNote>
+
+Full instructions for installing Captain's GPG key and running the verification end-to-end are in the [DERO forum thread](https://forum.dero.io/t/verify-dero-code-and-binaries-release/2230).
+
+---
+
+## Reading the derod prompt
+
+When you start `derod`, the top of the terminal looks like this:
+
+<figure style={{ margin: '1.5rem 0', textAlign: 'center' }}>
+  <Image
+    src="/assets/Dprompt1.png"
+    alt="Annotated derod interface showing 10 numbered callouts mapping each region of the prompt to its meaning"
+    width={1200}
+    height={650}
+    sizes="(max-width: 768px) 100vw, 800px"
+    style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px' }}
+  />
+  <CaptainNote
+    variant="figure"
+    source="https://discord.com/channels/419781880632836096/419798461039509504/1095749633671712890"
+    date="2023-04-12"
+    channel="#technical-questions"
+  >
+    Details about DERO daemon prompt. Also run status/syncinfo/help cmd in daemon for details.
+  </CaptainNote>
+</figure>
+
+Every field on the prompt is a live signal. Once you can read it, you can diagnose almost any daemon problem at a glance.
+
+| # | Field on prompt | Meaning |
+|---|---|---|
+| 1 | `146658/146658` | **Local sync height** — your node's chain tip |
+| 2 | `[146658/146658]` | **Network height** — what your peers agree on |
+| 3 | `P 17` | **Peers** — daemons currently connected to you |
+| 4 | `TXp 0` | **TX pool** — transactions waiting to be included |
+| 5 | `0` | **Registration pool** — wallet registrations waiting |
+| 6 | `NW 4.200 GH/s` | **Global network hashrate** |
+| 7 | `>Miners 1` | **Miners** connected to your daemon |
+| 8 | `98` | **Miniblocks** currently active in this machine's RAM |
+| 9 | `0s\|0s` | **Time offsets** — NTP vs peer-derived |
+| 10 | `2ms>>` | **Latency** between this daemon and its peers |
+
+Read the prompt left to right:
+
+- When **1** and **2** match, you're synced.
+- When **9** shows non-zero seconds, your clock is drifting — fix NTP (see [Mining → time sync](/basics/mining)).
+- When **10** climbs into the hundreds of ms, check your network.
+
+Three commands give you more detail any time you need it:
+
+```bash
+status     # chain height, peers, version, top hash
+syncinfo   # per-peer height and direction
+help       # full command list
+```
+
+### MB / MBR / IB counters
+
+When you're mining (or operating a daemon other miners connect to), three additional counters appear under the prompt's Mining Stats:
+
+| Code | Meaning | Healthy? |
+|---|---|---|
+| `MB` | Miniblock submitted | yes |
+| `MBR` | Miniblock rejected (usually invalid PoW) | only if rare |
+| `IB` | Integrator block submitted | yes |
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/427613001537814540/971678950562594946"
+  date="2022-05-05"
+  channel="#dero-mining"
+  codeRef="cmd/derod/main.go:904"
+>
+  MB-> Minblock submitted. MBR: Miniblock rejected due to invalidPOW or so. IB-> Integrator Block submitted.
+</CaptainNote>
+
+The `status` command's `Block Minted` line is `(MB + IB) − MBR` — so when `MBR` climbs, your minted count visibly drops. If `MBR` keeps growing, you're probably running an unofficial miner that submits malformed work; switch back to the official `dero-miner` binary.
+
+---
+
 ## Running Your Own Node
 
 **Basic command:**
@@ -137,6 +235,50 @@ Synced:     6090778/6090778 ✓
 **Fast sync vs Full sync:**
 - **Full sync:** Downloads and validates entire blockchain (slow, complete)
 - **Fast sync:** Downloads state snapshots (faster, still secure)
+
+### Pruned-node height — why your status looks short
+
+If you started your node with `--fastsync`, `status` will print a line like:
+
+```
+Chain is pruned till 6087500
+```
+
+…meaning blocks before that point exist only on full-history nodes. The chain still validates correctly — you just can't serve TX queries from before the prune point.
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/419781880632836098/1054735099553386557"
+  date="2022-12-20"
+  channel="#dero-discussion"
+>
+  Pls run `status` cmd in daemon &amp; see what is your pruned node height. TXs before pruned height will not appear.
+</CaptainNote>
+
+If you need full history (e.g. to serve TX queries from genesis), restart `derod` without `--fastsync` and let it backfill — Captain's recommended path is a one-time full sync after the initial fastsync onboard.
+
+### When your node gets stuck — the pop escalation
+
+If your daemon stops advancing or believes a wrong tip, Captain's recommended recovery is to rewind blocks from the top and let the chain re-sync from your peers.
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/419798461039509504/1066560738862301225"
+  date="2023-01-22"
+  channel="#technical-questions"
+  codeRef="cmd/derod/main.go:981 (case command == 'pop')"
+>
+  pop 20 or 50000 blocks &amp; see if you can start sync again. if not delete mainnet folder &amp; start fullsync again, It takes 1 -2 days to do full sync on recent cpus with SSD. Sync may appear very slow for few hrs for some duration but it will sync very fast after that.
+</CaptainNote>
+
+In practice the ladder operators converge on is:
+
+| Step | Command | When |
+|---|---|---|
+| 1 | `pop 20` (in derod) | Brief hiccup, recent fork |
+| 2 | `pop 50000` | After step 1 doesn't unstick within minutes |
+| 3 | Stop `derod` → delete the `mainnet/` folder → restart with `--fastsync` | Nuclear option |
+
+Steps 1 and 2 are Captain's direct recommendation. Intermediate values (`pop 1000`, `pop 10000`) work the same way — `pop N` simply rewinds `N` blocks; pick whatever distance reflects how far back you suspect the wedge is.
 
 ---
 

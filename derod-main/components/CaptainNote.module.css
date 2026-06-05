@@ -1,0 +1,183 @@
+/* CaptainNote — lightweight cousin of <Quote> for canonical pages.
+   ~60% the visual weight; no anchor bar, no archival chrome.
+   Four variants: inline (default), figure, pullquote, verified. */
+
+.note {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid hsl(0 0% 88%);
+  border-left: 3px solid hsl(270 100% 50% / 0.55);
+  border-radius: 4px;
+  background: hsl(0 0% 98%);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: hsl(0 0% 25%);
+}
+
+:global(.dark) .note {
+  border-color: hsl(270 12% 18%);
+  border-left-color: hsl(270 100% 65% / 0.75);
+  background: hsl(270 14% 9% / 0.4);
+  color: hsl(0 0% 88%);
+}
+
+.body {
+  margin: 0;
+  font-style: italic;
+}
+
+.body p {
+  margin: 0.4rem 0;
+}
+
+.body p:first-child {
+  margin-top: 0;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+.attribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: hsl(0 0% 45%);
+  font-style: normal;
+}
+
+:global(.dark) .attribution {
+  color: hsl(270 8% 62%);
+}
+
+.author {
+  font-weight: 600;
+  color: hsl(0 0% 30%);
+}
+
+:global(.dark) .author {
+  color: hsl(270 100% 78%);
+}
+
+.date {
+  color: hsl(0 0% 50%);
+}
+
+:global(.dark) .date {
+  color: hsl(270 8% 70%);
+}
+
+.channel {
+  color: hsl(0 0% 35%);
+}
+
+:global(.dark) .channel {
+  color: hsl(270 8% 78%);
+}
+
+.sep {
+  opacity: 0.4;
+}
+
+.source {
+  color: hsl(270 80% 45%);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.source:hover {
+  color: hsl(270 100% 35%);
+  text-decoration: underline;
+}
+
+:global(.dark) .source {
+  color: hsl(270 100% 75%);
+}
+
+:global(.dark) .source:hover {
+  color: hsl(270 100% 85%);
+}
+
+/* "verified" footer chip + code citation — only renders for variant=verified */
+.verified {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.25rem;
+}
+
+.verifiedBadge {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid hsl(140 60% 40% / 0.45);
+  border-radius: 3px;
+  background: hsl(140 60% 45% / 0.1);
+  color: hsl(140 60% 28%);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global(.dark) .verifiedBadge {
+  border-color: hsl(140 60% 60% / 0.5);
+  background: hsl(140 60% 50% / 0.12);
+  color: hsl(140 70% 78%);
+}
+
+.codeRef {
+  font-size: 0.7rem;
+  color: hsl(0 0% 40%);
+  background: transparent;
+  padding: 0;
+}
+
+:global(.dark) .codeRef {
+  color: hsl(270 8% 72%);
+}
+
+/* Variant: figure — caption beneath an <img>. No card chrome — strips the
+   container styles so the caption sits cleanly below the image. */
+.variant_figure {
+  margin-top: 0.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+}
+
+.variant_figure .attribution {
+  justify-content: center;
+}
+
+/* Variant: pullquote — stronger left accent than the default card, no border
+   on the other three sides. Kept for callouts that need extra emphasis. */
+.variant_pullquote {
+  border: none;
+  border-left: 3px solid hsl(270 100% 50% / 0.75);
+  padding: 0.4rem 0 0.4rem 1rem;
+  background: hsl(270 100% 50% / 0.04);
+  border-radius: 0 4px 4px 0;
+}
+
+:global(.dark) .variant_pullquote {
+  border-left-color: hsl(270 100% 65% / 0.85);
+  background: hsl(270 100% 50% / 0.07);
+}
+
+/* Variant: verified — green left bar signals "this Captain claim has been
+   confirmed against the current source tree." Pairs with the codeRef
+   citation rendered in the attribution footer. */
+.variant_verified {
+  border-left-color: hsl(140 60% 45% / 0.7);
+}
+
+:global(.dark) .variant_verified {
+  border-left-color: hsl(140 65% 55% / 0.8);
+}
+

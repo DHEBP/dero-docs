@@ -13,6 +13,7 @@ tags: ["privacy", "ring-signatures", "cryptography", "anonymity", "technical"]
 
 import { Callout } from 'nextra/components'
 import { Tabs } from 'nextra/components'
+import CaptainNote from '../../components/CaptainNote'
 
 # Ring Signatures
 
@@ -147,6 +148,20 @@ for i := 0; i < 100; i++ {
 - Prevents timing attacks
 - More plausible anonymity
 
+### Roadmap: polymorphic ring selection
+
+The selection algorithm described above — uniform random sampling of recently-unchanged-balance addresses — is the current implementation, not the long-term design. Captain has signaled the wallet layer is targeted for *polymorphic* per-wallet selection logic so that no two wallets pick decoys the same way.
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/419781880632836098/1050436403042988153"
+  date="2022-12-08"
+  channel="#dero-discussion"
+>
+  Also in free time wallet part will have new/modified code to handle more chain-analysis &amp; some points discussed above. Wallet will have some polymorphic code &amp; algo so that no single or two wallets work &amp; selects ring members in same way single/everytime. Also users will be able to configure this part to their preferences.
+</CaptainNote>
+
+No timeline has been published. The uniform algorithm above remains in force on Release 142.
+
 ---
 
 ## The Parity Constraint: How the Ring Is Split
@@ -222,6 +237,20 @@ Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
 With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. The parity assignment itself (which parity is the sender's role) is **cryptographically hidden** — the verifier's parity check at `cryptography/crypto/proof_verify.go:130-141` rejects malformed parity but does not reveal the assignment to observers. So an observer sees the two ring members and knows one sent and one received, but cannot tell from on-chain data alone which is which.
 
 The reason ring size 2 is listed as "no sender privacy" is not that the parity leaks — it's that there is **no anonymity set within the sender's parity role**: there is exactly one candidate sender (the lone member of that parity), so the sender's identity collapses to the singleton on that side. Any additional out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) then resolves the pair trivially. Ring size 2 should therefore be treated as no meaningful anonymity, even though the parity itself remains hidden.
+
+Captain has stated explicitly that this collapse is **intentional** — ring size 2 is the opt-in mode for transactions where the sender wants to be mathematically provable (audit trails, exchange deposits, DERO-PROOF generation):
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/911455371766407210"
+  date="2021-11-20"
+  channel="#dero-he-testnet"
+  codeRef="config/config.go:58 (MIN_RINGSIZE = 2); walletapi/daemon_communication.go:1067-1074 (// if ring size is 2, the other party is the sender so mark it so)"
+>
+  This is by design. By this you can prove sender mathematically. This is a feature not a bug. There may be some situations/applications when you need to reveal sender, In that case send TX by setting RingSize to 2.
+</CaptainNote>
+
+In other words: the table above is correct that ring size 2 provides no sender anonymity — and that is the point. The sender is choosing to be derivable.
 
 ### Verify It Yourself
 

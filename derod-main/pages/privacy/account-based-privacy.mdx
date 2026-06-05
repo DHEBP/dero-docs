@@ -300,6 +300,24 @@ graph TB
 
 **Result:** Strong privacy guarantees on transfers and balances; contract logic is openly auditable.
 
+### What a verified DERO-PROOF reveals
+
+The privacy guarantees above are the **defaults** — what the chain hides from every observer. DERO also gives the sender a per-transaction escape hatch: the **DERO-PROOF**. By sharing the proof string for one specific transaction, the sender lets a verifier confirm what was sent to whom — on-chain equivalent of handing someone a receipt.
+
+A verified DERO-PROOF on the public explorer surfaces exactly three fields:
+
+| Field | What it reveals |
+|---|---|
+| **Receiver address** | The `dero1q...` that was paid. **The sender remains hidden in the ring.** |
+| **Amount** | Exact DERO transferred, in standard units |
+| **Memo / decoded payload** | The optional comment field from the transfer, if one was attached |
+
+The proof scheme is sender-driven: the sender holds the tx key, runs the proof tool, and hands the resulting string to whoever needs to verify the payment. The verifier resolves it against the on-chain transaction; the chain confirms that the named receiver was paid the named amount.
+
+**Source:** `proof/proof.go` (`Prove()` returns `receivers`, `amounts`, `payload_raw`, `payload_decoded`); `cmd/explorer/explorerlib/explorerlib.go` wires the result into the explorer UI; `cmd/explorer/explorerlib/templates/tx.tmpl` renders the verified-proof block as `{receiver} Received {amount} DERO`.
+
+Note: scope is one transaction at a time. A proof for tx-A reveals nothing about tx-B, even between the same parties.
+
 ---
 
 ## Why DERO's Approach Works

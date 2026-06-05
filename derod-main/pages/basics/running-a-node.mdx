@@ -13,6 +13,7 @@ tags: ["basics", "node", "daemon", "setup", "configuration"]
 
 import { Callout } from 'nextra/components'
 import Image from 'next/image';
+import CaptainNote from '../../components/CaptainNote'
 
 # Running Your Own DERO Node
 
@@ -223,14 +224,36 @@ curl http://127.0.0.1:10102/json_rpc -d '{
 
 ## Firewall Configuration
 
-### Required Ports
+### DERO ports (Stargate mainnet)
 
-**Mainnet:**
+| Service | Default Port | Notes |
+|---|---|---|
+| P2P | `10101` | **Randomized at startup** — check `derod` log for actual port, or pin with `--p2p-bind=0.0.0.0:10102` |
+| RPC | `10102` | Daemon JSON-RPC |
+| Wallet RPC | `10103` | Wallet JSON-RPC |
+| GETWORK | `10100` | Miner connections (`dero-miner --daemon-rpc-address=127.0.0.1:10100`) |
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1102114373692047430"
+  date="2023-04-30"
+  channel="#dero-mining"
+  codeRef="config/config.go:103-104"
+>
+  P2P Default Port: 10101 But Randomized, check daemon during startup for exact port used or use --p2p-bind=0.0.0.0:10102.
+</CaptainNote>
+
+If you're behind NAT, **pin the P2P port** before opening firewall rules — randomization will silently break port forwarding.
+
+**Mainnet (UFW example):**
 ```bash
-# P2P (required for syncing)
+# P2P (pin the port first with --p2p-bind, then open the same port here)
 sudo ufw allow 10101/tcp
 
-# RPC (optional, for local access only)
+# GETWORK (only if miners connect from outside the host)
+sudo ufw allow 10100/tcp
+
+# RPC (local access only — never expose to the internet)
 sudo ufw allow from 127.0.0.1 to any port 10102
 ```
 
@@ -269,6 +292,27 @@ sudo ufw allow 40401/tcp
 ```
 
 Most operators want **fast sync + pruning** (see "For VPS/Server" under Performance Optimization). Choose full sync only if you specifically need the complete historical chain.
+
+### Fastsync vs `--add-priority-node` — what each flag does
+
+These two flags are commonly conflated. They solve different problems:
+
+| Flag | What it does | When to use |
+|---|---|---|
+| `--fastsync` | Skip historical block bodies during initial sync; download recent state snapshots instead. | One-time onboarding to get your node online quickly. After sync completes, restart without it to keep validating new blocks normally. |
+| `--add-priority-node=ip:port` | Always keep this specific peer connected during sync. | When you want to bias the sync process toward a peer you trust (a friend's node, a foundation seed, etc.). |
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1096083241334755348"
+  date="2023-04-13"
+  channel="#dero-mining"
+  codeRef="cmd/derod/main.go (flag parsing)"
+>
+  Fastsync is used to sync your node only. After your node is synced by normal/fastsync you can use it for mining. Priority node option is used to select node of your preference for sync process.
+</CaptainNote>
+
+You can use both at the same time — fastsync to skip history, priority node to choose your seed.
 
 ### Monitoring Sync Progress
 
@@ -394,6 +438,67 @@ nice -n 19 ./derod-linux-amd64
   --integrator-address=YOUR_ADDRESS \
   --rpc-bind=127.0.0.1:10102
 ```
+
+---
+
+## Run your own block explorer
+
+You don't have to rely on `explorer.dero.io`. The `explorer` binary ships in the same release as `derod` and talks to your local daemon.
+
+```bash
+./explorer-linux-amd64 --daemon-address=127.0.0.1:10102 --http-address=0.0.0.0:8080
+```
+
+Open `http://127.0.0.1:8080` in your browser.
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1044599223645122642"
+  date="2022-11-22"
+  channel="#dero-mining"
+>
+  Personal explorer `./explorer-linux-amd64 --daemon-address=127.0.0.1:10102 --http-address=0.0.0.0:8080` Open in browser 127.0.0.1:8080 for your local explorer.
+</CaptainNote>
+
+This is the privacy default. Public explorers see every query you make — block lookups, address checks, TX inspections; a local one keeps that traffic on your own machine.
+
+---
+
+## Seed nodes are bootstrap only
+
+DERO's seed nodes are not a control plane. They exist so a fresh node can find its first peers; after that, peer exchange takes over and the seed nodes can vanish without affecting your daemon.
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1094238692203315281"
+  date="2023-04-08"
+  channel="#dero-mining"
+  codeRef="p2p/connection_pool.go + config/config.go (Seed_Nodes)"
+>
+  DERO seed nodes are not required except to bootstrap network. DERO is actual decentralized network &amp; will remain so. DERO core devs will never be part of some centralized thing.
+</CaptainNote>
+
+If you want to fully decouple from the default seed list, run `--add-priority-node=<friend's IP>:10101` (see [Fastsync vs --add-priority-node](#fastsync-vs---add-priority-node--what-each-flag-does) above) and you never have to talk to a seed node again.
+
+---
+
+## `--remote` is convenience, not sovereignty
+
+The wallet CLI accepts a `--remote` flag that connects to a public DERO Foundation node instead of your own daemon:
+
+```bash
+./dero-wallet-cli-linux-amd64 --remote
+# Connects to node.derofoundation.org:11012 — config/config.go:140-141
+```
+
+It works — and for read-only operations or quick balance checks it's fine. What you give up is the self-sovereignty premise of the rest of this page: with `--remote`, you're trusting one party's view of the chain. They could censor your transactions, lie about your balance, or correlate every query you make.
+
+For anything that matters — large balances, smart-contract operations, payment processing, anything you'd describe as "real" — point your wallet at your own daemon:
+
+```bash
+./dero-wallet-cli-linux-amd64 --daemon-address=127.0.0.1:10102
+```
+
+This is the whole point of running a node.
 
 ---
 

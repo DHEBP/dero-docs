@@ -13,6 +13,7 @@ tags: ["features", "privacy", "TLS", "network", "P2P"]
 
 import Image from 'next/image'
 import { Callout } from 'nextra/components'
+import CaptainNote from '../../components/CaptainNote'
 
 # TLS-Encrypted P2P Network
 
@@ -109,6 +110,38 @@ tlsconn = tls.Server(conn, tlsconfig)
 - ✅ Each node generates own cert
 - ✅ No trusted third parties
 - ✅ Prevents network-level eavesdropping
+
+---
+
+## Why HTTPS is intentionally absent from RPC
+
+Every integrator who looks at the DERO daemon eventually asks: "why doesn't `derod` ship HTTPS on the RPC port?" The answer is two-part, and Captain has stated it directly:
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/419798461039509504/1054919216400175104"
+  date="2022-12-21"
+  channel="#technical-questions"
+  codeRef="cmd/derod/rpc/websocket_server.go:241 (daemon RPC plain ListenAndServe); walletapi/rpcserver/rpc_websocket_server.go:266 (wallet RPC plain ListenAndServe)"
+>
+  https is not supported intentionally. HTTPS gives false sense of security as certificate issuer has the private key to decrypt the traffic. And issuer can share the private-keys to others also when required. https can only help with local ISP/telecom sniffing, In that case use vpn etc..
+</CaptainNote>
+
+**The two arguments unpacked:**
+
+1. **HTTPS as a trust model is compromised by design.** A public CA can mint a valid certificate for any domain it wants (sometimes under legal compulsion, sometimes through compromise) and from that point, any "encrypted" HTTPS session can be silently intercepted. The padlock icon does not mean the traffic is private from the CA, only that it's private from passive sniffers on the wire.
+
+2. **VPN is the right tool for the only legitimate HTTPS use case.** If your concern is local ISP / telecom / coffee-shop wifi sniffing, a VPN solves it at the transport layer — without inheriting the CA-as-trusted-third-party problem. RPC traffic should already be on a trusted bus (`127.0.0.1`, a private VPN, an SSH tunnel, WireGuard).
+
+The architectural pattern that follows from this:
+
+| Port | Protocol | Encryption | Why |
+|---|---|---|---|
+| P2P (`10101`) | TLS over KCP/UDP | **Self-signed TLS** (per the section above) | Nodes talk across the public internet; encryption is required, but CAs are unwanted |
+| Daemon RPC (`10102`) | Plain HTTP | None (local trust) | Designed for `127.0.0.1` traffic; if you tunnel it, the tunnel provides encryption |
+| Wallet RPC (`10103`) | Plain HTTP | None (local trust) | Same model as daemon RPC |
+
+If you need to expose RPC over a network, **don't add HTTPS to `derod`** — put it behind an authenticated TLS terminator you control (nginx, Caddy, an SSH tunnel, WireGuard). The threat model assumes the RPC port is on a trusted bus, and the encryption decision is delegated to whatever transport you choose to expose it over.
 
 ---
 

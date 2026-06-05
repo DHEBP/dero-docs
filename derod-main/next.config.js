@@ -45,6 +45,7 @@ const withPwaPlugin = withPWA({
 
 export default withAnalyze(withPwaPlugin(withNextra({
   reactStrictMode: true,
+  outputFileTracingRoot: path.resolve('.'),
   eslint: {
     // Eslint behaves weirdly in this monorepo.
     ignoreDuringBuilds: true

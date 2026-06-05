@@ -11,6 +11,7 @@ tags: ["dvm", "smart-contracts", "tutorial", "deployment", "development"]
 ---
 
 import { Callout, Steps, Tabs } from 'nextra/components'
+import CaptainNote from '../../components/CaptainNote'
 
 # Create, Deploy & Use a Smart Contract
 
@@ -23,6 +24,18 @@ This is a hands-on tutorial that takes you from a blank file to a working smart 
 ---
 
 ## Prerequisites
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/813934126636859454"
+  date="2021-02-24"
+  channel="#dero-he-testnet"
+  codeRef="config/config.go (mainnet 10102/10103, testnet 40402/40403); walletapi/rpcserver/rpc_websocket_server.go:208,319"
+>
+  SC download/balance/parameters checks are done on blockchain using daemon port. But sending/SC install/update/balance transfer etc. are done using wallet port by rpc methods.
+</CaptainNote>
+
+**Mental model:** **reads → daemon, writes → wallet.** Every example below follows that split. Captain's 2021 quote uses testnet ports (`40402`/`40403`); mainnet is `10102`/`10103`. Same logic.
 
 You need three things running:
 
@@ -236,12 +249,23 @@ A successful deployment returns the contract's stored variables:
 
 | Field | Meaning |
 |-------|---------|
-| `stringkeys.C` | The contract source code (hex-encoded) |
-| `stringkeys.owner` | The raw address of the deployer |
+| `stringkeys.C` | The contract source code (hex-encoded — recover with `echo "<hex>" \| xxd -r -p`) |
+| `stringkeys.owner` | The raw address of the deployer (whatever your `Initialize` stored) |
 | `stringkeys.totalTips` | Current total tips (0 after deploy) |
-| `balance` | DERO held by the contract |
+| `balances` | Map keyed by SCID. **`0x000...000` is native DERO.** Any other 32-byte key is a token SCID. |
+| `balance` | Convenience field — same as `balances["0000...0000"]` |
 
 If `stringkeys` is missing or empty, the deployment failed — likely a syntax error in the contract or an `Initialize` that returned 1.
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/914341300826963968"
+  date="2021-11-28"
+  channel="#dero-he-testnet"
+  codeRef="dvm/sc.go (SC_Code_Key = 'C'); cmd/derod/rpc/rpc_dero_getsc.go (zerohash native-DERO balance, hex-encoded SCID keys in balances map)"
+>
+  The `C` key holds the contract source as hex. The `balances` map is keyed by SCID; `0x000...000` is the native DERO asset.
+</CaptainNote>
 
 ### Query Specific Variables
 
@@ -356,6 +380,79 @@ tipCount: 1
 totalTips: 10000
 balance: 10000
 ```
+
+---
+
+## The three-step pattern — minimal reference
+
+The TipJar tutorial above shows the full lifecycle. If you just want the smallest possible reference template to copy-paste, this is Captain's original three-step example.
+
+**The contract** (`helloworld.bas`):
+
+```basic
+Function Initialize() Uint64
+  10 STORE("owner", SIGNER())
+  20 RETURN 0
+End Function
+
+Function Save() Uint64
+  10 STORE("test", "HELLOWORLD")
+  20 RETURN 0
+End Function
+```
+
+**Step 1 — Install via wallet RPC:**
+
+```bash
+curl --request POST --data-binary @helloworld.bas \
+  http://127.0.0.1:10103/install_sc
+```
+
+The response contains the SCID — use it in the next two steps.
+
+**Step 2 — Query state via daemon RPC:**
+
+```bash
+curl http://127.0.0.1:10102/json_rpc -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "DERO.GetSC",
+  "params": {
+    "scid": "YOUR_SCID_HERE",
+    "variables": true
+  }
+}' -H 'Content-Type: application/json' | jq
+```
+
+**Step 3 — Call a function via wallet RPC:**
+
+```bash
+curl http://127.0.0.1:10103/json_rpc -d '{
+  "jsonrpc": "2.0",
+  "id": "0",
+  "method": "scinvoke",
+  "params": {
+    "sc_dero_deposit": 3,
+    "scid": "YOUR_SCID_HERE",
+    "ringsize": 2,
+    "sc_rpc": [
+      { "name": "entrypoint", "datatype": "S", "value": "Save" }
+    ]
+  }
+}' -H 'Content-Type: application/json' | jq -r ".result.txid"
+```
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/914510084900536350"
+  date="2021-11-28"
+  channel="#dero-he-testnet"
+  codeRef="walletapi/rpcserver/rpc_websocket_server.go:208 (install_sc), :319 (scinvoke); walletapi/rpcserver/rpc_scinvoke.go:28"
+>
+  Three steps: install_sc on wallet port, getsc on daemon port, scinvoke on wallet port.
+</CaptainNote>
+
+Captain's original used testnet ports (`40402`/`40403`). The examples above are converted to mainnet. The RPC shapes (`sc_dero_deposit`, `sc_rpc` array, `ringsize`) are unchanged on Release 142.
 
 ---
 
