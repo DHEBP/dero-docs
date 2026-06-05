@@ -46,7 +46,7 @@ End Function
 
 ## Authorization patterns
 
-`SIGNER()` returns the wallet address that sent the current transaction. **It does not mean "the owner of this contract."** If your contract has no explicit owner check, anyone can call `UpdateCode` and overwrite your logic — the DVM does not gate `UpdateCode` at the protocol level.
+`SIGNER()` returns the wallet address that sent the current transaction — Captain's words: *"may not be the owner of the SC."* It coincides with the owner during `Initialize` (canonical pattern below) but on every other call you must check explicitly. If your contract has no stored-owner gate, anyone can call `UpdateCode` and overwrite your logic — the DVM does not gate `UpdateCode` at the protocol level.
 
 <CaptainNote
   variant="verified"

@@ -334,7 +334,7 @@ The 66 bytes referenced above are load-bearing — they are literally all a DERO
   There is no concept of any master private/secret key on DERO. DERO creates a elgamal balance ciphertext associated to any wallet-account. The private key is NOT broken or distributed among other nodes in any way or form. When user opens wallet, no communication with DERO network except 66 bytes are required. This process is completely done within wallet and is not linked with DERO network. As DERO is account model, Only 66 bytes are required by wallet from DERO blockchain to operate. Blocks &amp; transactions are required to create &amp; maintain history on DERO network.
 </CaptainNote>
 
-This is why DERO wallets open in seconds while traditional privacy-coin wallets need to scan the chain for minutes — there is no chain to scan, only a single 66-byte ciphertext to fetch and decrypt locally.
+This is why DERO wallets **open in seconds** — to display your current balance the wallet pulls only the 66-byte ciphertext (`GetEncryptedBalanceAtTopoHeight`) and decrypts locally. Captain's quote above is explicit about the split: blocks and transactions *are* required to build and maintain history, so when balance changes the wallet binary-searches to the specific blocks where the change happened (`walletapi/daemon_communication.go` SyncHistory) — but that's bounded by activity, not by chain length. Traditional privacy-coin wallets that linearly scan every block don't have that shortcut.
 
 ### 2. Private Token Systems
 

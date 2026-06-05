@@ -62,7 +62,7 @@ graph TB
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| **P2P** | 10101 | Node-to-node communication |
+| **P2P** | 10101 | Node-to-node communication — **randomized at startup**; pin with `--p2p-bind=0.0.0.0:10101` ([details](/basics/running-a-node#firewall-configuration)) |
 | **RPC** | 10102 | Daemon RPC API |
 | **Wallet RPC** | 10103 | Wallet communication |
 
@@ -70,11 +70,11 @@ graph TB
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| **P2P** | 40401 | Node-to-node communication |
+| **P2P** | 40401 | Node-to-node communication (randomized; pin with `--p2p-bind=0.0.0.0:40401`) |
 | **RPC** | 40402 | Daemon RPC API |
 | **Wallet RPC** | 40403 | Wallet communication |
 
-**Source:** `config/config.go` - Network configuration
+**Source:** `config/config.go` (RPC + GETWORK ports); `p2p/controller.go:502` (P2P default `0.0.0.0:0` — random); `README.md:133` (10101 convention).
 
 ---
 
@@ -140,7 +140,7 @@ Every field on the prompt is a live signal. Once you can read it, you can diagno
 Read the prompt left to right:
 
 - When **1** and **2** match, you're synced.
-- When **9** shows non-zero seconds, your clock is drifting — fix NTP (see [Mining → time sync](/basics/mining)).
+- When **9** shows non-zero seconds, your clock is drifting — fix NTP (see [Mining → Time sync — install chrony](/basics/mining#time-sync--install-chrony)).
 - When **10** climbs into the hundreds of ms, check your network.
 
 Three commands give you more detail any time you need it:
@@ -171,7 +171,7 @@ When you're mining (or operating a daemon other miners connect to), three additi
   MB-> Minblock submitted. MBR: Miniblock rejected due to invalidPOW or so. IB-> Integrator Block submitted.
 </CaptainNote>
 
-The `status` command's `Block Minted` line is `(MB + IB) − MBR` — so when `MBR` climbs, your minted count visibly drops. If `MBR` keeps growing, you're probably running an unofficial miner that submits malformed work; switch back to the official `dero-miner` binary.
+The `status` command's `Block Minted` line is `(MB + IB) − MBR` — so when `MBR` climbs, your minted count visibly drops. `MBR` is PoW-test rejection only (`cmd/derod/rpc/websocket_getwork_server.go:137`), so the root-causes to check, in order: (1) clock drift on the miner host ([Mining → Time sync](/basics/mining#time-sync--install-chrony)); (2) network instability dropping work mid-flight; (3) an unofficial miner binary submitting malformed work — switch back to the official `dero-miner`.
 
 ---
 
@@ -254,7 +254,15 @@ Chain is pruned till 6087500
   Pls run `status` cmd in daemon &amp; see what is your pruned node height. TXs before pruned height will not appear.
 </CaptainNote>
 
-If you need full history (e.g. to serve TX queries from genesis), restart `derod` without `--fastsync` and let it backfill — Captain's recommended path is a one-time full sync after the initial fastsync onboard.
+If you need full history (e.g. to serve TX queries from genesis), there is no "backfill" — `--fastsync` is a bootstrap-only flag (`cmd/derod/main.go:73`), and toggling it off post-bootstrap doesn't recover pruned blocks. Captain's recommended path for full history is to start over: stop `derod`, delete the `mainnet/` folder, and run a full sync from zero (no `--fastsync`).
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/419798461039509504/949516853619855480"
+  date="2022-03-05"
+  channel="#technical-questions"
+>
+  Don't use --fastsync. Sync full node.
+</CaptainNote>
 
 ### When your node gets stuck — the pop escalation
 

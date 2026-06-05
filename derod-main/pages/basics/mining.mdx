@@ -149,7 +149,7 @@ Wallet:
 
 ### Time sync — install chrony
 
-Miniblocks carry timestamps. If your node's clock drifts more than a few hundred milliseconds from network median, the network rejects your work (shows up as `MBR` climbing — see [Reading the derod prompt → MB / MBR / IB counters](/basics/daemon#mb--mbr--ib-counters)). Captain's recommendation is **chrony**, not the default `ntpd`:
+Miniblocks carry timestamps. `derod`'s peer time check rejects clock offsets over **±1 second** (`p2p/timecheck.go:86`) — sustained drift breaks chain sync and your blocks can be rejected by peers. `MBR` is a separate counter that tracks PoW-test failures only (`cmd/derod/rpc/websocket_getwork_server.go:137` — *"only counting rejected as those which didnot pass Pow test"*), so clock drift won't show up there directly — it'll surface as failed peer time syncs and lost miniblocks. Captain's recommendation is **chrony**, not the default `ntpd`:
 
 <CaptainNote
   source="https://discord.com/channels/419781880632836096/419781880632836098/1044465263577419796"
@@ -183,7 +183,7 @@ server time.cloudflare.com iburst prefer
   date="2023-01-25"
   channel="#dero-mining"
 >
-  Add in /etc/chrony.conf or /etc/chrony/chrony.conf following: `server time.google.com iburst prefer` / `server time.cloudflare.com iburst prefer`
+  Add in /etc/chrony.conf or /etc/chrony/chrony.conf following:<br/>`server time.google.com iburst prefer`<br/>`server time.cloudflare.com iburst prefer`
 </CaptainNote>
 
 **Verify:**
@@ -260,28 +260,14 @@ This isn't editorial framing. It's the architect's direct recommendation, repeat
 </CaptainNote>
 
 <CaptainNote
-  source="https://discord.com/channels/419781880632836096/557277155436789760/1042706857195733024"
-  date="2022-11-17"
-  channel="#suggestions"
->
-  Run your own node and mine on it. Single node supports more than 10000 miners easily.
-</CaptainNote>
-
-<CaptainNote
-  source="https://discord.com/channels/419781880632836096/427613001537814540/1092655070623039498"
-  date="2023-04-04"
-  channel="#dero-mining"
->
-  Also there are several tests conducted above, Solo mining has same or better rewards than pool.
-</CaptainNote>
-
-<CaptainNote
   source="https://discord.com/channels/419781880632836096/427613001537814540/1092655318678384710"
   date="2023-04-04"
   channel="#dero-mining"
 >
   Solo mining to your own node is preferred way for your privacy &amp; security of DERO network.
 </CaptainNote>
+
+Captain also shared specific reasoning during the same period: a single daemon supports more than 10,000 miners ([2022-11-17, #suggestions](https://discord.com/channels/419781880632836096/557277155436789760/1042706857195733024)), and bench tests show solo mining has same-or-better rewards than pool ([2023-04-04, #dero-mining](https://discord.com/channels/419781880632836096/427613001537814540/1092655070623039498)).
 
 Sigma Mining's miniblock structure means even small miners produce shares regularly — the long variance penalty that drives pool culture on Bitcoin doesn't apply here the same way. A single daemon supports 10,000+ connected miners, so even a family or small mining group can share one node without scaling concerns.
 
