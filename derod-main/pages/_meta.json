@@ -15,6 +15,11 @@
   "features": "Features",
   "privacy": "Privacy Suite",
   "integrity": "Protocol Integrity",
+  "captain": {
+    "title": "Captain Archive",
+    "display": "hidden",
+    "theme": { "breadcrumb": false, "toc": true }
+  },
   "tools": "Tools",
   "engram": "Engram",
   "-- Documentation": {

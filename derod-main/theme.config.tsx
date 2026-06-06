@@ -327,6 +327,13 @@ const config: DocsThemeConfig = {
         <p>Privacy Together</p>
         <p className="mt-2 text-xs">
           © {new Date().getFullYear()} DHEBP
+          <span className="opacity-40"> · </span>
+          <a
+            href="/captain"
+            className="opacity-60 transition-opacity hover:opacity-100"
+          >
+            Captain Archive
+          </a>
         </p>
       </div>
     )

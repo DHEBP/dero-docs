@@ -13,6 +13,7 @@ tags: ["privacy", "encryption", "homomorphic", "technical", "cryptography"]
 
 import { Callout } from 'nextra/components'
 import { Tabs } from 'nextra/components'
+import CaptainNote from '../../components/CaptainNote'
 
 # Homomorphic Encryption: Math on Locked Boxes
 
@@ -189,6 +190,20 @@ sequenceDiagram
   **Teaching abstraction, not literal verifier flow.** The diagram above shows the *intuition* — value conservation across encrypted balances. The actual verifier does not perform explicit ciphertext arithmetic like `E(500) + E(200) = E(400) + E(300)` at consensus. Balance conservation is enforced by the sigma proof structure: `A_b` (one of the six sigma commitments) commits to the balance-update polynomial relation, and the prover must produce a valid proof that the relation holds for the encrypted before/after values. The verifier checks the proof, not the arithmetic. See `proof_verify.go:98` for the actual `Verify()` entry point and `proof_generate.go` for what `A_b` commits to.
 </Callout>
 
+A common point of confusion: **ring size and amount privacy are independent properties.** The conservation above holds regardless of how many decoys the ring contains — the cryptographic reason amounts stay hidden has nothing to do with how many ring members there are.
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/946298626005672016"
+  date="2022-02-24"
+  channel="#dero-he-testnet"
+  codeRef="walletapi/transaction_build.go (per-ring-member ElGamal commitment loop) — every commitment is blinded uniformly with the same random r, so sender (−value), receiver (+value), and decoy (0) commitments are indistinguishable regardless of ring size"
+>
+  Whatever the RingSize is set in DERO amounts are never revealed.
+</CaptainNote>
+
+This is why [ring size 2](/privacy/ring-signatures#why-ring-size-2-offers-no-anonymity-set) — which removes *sender* anonymity by design — still leaves the *transferred amount* fully encrypted. The two privacy properties are decoupled.
+
 ### What Happens at Each Step
 
 <Tabs items={['Before', 'Transaction', 'Homomorphic Math', 'After']}>
@@ -306,6 +321,20 @@ Result: Slow, requires full sync
 
 Result: Instant, no chain scanning needed
 ```
+
+The 66 bytes referenced above are load-bearing — they are literally all a DERO wallet pulls from the network to operate. Captain on the wallet sync model:
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/419781880632836098/1050433141875155064"
+  date="2022-12-08"
+  channel="#dero-discussion"
+  codeRef="cryptography/crypto/algebra_elgamal.go (66-byte ElGamal codec — 33B Left ‖ 33B Right compressed G1 points); walletapi/daemon_communication.go (GetEncryptedBalanceAtTopoHeight)"
+>
+  There is no concept of any master private/secret key on DERO. DERO creates a elgamal balance ciphertext associated to any wallet-account. The private key is NOT broken or distributed among other nodes in any way or form. When user opens wallet, no communication with DERO network except 66 bytes are required. This process is completely done within wallet and is not linked with DERO network. As DERO is account model, Only 66 bytes are required by wallet from DERO blockchain to operate. Blocks &amp; transactions are required to create &amp; maintain history on DERO network.
+</CaptainNote>
+
+This is why DERO wallets **open in seconds** — to display your current balance the wallet pulls only the 66-byte ciphertext (`GetEncryptedBalanceAtTopoHeight`) and decrypts locally. Captain's quote above is explicit about the split: blocks and transactions *are* required to build and maintain history, so when balance changes the wallet binary-searches to the specific blocks where the change happened (`walletapi/daemon_communication.go` SyncHistory) — but that's bounded by activity, not by chain length. Traditional privacy-coin wallets that linearly scan every block don't have that shortcut.
 
 ### 2. Private Token Systems
 

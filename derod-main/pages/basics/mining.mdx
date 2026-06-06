@@ -13,12 +13,13 @@ tags: ["basics", "mining", "Σ-blocks", "AstroBWT", "rewards"]
 
 import { Callout } from 'nextra/components'
 import Image from 'next/image'
+import CaptainNote from '../../components/CaptainNote'
 
 # DERO Mining
 
 ![DERO Mining](/assets/mining.jpeg)
 
-DERO's **Σ-blocks** (Sigma blocks) system turns the entire network into one giant mining pool. Even miners with 100 KH/s get daily rewards based on their hashrate contribution.
+DERO's **Σ-blocks** (also called *Sigma blocks*, *Sigma Mining* in older Captain posts, or `MiniBlock` in the source tree) turn the entire network into one giant mining pool. Even miners with 100 KH/s get daily rewards based on their hashrate contribution.
 
 <Callout type="tip">
   **Solo Mining Made Easy:** No pools needed - the network automatically distributes rewards proportionally to all miners every few minutes.
@@ -146,6 +147,52 @@ Wallet:
   Rewards: Arriving proportionally based on your miniblock contributions
 ```
 
+### Time sync — install chrony
+
+Miniblocks carry timestamps. `derod`'s peer time check rejects clock offsets over **±1 second** (`p2p/timecheck.go:86`) — sustained drift breaks chain sync and your blocks can be rejected by peers. `MBR` is a separate counter that tracks PoW-test failures only (`cmd/derod/rpc/websocket_getwork_server.go:137` — *"only counting rejected as those which didnot pass Pow test"*), so clock drift won't show up there directly — it'll surface as failed peer time syncs and lost miniblocks. Captain's recommendation is **chrony**, not the default `ntpd`:
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/419781880632836098/1044465263577419796"
+  date="2022-11-22"
+  channel="#dero-discussion"
+>
+  Install chrony much better than ntp.
+</CaptainNote>
+
+**Install:**
+```bash
+# Debian / Ubuntu
+sudo apt install chrony
+
+# CentOS / RHEL / Fedora
+sudo yum install chrony
+
+# Start and enable
+sudo systemctl enable --now chrony
+```
+
+**Captain's recommended config** — add to `/etc/chrony.conf` or `/etc/chrony/chrony.conf`:
+
+```
+server time.google.com iburst prefer
+server time.cloudflare.com iburst prefer
+```
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1067800565876260874"
+  date="2023-01-25"
+  channel="#dero-mining"
+>
+  Add in /etc/chrony.conf or /etc/chrony/chrony.conf following:<br/>`server time.google.com iburst prefer`<br/>`server time.cloudflare.com iburst prefer`
+</CaptainNote>
+
+**Verify:**
+```bash
+chronyc tracking   # confirm offset is in microseconds, not seconds
+```
+
+If your `derod` prompt shows non-zero values in field 9 (time offsets — `Bs|Cs|Dms`), your clock is the problem — fix chrony first.
+
 ---
 
 ## Reward Breakdown
@@ -199,6 +246,30 @@ This runs local performance tests and shows hashrate for different thread counts
 | **Small miner friendly** | ✅ Yes | ✅ Yes (even better!) |
 
 **DERO = Best of both worlds**
+
+### Captain's doctrine — solo on your own node
+
+This isn't editorial framing. It's the architect's direct recommendation, repeated across the post-Stargate window:
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1042283825910263888"
+  date="2022-11-16"
+  channel="#dero-mining"
+>
+  DERO doesn't require pools to mine. Solo mining is recommended on DERO network. Just run your own node &amp; mine on local node. No need to pay any fees to anyone.
+</CaptainNote>
+
+<CaptainNote
+  source="https://discord.com/channels/419781880632836096/427613001537814540/1092655318678384710"
+  date="2023-04-04"
+  channel="#dero-mining"
+>
+  Solo mining to your own node is preferred way for your privacy &amp; security of DERO network.
+</CaptainNote>
+
+Captain also shared specific reasoning during the same period: a single daemon supports more than 10,000 miners ([2022-11-17, #suggestions](https://discord.com/channels/419781880632836096/557277155436789760/1042706857195733024)), and bench tests show solo mining has same-or-better rewards than pool ([2023-04-04, #dero-mining](https://discord.com/channels/419781880632836096/427613001537814540/1092655070623039498)).
+
+Sigma Mining's miniblock structure means even small miners produce shares regularly — the long variance penalty that drives pool culture on Bitcoin doesn't apply here the same way. A single daemon supports 10,000+ connected miners, so even a family or small mining group can share one node without scaling concerns.
 
 ---
 

@@ -11,6 +11,8 @@ canonicalUrl: "https://derod.org/dvm/dvm-basic"
 tags: ["dvm", "programming", "development", "smart-contracts", "tutorial", "language"]
 ---
 
+import CaptainNote from '../../components/CaptainNote'
+
 # DVM-BASIC Programming Guide
 
 DVM-BASIC is DERO's smart contract programming language - a blockchain-optimized BASIC variant that's easy to learn yet powerful enough for complex dApps with privacy features.
@@ -41,6 +43,38 @@ Function Increment() Uint64
   40 RETURN 0
 End Function
 ```
+
+## Authorization patterns
+
+`SIGNER()` returns the wallet address that sent the current transaction — Captain's words: *"may not be the owner of the SC."* It coincides with the owner during `Initialize` (canonical pattern below) but on every other call you must check explicitly. If your contract has no stored-owner gate, anyone can call `UpdateCode` and overwrite your logic — the DVM does not gate `UpdateCode` at the protocol level.
+
+<CaptainNote
+  variant="verified"
+  source="https://discord.com/channels/419781880632836096/737351309396541471/813933195850416168"
+  date="2021-02-24"
+  channel="#dero-he-testnet"
+  codeRef="dvm/dvm_functions.go (dvm_signer, dvm_update_sc_code — // TODO verify code authenticity how)"
+>
+  SIGNER() -&gt; its the wallet adress which is sending this TX. It may not be the owner of the SC. Please install owner address in DB during SC install. If you have no owner stored &amp; verification anyone can update your SC.
+</CaptainNote>
+
+The canonical pattern: store the owner during `Initialize`, then gate every privileged function with `IF LOAD("owner") == SIGNER() THEN ...`.
+
+```basic
+Function Initialize() Uint64
+  10 STORE("owner", SIGNER())
+  20 RETURN 0
+End Function
+
+Function UpdateOwner(new_owner String) Uint64
+  10 IF LOAD("owner") == SIGNER() THEN GOTO 30
+  20 RETURN 1
+  30 STORE("owner", ADDRESS_RAW(new_owner))
+  40 RETURN 0
+End Function
+```
+
+Without line 10, anyone can call `UpdateOwner` and seize the contract.
 
 ## Data Types & Variables
 
