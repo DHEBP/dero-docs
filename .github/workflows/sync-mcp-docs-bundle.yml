@@ -21,3 +21,22 @@ jobs:
             {
               "ref": "${{ github.sha }}"
             }
+
+      # If the dispatch step errors (e.g. MCP_DOCS_SYNC_TOKEN missing/invalid),
+      # GitHub emails on the failed run; this makes the email actionable.
+      # NOTE: this does NOT catch a token that is expired-but-accepted-then-
+      # rejected silently — for that, watch for missing refresh PRs on
+      # dero-mcp-server. See dero-mcp-server docs/DOCS-BUNDLE-SYNC.md.
+      - name: Report sync failure
+        if: failure()
+        run: |
+          {
+            echo "## ❌ MCP docs-sync dispatch failed"
+            echo ""
+            echo "**dero-docs commit:** \`${{ github.sha }}\`"
+            echo "**Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            echo "dero-mcp-server was NOT notified — no refresh PR will open for this push."
+            echo "Most likely: \`MCP_DOCS_SYNC_TOKEN\` is missing or invalid."
+            echo "Recover: re-run, or manually trigger 'Refresh docs bundle' on dero-mcp-server."
+          } >> "$GITHUB_STEP_SUMMARY"
