@@ -1,6 +1,6 @@
 ---
 title: "DERO MCP Server | AI Assistant Integration for the DERO Blockchain"
-description: "Run a read-only, agent-ready DERO MCP server — stdio for local hosts, streamable-HTTP for remote agents. 21 daemon primitives + 7 composite tools that fuse live chain reads with the bundled DERO docs index, plus structured errors and curated citations — no middlemen, no API keys, no surveillance."
+description: "Run a read-only, agent-ready DERO MCP server — stdio for local hosts, streamable-HTTP for remote agents. 21 daemon primitives + 11 composite tools (incl. TELA app inspection and dURL discovery) that fuse live chain reads with the bundled DERO docs index, plus structured errors and curated citations — no middlemen, no API keys, no surveillance."
 keywords: ["MCP", "Model Context Protocol", "DERO", "AI assistant", "Claude Desktop", "Cursor", "OpenCode", "ChatGPT Custom Connectors", "agent", "composite tools", "read-only", "DVM", "smart contracts", "agent-ready", "streamable-HTTP", "stargate", "privacy-blockchain", "monero-alternative", "private-ethereum", "homomorphic-encryption", "ring-signatures", "bulletproofs"]
 date: "2025-10-19"
 lastUpdated: "2026-05-29"
@@ -26,10 +26,10 @@ The DERO MCP server implements the [Model Context Protocol](https://modelcontext
 
 | Surface | Count | Notes |
 |---|---:|---|
-| **Tools** | **28** | 18 daemon RPC wrappers + 3 docs-index tools + 7 composites |
+| **Tools** | **32** | 18 daemon RPC wrappers + 3 docs-index tools + 11 composites |
 | ↳ Daemon primitives | 18 | One per common daemon read method, plus local bech32 proof/address decode |
 | ↳ Docs primitives | 3 | Search, fetch-by-slug, enumerate across `derod` / `tela` / `hologram` / `deropay` |
-| ↳ Composite tools | 7 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations |
+| ↳ Composite tools | 11 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations — including a full TELA suite (inspect, read file content, discover apps by dURL) |
 | **Resources** | 4 | `server-info`, `safety-boundary`, `example-flows`, `composites` |
 | **Prompts** | 5 | Composite-first guided flows |
 | **Structured error codes** | 11 | Every error carries a `hint` and a `retryable` flag for agent self-correction |
@@ -42,7 +42,7 @@ Tool identifiers, schemas, and behavior are semantically stable — once a tool 
 
 ## Why This Matters
 
-AI assistants are powerful research and dev tools, but most blockchain integrations route through centralized APIs that log your queries. This server runs on **your machine**, talks to **your daemon** (or a public one you choose), and communicates with your AI over **local stdio**. No accounts, no analytics, no tracking — just code you can audit. The bundled DERO documentation index (145+ pages across `derod`, `tela`, `hologram`, and `deropay`) is shipped inside the package, so the AI can quote primary sources offline without a single network round-trip beyond the daemon you pointed it at.
+AI assistants are powerful research and dev tools, but most blockchain integrations route through centralized APIs that log your queries. This server runs on **your machine**, talks to **your daemon** (or a public one you choose), and communicates with your AI over **local stdio**. No accounts, no analytics, no tracking — just code you can audit. The bundled DERO documentation index (147 pages across `derod`, `tela`, `hologram`, and `deropay`) is shipped inside the package, so the AI can quote primary sources offline without a single network round-trip beyond the daemon you pointed it at.
 
 ## Install
 
@@ -50,11 +50,11 @@ AI assistants are powerful research and dev tools, but most blockchain integrati
 npm install -g dero-mcp-server
 ```
 
-Requires Node.js 18+. Source code: [github.com/DHEBP/dero-mcp-server](https://github.com/DHEBP/dero-mcp-server) · npm: [dero-mcp-server](https://www.npmjs.com/package/dero-mcp-server)
+Requires Node.js 20+. Source code: [github.com/DHEBP/dero-mcp-server](https://github.com/DHEBP/dero-mcp-server) · npm: [dero-mcp-server](https://www.npmjs.com/package/dero-mcp-server)
 
 ## Run Your Own Node
 
-The server defaults to a third-party public RPC. For real privacy, run your own daemon:
+When `DERO_DAEMON_URL` is unset the server is **local-first**: it uses a local daemon at `127.0.0.1:10102` if one answers, and only falls back to a third-party public RPC when none is found. For real privacy, run your own daemon:
 
 ```bash
 ./derod --rpc-bind=127.0.0.1:10102
@@ -161,6 +161,10 @@ Once connected, talk to your AI naturally — it will pick the right composite o
 - *"Estimate the gas cost to deploy this DVM contract."* → `estimate_deploy_cost`
 - *"Verify the claim that DERO's total supply has been correctly minted at the current tip."* → `audit_chain_artifact_claim`
 - *"Forge a payload proof showing any amount — to see why 'Verified ✓' on an explorer proves nothing."* → `dero_forge_demo_proof`
+- *"What's the SCID for `vault.tela`?"* → `dero_durl_to_scid`
+- *"What TELA apps exist on DERO? Show me a few."* → `dero_tela_list_apps`
+- *"Inspect the TELA app at SCID `[…]` — what is it and what files does it have?"* → `tela_inspect`
+- *"Show me the actual HTML of that app's `index.html`."* → `tela_get_doc_content`
 - *"What's the current block height?"* → `dero_get_info` / `dero_get_height`
 - *"Show me the source code for contract `[SCID]`."* → `dero_get_sc`
 - *"Resolve the name `dero` to a wallet address."* → `dero_name_to_address`
@@ -179,6 +183,10 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 | `trace_transaction_with_context` | `GetTransaction` + (for SC installs) `GetSC` + manual classification | "What is this tx" — returns confirmation status, kind classification, ring stats, and parsed SC install surface inline |
 | `audit_chain_artifact_claim` | Multiple primitives + docs lookups + proof decode | End-to-end verifier for chain-related claims — returns narrative + cited daemon state + flagged-artifact analysis + optional bech32 proof round-trips. Backbone of the adversarial-context defense layer |
 | `dero_forge_demo_proof` | `dero_get_transaction` + manual commitment math + bech32 encode | Forge a `deroproof…` display object for any tx / ring slot / amount — the one-call reproduction of the [inflation-claim Part 3](/integrity/inflation-claim#part-3-forge-a-fake-proof-yourself) demo that **Verified ✓ proves nothing**: payload proofs are user-forgeable. Also exercises SDK proof-decode paths. |
+| `tela_inspect` | `GetSC` + manual TELA-INDEX-1/DOC-1 schema parsing | "What is this TELA contract/app" — auto-detects INDEX vs DOC, decodes the manifest (name, dURL, mods, the full DOC file list, version history, ratings) or the file metadata. Reads raw stored keys so large manifests aren't truncated |
+| `tela_get_doc_content` | `GetSC` + comment-block extraction (+ gzip decode) | "Show me this TELA file's content" — extracts the actual on-chain HTML/CSS/JS from a TELA-DOC-1, transparently gunzipping `.gz` files to plaintext |
+| `dero_durl_to_scid` | a separate Gnomon indexer | "What's the SCID for `vault.tela`" — resolves a TELA dURL to its on-chain SCID(s) by discovering apps in-process (no external indexer). Non-unique dURLs return the newest as primary and disclose other claimants |
+| `dero_tela_list_apps` | a separate Gnomon indexer | "What TELA apps exist" — lists/searches discovered TELA apps (dURL, name, SCID, file count) with transparent scan-coverage metadata |
 
 Each composite is fully documented in [`docs/composites.md`](https://github.com/DHEBP/dero-mcp-server/blob/main/docs/composites.md) (design contract, accepted/rejected designs, failure modes), and every composite ships with a green flow test in CI that runs against a live public daemon.
 
@@ -232,7 +240,7 @@ Beyond tools, the server exposes 4 **resources** and 5 **prompts** so MCP-aware 
 | `dero://mcp/server-info` | Server metadata, tool list, resource list, prompt names, daemon endpoint |
 | `dero://mcp/safety-boundary` | Read-only posture and excluded method list (transfer, scinvoke, etc.) |
 | `dero://mcp/example-flows` | Composite-first agent flow recipes for common DERO investigations |
-| `dero://mcp/composites` | Structured catalog of all 7 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
+| `dero://mcp/composites` | Structured catalog of all 11 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
 
 ### Prompts
 
@@ -266,7 +274,7 @@ Every error code carries a `hint` string with actionable next steps so the agent
 
 ## Read-Only by Design
 
-Every one of the 28 tools carries the MCP read-only annotation block:
+Every one of the 32 tools carries the MCP read-only annotation block:
 
 ```json
 {
