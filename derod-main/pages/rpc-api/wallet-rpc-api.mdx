@@ -182,7 +182,7 @@ curl -X POST \
 }
 ```
 
-**NOTE:** The amount is in atomic format. As a reminder, 10^5 (=100000) is equivalent to 1 DERO.
+**NOTE:** The amount is in atomic format. As a reminder, 10^5 (=100000) is equivalent to 1 DERO. When using a transfer to carry a payload (a comment, destination port, or app data) rather than to send value, the amount must still be at least **1 atomic unit** (`0.00001 DERO`): a zero-amount transfer creates no output for the recipient's wallet to detect, so its attached `payload_rpc` never reaches them even though the transaction is valid and mined. This applies to any use of a transfer as a data carrier, not just payments.
 
 <Callout type="warning" emoji="⚠️">
     If this address is not registered on the blockchain, you will get this error:

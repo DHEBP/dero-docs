@@ -77,6 +77,52 @@ This looks primitive, but it's **by design**. There is no hidden control flow. Y
 
 ---
 
+## `Initialize` vs `InitializePrivate`
+
+Every contract has exactly one initializer that runs **once**, at install time. It is named **either** `Initialize` **or** `InitializePrivate` — and which name you choose is the *only* difference between the two contract types DERO recognizes.
+
+```basic
+// Type 0 — "Open" contract
+Function Initialize() Uint64
+  10 STORE("owner", SIGNER())
+  20 RETURN 0
+End Function
+
+// Type 1 — "Private" contract: identical body, different name
+Function InitializePrivate() Uint64
+  10 STORE("owner", SIGNER())
+  20 RETURN 0
+End Function
+```
+
+At deploy, the daemon checks the function name and sets a single metadata byte:
+
+```go
+// blockchain/transaction_execute.go:325-326
+if _, ok := sc.Functions["InitializePrivate"]; ok {
+    meta.Type = 1            // present -> Private (Type 1); absent -> Open (Type 0)
+}
+// ...then the matching name is used as the install entrypoint:
+// transaction_execute.go:336-337  if meta.Type == 1 { entrypoint = "InitializePrivate" }
+```
+
+That byte is the whole distinction:
+
+```go
+// dvm/sc.go:38
+Type byte // 0 = Open, 1 = Private
+```
+
+<Callout type="warning">
+**`InitializePrivate` does NOT hide your contract.** It does not encrypt code, does not encrypt state, and does not change how `STORE`/`LOAD` or `DERO.GetSC` behave. For **both** types the contract code is public and every stored variable is world-readable — `DERO.GetSC` serves Type 0 and Type 1 state identically, with no privacy gate.
+</Callout>
+
+So what is "private" about a private smart contract? **The tokens it issues**, not the contract itself. When a contract sends an asset with `SEND_ASSET_TO_ADDRESS`, that balance lands **encrypted in the recipient's wallet** and moves wallet-to-wallet with homomorphic encryption afterward — the contract never tracks who holds what. The Type 1 marker is what tells the chain to treat the contract as a private-asset issuer. (See [Private Smart Contracts](/privacy/private-smart-contracts) for the token model in full.)
+
+**Practical guidance:** if your contract issues tokens/assets, use `InitializePrivate`. If it is a pure logic or storage contract, either name works — but never rely on either one to keep state secret. Anything that must be confidential has to be encrypted by your app **before** it is stored on-chain.
+
+---
+
 ## The Core Primitives
 
 Everything in DVM-BASIC is built from a handful of building blocks:
