@@ -1,124 +1,103 @@
 # Contributing to DERO Documentation
 
-Thank you for your interest in contributing to the DERO and TELA documentation!
+Bug fixes, doc improvements, new guides — all welcome. This repo is the source for four DERO ecosystem docs sites; the sites are the product.
 
-## Getting Started
+## What's here
 
-This is a monorepo containing two documentation sites:
-- **derod-main**: DERO blockchain documentation (derod.org)
-- **tela-main**: TELA platform documentation (tela.derod.org)
+A monorepo of four [Nextra](https://nextra.site) (Next.js) documentation sites, wired together as npm workspaces:
+
+| Workspace | Covers | Live at |
+|---|---|---|
+| `derod-main` | DERO blockchain — privacy suite, DVM-BASIC, mining, wallets, daemon RPC | [derod.org](https://derod.org) |
+| `tela-main` | TELA on-chain web platform — apps, XSWD, CLI, templates | [tela.derod.org](https://tela.derod.org) |
+| `hologram-main` | Hologram desktop client — wallet, TELA browser, explorer, Studio | [hologram.derod.org](https://hologram.derod.org) |
+| `deropay-main` | DeroPay — payment router, escrow, dero-pay / dero-auth SDKs | [pay.derod.org](https://pay.derod.org) |
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
+- Node.js >= 18.0.0 (CI builds on Node 20)
 - npm >= 9.0.0
 
-## Development Setup
+## Development setup
 
-### Install Dependencies
+### Install
+
+This is an npm workspaces monorepo — install once from the root to set up all four sites:
 
 ```bash
-# Install all dependencies for both projects
-npm run install:all
-
-# Or install individually
-cd derod-main && npm install
-cd ../tela-main && npm install
+npm install
 ```
 
-### Run Development Servers
+### Run a dev server
+
+Each site runs on its own. They all default to **http://localhost:3000**, so run one at a time — or pass a port (`npm run dev:tela -- -p 3001`) to run several side by side.
 
 ```bash
-# Run DERO docs
-npm run dev:derod
-
-# Run TELA docs
-npm run dev:tela
+npm run dev:derod      # DERO docs
+npm run dev:tela       # TELA docs
+npm run dev:hologram   # Hologram docs
+npm run dev:deropay    # DeroPay docs
 ```
 
-The sites will be available at:
-- DERO: http://localhost:3000
-- TELA: http://localhost:3000 (when running individually)
-
-### Build for Production
+### Build
 
 ```bash
-# Build both sites
-npm run build:all
-
-# Or build individually
-npm run build:derod
+npm run build:derod    # build one site
 npm run build:tela
+npm run build:hologram
+npm run build:deropay
+
+npm run build:all      # build all four
 ```
 
-## Project Structure
+## Project structure
 
 ```
 dero-docs/
-├── derod-main/          # DERO documentation
-│   ├── pages/           # MDX documentation files
+├── derod-main/          # DERO docs site (Nextra)
+│   ├── pages/           # MDX documentation + _meta.json ordering
 │   ├── components/      # React components
-│   └── public/          # Static assets
-├── tela-main/           # TELA documentation
-│   ├── pages/           # MDX documentation files
-│   ├── components/      # React components
-│   └── public/          # Static assets
-└── README.md            # You are here
+│   ├── public/          # Static assets + generated llms.txt, agents.md, .well-known/
+│   └── ...
+├── tela-main/           # TELA docs site
+├── hologram-main/       # Hologram docs site
+├── deropay-main/        # DeroPay docs site
+├── scripts/             # Repo tooling (link health, generators)
+└── README.md
 ```
 
-## How to Contribute
+Each site follows Nextra's `pages/` convention: an `.mdx` file is a page, and a sibling `_meta.json` controls sidebar order and titles.
 
-### Reporting Issues
+## How to contribute
 
-- Check existing issues before creating a new one
-- Provide clear descriptions and steps to reproduce bugs
-- Include screenshots for UI-related issues
+### Reporting issues
 
-### Submitting Changes
+- Check existing issues before opening a new one
+- Give a clear description and steps to reproduce
+- Include screenshots for anything visual
 
-1. **Fork the repository**
-2. **Create a feature branch**
+### Submitting changes
+
+1. **Fork** the repository
+2. **Branch** off `main`:
    ```bash
    git checkout -b feature/your-feature-name
    ```
+3. **Make your changes** — follow existing style, test locally, update related pages
+4. **Commit** with a clear message
+5. **Push** to your fork
+6. **Open a Pull Request** against `main` — describe the change and reference any related issues
 
-3. **Make your changes**
-   - Follow existing code style
-   - Test your changes locally
-   - Update documentation if needed
+CI builds the docs on every PR to `main`; make sure your branch builds cleanly first.
 
-4. **Commit your changes**
-   ```bash
-   git commit -m "Description of changes"
-   ```
+## Writing documentation
 
-5. **Push to your fork**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-6. **Create a Pull Request**
-   - Provide a clear description of changes
-   - Reference any related issues
-
-## Content Guidelines
-
-### Writing Documentation
-
-- Use clear, concise language
-- Include code examples where applicable
-- Add images/screenshots for visual guidance
-- Test all code examples before submitting
-- Link to related documentation
-
-### MDX Files
-
-Documentation is written in MDX (Markdown + JSX):
+Pages are MDX (Markdown + JSX) with Nextra frontmatter:
 
 ```mdx
 ---
 title: Your Page Title
-description: Brief description
+description: Brief description for search and previews
 ---
 
 # Your Page Title
@@ -130,55 +109,56 @@ Your content here...
 </Callout>
 ```
 
-### Code Examples
+Guidelines:
 
-Use proper syntax highlighting:
+- Clear, concise, technical — written for developers, no fluff
+- Include working code examples; test them before submitting
+- Use proper language tags on fenced code blocks for syntax highlighting
+- Link to related pages
+- Sentence case for headings
 
-````mdx
-```javascript
-const example = "code";
-```
-````
+### Adding a page
+
+1. Create the `.mdx` file under the site's `pages/` directory
+2. Add it to the sibling `_meta.json` so it appears in the sidebar
+3. Run the dev server to confirm it renders and the nav is correct
 
 ### Images
 
-Place images in the appropriate `public/assets/` directory:
+Place assets under the site's `public/assets/` and reference them with an absolute path:
 
 ```mdx
 ![Alt text](/assets/your-image.png)
 ```
 
-## Style Guide
+## Agent-ready surfaces
 
-- Use sentence case for headings
-- Keep line length reasonable (80-100 chars for prose)
-- Use lists for multiple related items
-- Add spacing between sections
+Each site exposes machine-readable surfaces (`/llms.txt`, `/agents.md`, `/<page>.md` twins, `/.well-known/*`) so LLMs and agents can read the docs natively — see the [README](./README.md) for the full list.
 
-## Testing
-
-Before submitting:
-
-1. Run the dev server and verify changes
-2. Build the site to check for errors
-3. Test all links and images
-4. Verify code examples work
+These are **generated**, not hand-edited. If you add or rename pages, the link lists need regenerating so they don't drift:
 
 ```bash
-npm run dev:derod    # Test DERO docs
-npm run build:derod  # Build DERO docs
-
-npm run dev:tela     # Test TELA docs
-npm run build:tela   # Build TELA docs
+node scripts/generate-llms-and-agents.mjs <site-dir>   # e.g. derod-main
 ```
 
-## Need Help?
+## Before you submit
 
-- Join our [Discord](https://discord.gg/H95TJDp)
-- Check existing documentation
-- Ask questions in GitHub issues
+```bash
+npm run build:derod          # build the site(s) you touched — must pass
+npm run check:llms-links     # verify llms.txt links still resolve
+```
+
+1. Run the dev server and visually verify your changes
+2. Build the affected site(s) — fix any errors
+3. Check links and images resolve
+4. Confirm code examples actually work
+
+## Need help?
+
+- Join the [DERO Discord](https://discord.gg/H95TJDp)
+- Browse the existing docs
+- Ask in a GitHub issue
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
-
+By contributing, you agree your contributions are licensed under the MIT License.
