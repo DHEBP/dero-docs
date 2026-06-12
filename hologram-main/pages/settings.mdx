@@ -291,18 +291,18 @@ The Gnomon WebSocket API allows external tools to query indexed blockchain data 
 |  WebSocket API                                            |
 |  Expose Gnomon queries via WebSocket for external apps    |
 |                                                           |
-|  [ON/OFF Toggle]  Port: [44400]  Status: Running          |
+|  [ON/OFF Toggle]  Port: [9190]  Status: Running           |
 +----------------------------------------------------------+
 ```
 
 #### API Reference
 
 ```go
-// Start the WebSocket server
+// Start the WebSocket server (auto-selects a port in 9190-9199 if address is empty)
 StartGnomonWSServer(address) -> {
     success: bool,
-    address: string,  // "127.0.0.1:44400"
-    message: string,
+    address: string,  // "127.0.0.1:9190"
+    port: int,
 }
 
 // Stop the WebSocket server
@@ -313,10 +313,10 @@ StopGnomonWSServer() -> {
 
 // Check server status
 GetGnomonWSStatus() -> {
-    success: bool,
     running: bool,
     address: string,
     port: int,
+    clients: int,
 }
 ```
 
@@ -325,7 +325,7 @@ GetGnomonWSStatus() -> {
 Connect via WebSocket and send JSON-RPC 2.0 requests:
 
 ```javascript
-const ws = new WebSocket('ws://127.0.0.1:44400/gnomon');
+const ws = new WebSocket('ws://127.0.0.1:9190/ws');
 
 ws.onopen = () => {
     ws.send(JSON.stringify({
@@ -374,13 +374,12 @@ Each connected app shows:
 ### Permission Types
 
 | Permission | Description |
-|------------|-------------|
-| `read_address` | View wallet address |
-| `read_balance` | View wallet balance |
-| `read_history` | View transaction history |
-| `sign` | Sign messages |
-| `transfer` | Send DERO/tokens |
-| `sc_invoke` | Call smart contracts |
+| --- | --- |
+| `read_public_data` | Read public blockchain info (blocks, transactions, network stats) |
+| `view_address` | See your public wallet address |
+| `view_balance` | See your wallet balance |
+| `sign_transaction` | Request to send DERO (requires approval each time) |
+| `sc_invoke` | Request smart contract interactions (requires approval each time) |
 
 ### Revoking Access
 
@@ -405,10 +404,7 @@ For power users running the embedded node.
 Skip full block verification for faster initial sync:
 
 ```go
-SetNodeAdvancedConfig({
-    fastSync: true,
-    pruneHistory: 0
-}) -> { success: true }
+SetNodeAdvancedConfig(fastSync bool, pruneHistory int, syncNodeEndpoint string) -> { success: true }
 ```
 
 <Callout type="warning">

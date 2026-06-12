@@ -19,7 +19,7 @@ Simulator Mode is perfect for:
 - Rapid iteration with instant block mining
 
 <Callout type="success">
-  **One-Click Setup**: Hologram automatically downloads the daemon, creates a wallet, mines test coins, and configures Gnomon—all with a single click.
+  **One-Click Setup**: Once the simulator binary is in place, Hologram starts the daemon, creates wallets, mines test coins, and configures Gnomon—all with a single click. The simulator daemon is a separate binary (not the regular `derod`); build it with `make all` or download it from DERO releases if Hologram reports it's missing.
 </Callout>
 
 ## One-Click Activation
@@ -29,21 +29,22 @@ Simulator Mode is perfect for:
 StartSimulatorMode() -> {
     success: true,
     walletAddress: "deto1...",
+    walletCount: 22,
     rpcEndpoint: "http://127.0.0.1:20000",
-    getworkPort: 20100
+    getworkPort: 20002
 }
 ```
 
 **What `StartSimulatorMode` does automatically:**
 
-1. Downloads derod binary if missing
+1. Verifies the simulator binary is present (errors with build/download instructions if missing)
 2. Starts daemon in simulator mode
-3. Creates/opens simulator wallet (fixed password: "simulator")
+3. Creates/opens the pre-seeded simulator wallets (empty password, matching the original DERO simulator)
 4. Mines initial blocks for test DERO
 5. Configures Gnomon for simulator network
 
 <Callout type="info">
-  Simulator wallets use the fixed password "simulator" because security isn't needed for test coins.
+  Simulator wallets use an empty password (matching the original DERO simulator) because security isn't needed for test coins.
 </Callout>
 
 ## Simulator Manager API
@@ -63,9 +64,13 @@ The simulator wallet is auto-managed during `StartSimulatorMode`:
 ```go
 // Check simulator wallet state
 GetSimulatorWalletStatus() -> {
-    address: "deto1...",
-    balance: 100000000000000,
-    open: true,
+    success: true,
+    isSetup: true,
+    walletCount: 22,
+    primaryAddress: "deto1...",
+    primaryBalance: 100000000000000,
+    primaryLocked: 0,
+    primaryRegistered: true,
 }
 ```
 
@@ -259,15 +264,16 @@ The official DERO simulator daemon has a strict limitation: **it only allows one
 
 ```go
 GetSimulatorStatus() -> {
-    running: true,
+    success: true,
+    isInitialized: true,
+    isStarting: false,
     daemonRunning: true,
-    daemonPort: 20000,
     walletOpen: true,
     walletAddress: "deto1...",
-    walletBalance: 100000000000000,
+    balance: 100000000000000,
+    balanceDERO: 100,
     blockHeight: 150,
-    gnomonRunning: true,
-    gnomonHeight: 150
+    rpcEndpoint: "http://127.0.0.1:20000"
 }
 ```
 
@@ -291,7 +297,7 @@ Hologram includes **22 pre-seeded test wallets** matching the original DERO simu
 | Wallet 22 | `deto1qy...` | Pre-funded |
 
 <Callout type="info">
-  All test wallets use the fixed password "simulator". Click any wallet to instantly open it.
+  All test wallets use an empty password (matching the original DERO simulator). Click any wallet to instantly open it.
 </Callout>
 
 ### Test Wallet Features
@@ -306,17 +312,19 @@ Hologram includes **22 pre-seeded test wallets** matching the original DERO simu
 ```go
 // Get all test wallets
 GetSimulatorTestWallets() -> {
+    success: true,
+    count: 22,
     wallets: [
-        { id: 1, address: "deto1...", balance: 1000000000000 },
+        { index: 0, address: "deto1...", balance: 1000000000000, registered: true, rpcPort: 0 },
         ...
     ]
 }
 
 // Sync balances from daemon
-SyncSimulatorTestWallets() -> { success: true }
+SyncSimulatorTestWallets() -> { success: true, count: 22, wallets: [...] }
 
-// Open a specific test wallet
-OpenSimulatorTestWallet(walletId int) -> {
+// Open a specific test wallet (index is 0-based)
+OpenSimulatorTestWallet(index int) -> {
     success: true,
     address: "deto1...",
     balance: 1000000000000

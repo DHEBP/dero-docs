@@ -38,7 +38,7 @@ SelectWalletFile() map[string]interface{}
 
 ```go
 GetBalance() map[string]interface{}
-GetBalanceAtHeight(scid string, topoheight int64, address string) map[string]interface{}
+GetBalanceAtHeight(address string, topoheight int64, scid string) map[string]interface{}
 GetAddress() map[string]interface{}
 SyncWallet() map[string]interface{}
 GetWalletSyncStatus() map[string]interface{}
@@ -48,7 +48,7 @@ GetWalletSyncStatus() map[string]interface{}
 
 ```go
 Transfer(destination string, amount uint64, paymentID string) map[string]interface{}
-TransferToken(scid string, destination string, amount uint64, password string) map[string]interface{}
+TransferToken(scid string, destination string, amount uint64, password string, ringsize uint64) map[string]interface{}
 InternalWalletCall(method string, params string, password string) map[string]interface{}
 ```
 
@@ -235,7 +235,7 @@ ValidateSenderProof(txid string, address string, amount uint64, message string, 
 
 ```go
 RateTELAApp(scid string, rating int) map[string]interface{}
-RateTELA(scid string, rating int) map[string]interface{}
+RateTELA(scid string, rating uint64) map[string]interface{}
 LikeTELAApp(scid string) map[string]interface{}
 DislikeTELAApp(scid string) map[string]interface{}
 GetAppRating(scid string) map[string]interface{}
@@ -244,8 +244,8 @@ GetRatingsBreakdown(scid string) map[string]interface{}
 GetRatingResultForSCID(scid string) map[string]interface{}
 GetRatingCategories() map[string]interface{}
 ParseRatingForUI(ratingJSON string) map[string]interface{}
-BuildRating(categories string, overall int) map[string]interface{}
-SubmitRatingWithPicker(scid string, categories string, overall int) map[string]interface{}
+BuildRating(category int, detail int) map[string]interface{}
+SubmitRatingWithPicker(scid string, category int, detail int) map[string]interface{}
 ```
 
 ## NRS (Name Resolution)
@@ -524,11 +524,11 @@ GetServerInfo(name string) map[string]interface{}
 
 ```go
 GetContentFilterConfig() map[string]interface{}
-SetContentFilterConfig(enabled bool, minRating int, blockMalware bool, showNSFW bool, customRules string, autoBlock bool, maxAge int, strictMode bool) map[string]interface{}
+SetContentFilterConfig(enabled bool, minRating int, blockMalware bool, blockUnrated bool, requireEpoch bool, showWarnings bool, parentalLevel string, epochBonus int) map[string]interface{}
 GetContentFilterRules() map[string]interface{}
 GetContentFilterHistory(limit int) map[string]interface{}
 GetContentFilterStats() map[string]interface{}
-CheckAppFilter(scid string, name string, desc string, rating int, tags string, owner string, code string) map[string]interface{}
+CheckAppFilter(scid string, name string, author string, category string, rating int, ratingCount int, supportsEpoch bool) map[string]interface{}
 ManuallyAllowApp(scid string) map[string]interface{}
 ManuallyBlockApp(scid string) map[string]interface{}
 ClearAppFilterOverride(scid string) map[string]interface{}

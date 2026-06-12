@@ -13,7 +13,7 @@ The **Local Dev Server** enables hot-reload development of TELA applications dir
 </Callout>
 ## Features
 
-- **HTTP File Server**: Serves local directory on `127.0.0.1:8080+`
+- **HTTP File Server**: Serves local directory on `127.0.0.1`, first free port in the `50080-51000` range
 - **Hot Reload**: Automatic browser refresh on file changes
 - **File Watcher**: Uses `fsnotify` to detect changes
 - **CORS Support**: Proper headers for local development
@@ -41,8 +41,8 @@ The **Local Dev Server** enables hot-reload development of TELA applications dir
 ```go
 StartLocalDevServer("/path/to/tela-app") -> {
     success: true,
-    url: "http://127.0.0.1:8080",
-    port: 8080,
+    url: "http://127.0.0.1:50080",
+    port: 50080,
     directory: "/path/to/tela-app",
     message: "Local dev server started"
 }
@@ -53,8 +53,8 @@ StartLocalDevServer("/path/to/tela-app") -> {
 ```go
 GetLocalDevServerStatus() -> {
     running: true,
-    url: "http://127.0.0.1:8080",
-    port: 8080,
+    url: "http://127.0.0.1:50080",
+    port: 50080,
     directory: "/path/to/tela-app",
     watcherActive: true
 }
@@ -213,7 +213,7 @@ Since TELA apps can be cached offline:
 
 ### Server Won't Start
 
-- Check if port 8080 is available
+- Check that ports in the `50080-51000` range are available
 - Try a different directory
 - Restart Hologram
 

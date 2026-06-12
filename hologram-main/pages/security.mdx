@@ -48,7 +48,7 @@ All TELA content runs in a sandboxed iframe:
 
 ```html
 <iframe 
-  sandbox="allow-scripts allow-same-origin"
+  sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-clipboard-read allow-clipboard-write"
   ...
 >
 ```
@@ -58,8 +58,8 @@ All TELA content runs in a sandboxed iframe:
 - No direct network requests (except through telaHost)
 - No access to parent window DOM
 - No local storage or cookies
-- No form submission to external URLs
-- No popups or new windows
+
+The iframe sandbox grants `allow-forms` and `allow-modals` (modals and in-app forms are permitted; clipboard access is granted for TELA apps like Villager). External network isolation, not the sandbox, is what prevents content from reaching outside services.
 
 ### Layer 3: Permission System
 
@@ -136,8 +136,8 @@ Hologram analyzes what methods an app actually calls:
 Per-app rate limiting prevents abuse:
 
 ```go
-RATE_LIMIT_WINDOW    = 10 seconds
-RATE_LIMIT_MAX_CALLS = 100 per window
+RATE_LIMIT_WINDOW     = 10 seconds
+RATE_LIMIT_MAX_HASHES = 500 per window
 ```
 
 ## Privacy Mode

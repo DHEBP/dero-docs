@@ -37,17 +37,20 @@ const (
     // Prevents uint64→int64 wraparound attacks
     MAX_INT64_SAFE = 9223372036854775807
 
-    // Maximum reasonable transfer amount in atomic units
-    // DERO hard cap: 21M DERO (will never increase)
-    // Setting max at 22M DERO = 22 trillion atomic units
-    // ~5% above hard cap for buffer while blocking impossible amounts
-    MAX_REASONABLE_AMOUNT_ATOMIC = 22_000_000_000_000
-
-    // For display
+    // For display and calculations: 1 DERO = 100,000 atomic units
     ATOMIC_UNITS_PER_DERO = 100_000
 
+    // Maximum reasonable transfer amount in atomic units
+    // DERO hard cap: 21M DERO (will never increase)
+    // Setting max at 22M DERO = ~5% above hard cap for buffer
+    // while blocking impossible amounts
+    MAX_REASONABLE_AMOUNT_ATOMIC = 22_000_000 * ATOMIC_UNITS_PER_DERO // 2_200_000_000_000
+
     // Hard cap reference
-    DERO_HARD_CAP = 21_000_000
+    DERO_HARD_CAP_ATOMIC = 21_000_000 * ATOMIC_UNITS_PER_DERO // 2_100_000_000_000
+
+    // Current approximate circulating supply (for context display)
+    CURRENT_SUPPLY_APPROX_ATOMIC = 16_500_000 * ATOMIC_UNITS_PER_DERO // 1_650_000_000_000
 )
 ```
 
@@ -67,8 +70,8 @@ func ValidatePayloadProofAmount(amount uint64) error {
     // Check 2: Sanity check against DERO hard cap
     if amount > MAX_REASONABLE_AMOUNT_ATOMIC {
         amountInDero := amount / ATOMIC_UNITS_PER_DERO
-        return fmt.Errorf("amount %d DERO exceeds DERO hard cap (%d M) - proof is fabricated",
-            amountInDero, DERO_HARD_CAP/1_000_000)
+        return fmt.Errorf("amount %d DERO exceeds DERO hard cap (21M) - proof is fabricated",
+            amountInDero)
     }
 
     return nil
@@ -90,24 +93,24 @@ func DetectSuspiciousProofPatterns(amount uint64) []string {
             "Amount near int64 maximum - possible wraparound attempt")
     }
 
-    // Warning 2: Exceeds current circulating supply (~16M)
-    currentSupplyThreshold := uint64(17_000_000_000_000)
-    if amount > currentSupplyThreshold {
+    // Warning 2: Exceeds current circulating supply (~16.5M)
+    if amount > CURRENT_SUPPLY_APPROX_ATOMIC {
         amountDero := amount / ATOMIC_UNITS_PER_DERO
         warnings = append(warnings,
             fmt.Sprintf("Amount (%d DERO) exceeds current circulating supply - verify carefully", amountDero))
     }
 
     // Warning 3: Very large amount (> 1M DERO) - not fake, just notable
-    largeThreshold := uint64(1_000_000_000_000)
-    if amount > largeThreshold && amount <= currentSupplyThreshold {
+    largeThreshold := uint64(1_000_000 * ATOMIC_UNITS_PER_DERO) // 1M DERO
+    if amount > largeThreshold && amount <= CURRENT_SUPPLY_APPROX_ATOMIC {
         amountDero := amount / ATOMIC_UNITS_PER_DERO
         warnings = append(warnings,
             fmt.Sprintf("Large transfer amount: %d DERO", amountDero))
     }
 
-    // Warning 4: Suspiciously round number in trillions (often fabricated)
-    if amount >= 1_000_000_000_000 && amount%1_000_000_000_000 == 0 {
+    // Warning 4: Suspiciously round number (exact multiple of 1M DERO) - often fabricated
+    roundThreshold := uint64(1_000_000 * ATOMIC_UNITS_PER_DERO) // 1M DERO
+    if amount >= roundThreshold && amount%roundThreshold == 0 {
         amountDero := amount / ATOMIC_UNITS_PER_DERO
         warnings = append(warnings,
             fmt.Sprintf("Suspiciously round number (%d DERO exactly)", amountDero))
@@ -192,19 +195,20 @@ The validation is integrated into Hologram's Explorer at the proof display point
 ```go
 // In ValidateProofFull()
 for i, amt := range amounts {
-    // Block proofs with impossible amounts
-    if err := ValidatePayloadProofAmount(amt); err != nil {
+    // Validate each amount (blocks impossible amounts, collects warnings + context)
+    validationResult := ValidatePayloadProofAmountWithContext(amt)
+
+    if !validationResult.Valid {
         return map[string]interface{}{
             "success":      true,
             "valid":        false,
-            "error":        fmt.Sprintf("Proof rejected: %s", err.Error()),
+            "error":        fmt.Sprintf("Proof rejected: %s", validationResult.Error),
             "securityNote": "This proof claims an amount that exceeds the DERO hard cap (21M) and is therefore fabricated.",
         }
     }
 
-    // Collect warnings for suspicious but valid amounts
-    warnings := DetectSuspiciousProofPatterns(amt)
-    allWarnings = append(allWarnings, warnings...)
+    // Collect warnings and supply context for suspicious but valid amounts
+    allWarnings = append(allWarnings, validationResult.Warnings...)
 }
 ```
 

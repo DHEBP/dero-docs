@@ -50,7 +50,6 @@ flowchart LR
     
     DETECT -->|"64 hex chars"| SCID["Direct SCID Fetch"]
     DETECT -->|"dero://"| DURL["dURL Resolution via Gnomon"]
-    DETECT -->|"name@txid"| VER["Versioned Fetch"]
     DETECT -->|"text"| SEARCH["Name Search"]
     DETECT -->|"number"| EXPLORER["→ Explorer Tab"]
     DETECT -->|"dero1..."| EXPLORER
@@ -58,17 +57,17 @@ flowchart LR
     
     SCID --> RENDER["Render App"]
     DURL --> RENDER
-    VER --> RENDER
     SEARCH --> RENDER
     EXPLORER --> RESULT["Explorer Search Results"]
 ```
+
+{/* removed: name@txid "Versioned Fetch" render branch not in code as of 2026-06-12; address-bar navigate() only handles 64-hex SCID or dURL, and FetchSCID always fetches the latest version. Restore if built */}
 
 | Input Format | Example | Action |
 |--------------|---------|--------|
 | Raw SCID (64 hex) | `abc123...def456` | Fetch directly from blockchain |
 | dero:// URL | `dero://myapp` | Resolve via Gnomon, then fetch |
 | Name lookup | `myapp` | Search indexed apps |
-| Versioned SCID | `abc123...@txid456...` | Fetch specific version (see below) |
 | Block height | `5000000` | Switch to Explorer |
 | Address | `dero1qy...` | Switch to Explorer |
 | Search prefix | `key:owner` | Switch to Explorer with results |
@@ -77,45 +76,7 @@ flowchart LR
   The address bar runs in compact mode — no search button or helper text. Just type and press Enter. A type badge appears as you type to show what OmniSearch detected (Block, SCID, dURL, etc.).
 </Callout>
 
-### Versioned Navigation (scid@txid)
-
-Access any historical version of a TELA app by appending `@txid` to the SCID:
-
-```
-abc123def456...@987fed654...
-└─── SCID ────┘ └── TXID ──┘
-```
-
-**How to use versioned navigation:**
-
-1. Open **Version History** for the app (clock icon in toolbar)
-2. Find the version you want in the timeline
-3. Copy its **TXID** (transaction hash)
-4. Navigate to `scid@txid` in the address bar
-
-**Example:**
-
-```
-# Latest version (default)
-a1b2c3d4e5f6...
-
-# Specific version from January 2026
-a1b2c3d4e5f6...@f9e8d7c6b5a4...
-```
-
-<Callout type="info">
-  Versioned URLs are useful for sharing links to specific app versions, bookmarking known-good states, or auditing changes over time.
-</Callout>
-
-**Version Resolution:**
-
-When you navigate to a versioned URL, Hologram:
-
-1. Parses the SCID and TXID from the address
-2. Finds the block height where that TXID was confirmed
-3. Retrieves the INDEX contract state at that height
-4. Fetches DOC content as it existed at that version
-5. Renders the historical version of the app
+{/* removed: "Versioned Navigation (scid@txid)" section not in code as of 2026-06-12 — the Browser address bar navigate() only resolves a 64-hex SCID or a dURL, and FetchSCID always serves the latest version (LatestInteractionHeight). The only scid@txid handling is in CloneTELA -> CloneAtCommit (download path), not browser render. Restore if address-bar versioned fetch is built. */}
 
 ## Browser Toolbar
 

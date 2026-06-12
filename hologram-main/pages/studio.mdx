@@ -35,7 +35,7 @@ The Serve tab provides a local development server for testing TELA apps before d
 1. Navigate to **Studio > Serve**
 2. Click **"Choose Directory"**
 3. Select a folder containing your TELA app (must have `index.html`)
-4. Server starts automatically on an available port (default: 8080)
+4. Server starts automatically on the first available port (scans the 50080-51000 range to avoid DERO service ports)
 
 ### Features
 
@@ -65,16 +65,16 @@ The Serve tab provides a local development server for testing TELA apps before d
 ```go
 StartLocalDevServer(directory string) -> {
     success: true,
-    url: "http://127.0.0.1:8080",
-    port: 8080
+    url: "http://127.0.0.1:50080",
+    port: 50080
 }
 
 StopLocalDevServer() -> { success: true }
 
 GetLocalDevServerStatus() -> {
     running: true,
-    url: "http://127.0.0.1:8080",
-    port: 8080,
+    url: "http://127.0.0.1:50080",
+    port: 50080,
     directory: "/path/to/app",
     watcherActive: true
 }
@@ -191,12 +191,13 @@ When installing a library (dURL ending in `.tela.lib`), Hologram provides an **"
 
 This makes it easy to reuse library components across multiple TELA apps.
 
-### Password Confirmation Modal
+### Deployment Confirmation Modal
 
-For mainnet deployments, Hologram shows a password confirmation modal with enhanced safety:
+For mainnet deployments, Hologram shows a confirmation modal with enhanced safety:
 
-- **Password required** — Must enter wallet password to proceed
-- **Acknowledgement checkbox** — Must confirm you understand this is a mainnet deployment
+{/* removed: "Password required" bullet — the deploy confirmation modal has no wallet-password field as of 2026-06-12 (no password input in Studio.svelte; the wallet is already unlocked); restore if built */}
+
+- **Acknowledgement checkbox** — Must confirm you understand this deployment is permanent and will consume real DERO
 - **Gas estimate display** — Shows estimated gas cost before deployment
 - **Network indicator** — Clearly shows "Mainnet" or "Simulator"
 
@@ -377,16 +378,7 @@ scid@txid         → Clone specific commit
 
 Use the **Clone** button in the Version History modal or Actions tab to download files.
 
-### Version Pinning
-
-Access specific historical versions using the `scid@txid` format:
-
-1. Open Version History for an INDEX
-2. Find the commit you want
-3. Copy its TXID
-4. Navigate to `scid@txid` in the Browser address bar
-
-This allows bookmarking or sharing links to specific versions of an app.
+{/* removed: "Version Pinning" section — navigating to scid@txid in the Browser address bar is not wired as of 2026-06-12 (Browser.svelte navigate() only resolves 64-char hex SCIDs, dURLs, local paths, and payment URIs; a 129-char scid@txid string is not handled). The scid@txid format is supported only by the Clone flow (CloneTELA), documented under "Cloning" above. Restore if address-bar version navigation is built. */}
 
 ### Revert and Clone Actions
 

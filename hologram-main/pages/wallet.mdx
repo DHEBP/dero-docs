@@ -551,7 +551,7 @@ GetWalletSyncStatus() map[string]interface{}
 ### Transactions
 
 ```go
-Transfer(destination string, amount uint64, paymentID string) map[string]interface{}
+Transfer(destination string, amount uint64, paymentID string, ringsize uint64) map[string]interface{}
 TransferToken(scid string, destination string, amount uint64, password string, ringsize uint64) map[string]interface{}
 GetTransactionHistory(limit int) map[string]interface{}
 GetWalletMiningEarnings(limit int) map[string]interface{}

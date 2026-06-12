@@ -100,10 +100,11 @@ The address switching uses a **30-second sticky timeout**:
 ```go
 // Get current EPOCH address info
 GetEpochAddressInfo() -> {
-    address: "dero1qy...",
-    is_app_address: true,  // true if on app developer's address
-    default_address: "dero1qy...",  // Hologram's default
-    last_app_request: "2026-01-03T12:00:00Z"
+    current_address: "dero1qy...",     // address currently receiving rewards
+    default_address: "dero1qy...",     // Hologram's default
+    is_on_app_address: true,           // true if on app developer's address
+    last_app_request: "2026-01-03T12:00:00Z",
+    seconds_until_switch: 12           // seconds before switching back to default
 }
 ```
 
@@ -172,6 +173,8 @@ type DevSupportStats struct {
     UptimeSeconds    int64     // Total active time
     SessionHashes    uint64    // Current session hashes
     SessionMiniblocks int      // Current session miniblocks
+    SessionStart     time.Time // When the current session started
+    LastActive       time.Time // Last time the worker did work
     TotalSessions    int       // Number of sessions
     IsRunning        bool      // Currently active
     IsPaused         bool      // Temporarily paused

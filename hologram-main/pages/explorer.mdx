@@ -315,8 +315,8 @@ DetectSuspiciousProofPatterns(amount uint64) -> []string
 ```go
 const (
     MAX_INT64_SAFE               = 9223372036854775807  // 2^63 - 1
-    MAX_REASONABLE_AMOUNT_ATOMIC = 22_000_000_000_000   // 22M DERO
-    DERO_HARD_CAP_ATOMIC         = 21_000_000_000_000   // 21M DERO
+    MAX_REASONABLE_AMOUNT_ATOMIC = 2_200_000_000_000    // 22M DERO (22_000_000 * 100_000)
+    DERO_HARD_CAP_ATOMIC         = 2_100_000_000_000    // 21M DERO (21_000_000 * 100_000)
 )
 ```
 
@@ -355,7 +355,8 @@ When viewing a smart contract, Hologram automatically detects if it's a TELA IND
 - **Open in Studio** button - Jump to Studio Actions page
 
 <Callout type="info">
-  TELA INDEXes have Git-like version control. Each update creates a commit, and any version can be retrieved using `scid@txid` format. See [Studio > Actions](/studio#actions-version-control) for full documentation.
+  TELA INDEXes have Git-like version control. Each update creates a commit; **View Version History** opens the commit timeline so you can compare versions, and **Open in Studio** jumps to the Studio Actions page. See [Studio > Actions](/studio#actions-version-control) for full documentation.
+  {/* removed: scid@txid retrieval not wired in Explorer as of 2026-06-12 (Studio Clone only); restore if built */}
 </Callout>
 
 ### Invoke Smart Contracts

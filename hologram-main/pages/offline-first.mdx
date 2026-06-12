@@ -68,11 +68,14 @@ Prefetch all favorites in one operation:
 
 ```go
 BatchPrefetchFavorites(favorites, minRating) → {
+    success: true,
+    total: 9,
     prefetched: 5,
     already_cached: 3,
     skipped: 1,       // Below rating threshold
     failed: 0,
-    duration_ms: 2340
+    duration_ms: 2340,
+    results: [ { scid: "abc...", status: "prefetched", name: "...", version: 3 } ]
 }
 ```
 
@@ -82,8 +85,11 @@ Compare all cached apps against their current on-chain versions:
 
 ```go
 CheckAllForUpdates() → {
+    success: true,
     total_checked: 8,
     updates_found: 2,
+    failed_checks: 0,
+    duration_ms: 1820,
     apps: [
         { scid: "abc...", cached_version: 3, onchain_version: 5, has_update: true },
         { scid: "def...", cached_version: 7, onchain_version: 7, has_update: false }
@@ -101,13 +107,16 @@ Before updating, view exactly what changed:
 
 ```go
 DiffCachedVsOnChain(scid) → {
+    success: true,
     has_changes: true,
     lines_added: 42,
     lines_removed: 12,
     lines_modified: 8,
+    cached_size: 8192,
+    onchain_size: 9540,
     diff: [
-        { type: "added", line_num: 15, content: "const newFeature = true;" },
-        { type: "removed", line_num: 22, content: "// old comment" }
+        { type: "added", line: 15, content: "const newFeature = true;" },
+        { type: "removed", line: 22, content: "// old comment" }
     ]
 }
 ```
