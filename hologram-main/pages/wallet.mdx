@@ -237,8 +237,8 @@ VillagerIdenticon.render(address, size) -> canvas
 ```
 
 The avatar system uses:
-- 64-color palette with transparency support
-- Deterministic frame generation from SHA-256 address hash
+- The fixed Villager palette with transparency support (each pixel is one palette character; `z` = transparent)
+- Deterministic frame generation from the address hash
 - Canvas-based rendering with frame + pixel overlay
 - Local caching to avoid redundant blockchain calls
 
@@ -246,90 +246,13 @@ The avatar system uses:
   You don't need a Villager avatar to use Hologram. Without one, your unique address-derived identicon frame is displayed instead.
 </Callout>
 
-## Avatar Editor
+### Custom Avatars
 
-Hologram includes a built-in pixel art editor for creating and customizing your Villager avatar.
-
-### Pixel Art Editor
-
-The editor provides a **24×24 pixel canvas** with the official **52-color Villager palette**:
-
-- **Paint tool** — Click or drag to paint pixels
-- **Eraser tool** — Click or drag to erase pixels (transparent)
-- **Color palette** — 52 colors organized by groups (Reds, Oranges, Yellows, Greens, Blues, etc.)
-- **Live preview** — See your avatar with the address-derived frame in real-time
-- **Grid display** — Visual 24×24 grid for precise pixel placement
-
-### Color Palette
-
-The 52-color palette includes:
-
-- **Reds** (4 shades) — Light Red, Red, Pure Red, Dark Red
-- **Oranges** (4 shades) — Light Orange, Orange, OrangeRed, Dark Orange
-- **Peach/Brown** (4 shades) — Light Peach, Peach, DarkOrange, Brown
-- **Gold/Brown** (4 shades) — Light Gold, Gold, Amber, Dark Brown
-- **Yellows** (4 shades) — Light Yellow, Yellow, Pure Yellow, Golden
-- **Lime/Green** (4 shades) — Light Lime, Lime, Chartreuse, Dark Green
-- **Greens** (4 shades) — Light Green, Green, Pure Green, Dark Green
-- **Mint/Spring** (4 shades) — Light Mint, Mint, Spring Green, Dark Mint
-- **Cyans** (4 shades) — Light Cyan, Cyan, Pure Cyan, Dark Cyan
-- **Blues** (4 shades) — Light Blue, Blue, Pure Blue, Dark Blue
-- **Indigo** (4 shades) — Light Indigo, Indigo, Pure Indigo, Dark Indigo
-- **Violets** (4 shades) — Light Violet, Violet, Pure Violet, Dark Violet
-- **Magentas** (4 shades) — Light Magenta, Magenta, Pure Magenta, Dark Magenta
-- **Pinks** (4 shades) — Light Pink, Pink, Pure Pink, Dark Pink
-- **Grays** (6 shades) — Light Gray, Gray, Dark Gray, plus transparent
-
-### Live Preview
-
-As you paint, the editor shows a live preview of your avatar:
-
-- **Address-derived frame** — Your unique identicon frame is automatically applied
-- **Custom pixels overlay** — Your painted pixels appear on top of the frame
-- **256×256 preview** — High-resolution preview for detail work
-
-### Blockchain Storage
-
-When you save your avatar:
-
-1. **Pixel data encoded** — Your 24×24 pixel art is encoded as a 576-character string
-2. **Stored on-chain** — Saved to the Villager smart contract
-3. **Associated with address** — Linked to your wallet address
-4. **Developer donation** — Small fee (default: 0.0001 DERO) supports Villager development
-
-### Saving Your Avatar
-
-1. **Paint your design** — Use the paint and eraser tools to create your avatar
-2. **Preview in real-time** — See how it looks with your address frame
-3. **Click "Save to Blockchain"** — Stores your avatar on-chain
-4. **Wait for confirmation** — Transaction must be confirmed before avatar appears
+Custom Villager avatars are stored as a 576-character pixel string in the Villager smart contract, keyed to your wallet address. When present, Hologram fetches and overlays those pixels on your address-derived frame.
 
 <Callout type="info">
-  Your avatar is stored permanently on the DERO blockchain. Once saved, it will appear whenever your address is displayed in Hologram or other Villager-compatible apps.
+  Hologram displays Villager avatars; it does not create or edit them in-app. Use a Villager-compatible tool to design and store a custom avatar on-chain — once saved, it appears automatically wherever your address is shown in Hologram.
 </Callout>
-
-## Click-to-Edit Navigation
-
-Access the Avatar Editor quickly from multiple locations:
-
-### Sidebar Avatar Click
-
-Click your avatar in the sidebar to open the editor:
-
-- **Collapsed rail** — Click the 24px circular avatar
-- **Expanded sidebar** — Click the 40px circular avatar
-- **Visual feedback** — Hover effects indicate the avatar is clickable
-- **Tooltip** — "Click to customize your avatar" appears on hover
-
-### Wallet Menu Button
-
-From the wallet menu in the sidebar:
-
-1. **Click wallet status** — Opens the wallet menu
-2. **Click "Edit Avatar"** — Button at the bottom of the menu
-3. **Editor opens** — Navigates directly to the Avatar Editor
-
-The "Edit Avatar" button includes a user icon and is always visible when a wallet is connected.
 
 ## Recent Wallets
 
