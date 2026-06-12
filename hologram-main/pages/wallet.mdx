@@ -347,11 +347,11 @@ Data stored in `datashards/settings/recent_wallets_info.json`
 View and manage all tokens in your wallet:
 
 ```go
-// Get all tracked tokens with balances
+// Get all tracked tokens with balances (name/symbol/icon backfilled from Gnomon)
 GetTrackedTokens() -> {
     success: true,
     tokens: [
-        { scid: "...", name: "TokenName", symbol: "TKN", balance: 1000 },
+        { scid: "...", name: "TokenName", symbol: "TKN", icon: "data:image/...", balance: 1000 },
         ...
     ]
 }
@@ -362,8 +362,13 @@ AddTrackedToken(scid string, name string, symbol string) -> { success: true }
 // Remove a token from tracking
 RemoveTrackedToken(scid string) -> { success: true }
 
+// Auto-detect tokens/NFAs the wallet holds (requires a running, synced Gnomon).
+// Sweeps Gnomon's index, balance-checks each SCID, and adds the non-zero ones.
+ScanWalletForTokens() -> { success: true, total: 876 }
+// Streams progress via "wallet:scanProgress" / "wallet:scanComplete" events.
+
 // Send tokens to another address
-TransferToken(scid string, destination string, amount uint64, password string) -> {
+TransferToken(scid string, destination string, amount uint64, password string, ringsize uint64) -> {
     success: true,
     txid: "abc123..."
 }
@@ -372,9 +377,10 @@ TransferToken(scid string, destination string, amount uint64, password string) -
 ### Token Management
 
 - **View balances**: See all tokens held by your wallet
-- **Add tokens**: Track new token SCIDs by entering the SCID, name, and symbol
+- **Auto-detect**: Scan the wallet to discover held tokens and NFAs automatically — runs once on first portfolio view and on demand via the Scan button. Requires a running, synced Gnomon (its index is the candidate set)
+- **Add tokens**: Track new token SCIDs manually by entering the SCID, name, and symbol
 - **Remove tokens**: Hide tokens from your portfolio
-- **Send tokens**: Transfer tokens to other addresses (uses `Burn` field internally)
+- **Send tokens**: Transfer tokens to another address — the recipient is credited the amount on that SCID
 
 ## Address Book
 
@@ -623,7 +629,7 @@ GetWalletSyncStatus() map[string]interface{}
 
 ```go
 Transfer(destination string, amount uint64, paymentID string) map[string]interface{}
-TransferToken(scid string, destination string, amount uint64, password string) map[string]interface{}
+TransferToken(scid string, destination string, amount uint64, password string, ringsize uint64) map[string]interface{}
 GetTransactionHistory(limit int) map[string]interface{}
 GetWalletMiningEarnings(limit int) map[string]interface{}
 GetMiningEarningsSummary() map[string]interface{}
@@ -651,6 +657,7 @@ DeleteTransactionLabel(txid string) map[string]interface{}
 GetTrackedTokens() map[string]interface{}
 AddTrackedToken(scid string, name string, symbol string) map[string]interface{}
 RemoveTrackedToken(scid string) map[string]interface{}
+ScanWalletForTokens() map[string]interface{}
 ```
 
 ### Address Book

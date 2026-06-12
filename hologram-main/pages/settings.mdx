@@ -192,8 +192,12 @@ ResyncGnomon() -> { success: true, message: "Resyncing..." }
 
 **Workarounds:**
 
-1. **Full Resync** — Click "Resync Database" to re-index from block 0 (slow but complete)
-2. **Wait for upstream fix** — The Gnomon `addscid_toindex` feature will allow on-demand historical indexing
+1. **Add the SCID directly** — Adding a token or SCID manually force-indexes that contract on demand (via Gnomon's `AddSCIDToIndex`), so its data and metadata resolve even if fastsync skipped it
+2. **Full Resync** — Click "Resync Database" to re-index from block 0 (slow but complete)
+
+<Callout type="info">
+  **Token & NFA auto-detect:** the wallet's token scan discovers held assets from Gnomon's index, so a contract fastsync never indexed would be missed. Hologram's index covers the common token and Artificer NFA standards, and the token scan auto-runs once the index is synced. When the index's coverage filter changes between releases, Hologram performs a one-time re-index automatically on the next start (~30s) so previously-skipped contracts are picked up — no manual resync needed.
+</Callout>
 
 <Callout type="info">
   Full resync from block 0 can take many hours or days depending on blockchain height. Only use if you need complete historical data.
