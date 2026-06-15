@@ -1,0 +1,4030 @@
+# DeroPay — Full Documentation Corpus
+
+> Every documentation page for pay.derod.org, inlined as Markdown for long-context LLM ingestion. Curated link list: https://pay.derod.org/llms.txt. Each page is also available individually at https://pay.derod.org/<path>.md.
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/api-reference.md -->
+
+---
+title: "DeroAuth API Reference"
+description: "Complete API reference for the dero-auth package — all exports, types, and interfaces."
+---
+
+# API Reference
+
+Complete reference for all `dero-auth` package exports.
+
+## Core (`dero-auth`)
+
+Message format, types, and validation utilities.
+
+```ts
+
+```
+
+## Crypto (`dero-auth/crypto`)
+
+Pure cryptographic operations — no network, no wallet.
+
+```ts
+
+```
+
+### Key Crypto Details
+
+- **Signature scheme**: Schnorr on BN256 (Barreto-Naehrig 254-bit)
+- **Hash function**: Keccak-256, reduced modulo curve order
+- **Address format**: Bech32 with 33-byte compressed G1 public key
+- **Generator**: `DERO_G = HashToPoint(Keccak256("DEROG"))` — DERO's custom generator
+- **Library**: `@noble/curves` (audited by Cure53)
+
+## Server (`dero-auth/server`)
+
+Challenge generation, signature verification, and JWT sessions.
+
+```ts
+
+```
+
+### createChallengeServer
+
+Returns an object with:
+- `createChallenge(options)` — Generate a challenge message with nonce
+- `consumeNonce(nonce)` — Mark a nonce as used (returns boolean)
+- `isNonceValid(nonce)` — Check if nonce exists and is unused
+
+### createSessionManager
+
+Returns an object with:
+- `createSession(payload)` — Create a JWT token
+- `verifySession(token)` — Verify and decode a JWT token
+
+## Client (`dero-auth/client`)
+
+Browser-side XSWD connection and signing flow.
+
+```ts
+
+```
+
+### createAuthClient
+
+Returns an object with:
+- `xswd` — The underlying XSWDClient instance
+- `signIn(options?)` — Run the full auth flow (connect, challenge, sign, verify)
+- `disconnect()` — Close the wallet connection
+
+## React (`dero-auth/react`)
+
+```tsx
+
+```
+
+## Next.js (`dero-auth/next`)
+
+```ts
+
+```
+
+### createAuthHandlers Return Value
+
+```ts
+const {
+  challengeHandler,   // POST handler for /auth/challenge
+  verifyHandler,      // POST handler for /auth/verify
+  challengeServer,    // The underlying challenge server instance
+  sessionManager,     // The underlying session manager instance
+} = createAuthHandlers(config);
+```
+
+### AuthHandlersConfig
+
+```ts
+type AuthHandlersConfig = {
+  domain: string;              // Your domain (e.g., "myapp.com")
+  uri: string;                 // Your full URI (e.g., "https://myapp.com")
+  jwtSecret: string;           // Secret for JWT signing (min 32 bytes)
+  statement?: string;          // Optional message shown to user
+  expirationTime?: number;     // Challenge expiry in seconds (default: 300)
+  nonceStore?: NonceStore;     // Custom nonce store (default: in-memory)
+};
+```
+
+### DeroMiddlewareConfig
+
+```ts
+type DeroMiddlewareConfig = {
+  jwtSecret: string;           // Must match the handlers secret
+  protectedPaths: string[];    // Paths to protect
+  loginPath: string;           // Where to redirect unauthenticated users
+};
+```
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/auth-flow.md -->
+
+---
+title: "Authentication Flow — Challenge, Sign, Verify"
+description: "Detailed walkthrough of the DeroAuth authentication flow: challenge generation, wallet signing, and server-side verification."
+---
+
+# Authentication Flow
+
+DeroAuth uses a challenge-response pattern similar to SIWE (Sign-In With Ethereum), adapted for DERO's Schnorr signature scheme.
+
+## Flow Diagram
+
+```
+User                    Browser                   Server
+ |                         |                         |
+ | Click "Sign In"         |                         |
+ |------------------------>|                         |
+ |                         | POST /auth/challenge     |
+ |                         |   { address }            |
+ |                         |------------------------>|
+ |                         |   { messageText, nonce } |
+ |                         |<------------------------|
+ |                         |                         |
+ |  Wallet: "Sign this?"   | XSWD: SignData(message) |
+ |  [Approve] [Deny]       |                         |
+ |------------------------>|                         |
+ |  PEM signature           |                         |
+ |                         | POST /auth/verify        |
+ |                         |   { signature, nonce }   |
+ |                         |------------------------>|
+ |                         |     Verify Schnorr sig   |
+ |                         |     Check domain/nonce   |
+ |                         |   { session (JWT) }      |
+ |                         |<------------------------|
+ |  Authenticated!          |                         |
+```
+
+## Step by Step
+
+### 1. Challenge Generation
+
+The server creates a human-readable message for the user to sign:
+
+```
+myapp.com wants you to sign in with your DERO wallet:
+dero1qy...abc123
+
+Sign in to My App
+
+URI: https://myapp.com
+Version: 1
+Chain ID: dero-mainnet
+Nonce: k8j2m4n6p8q0
+Issued At: 2026-02-14T12:00:00.000Z
+Expiration Time: 2026-02-14T12:05:00.000Z
+```
+
+Key properties:
+- **Domain-bound** — Prevents phishing (the domain is displayed in the wallet)
+- **Nonce** — Crypto-random, single-use, prevents replay attacks
+- **Expiry** — Short window (default 5 minutes) limits exposure
+- **Human-readable** — Users can verify what they're signing
+
+### 2. Wallet Signing (XSWD)
+
+The browser connects to the user's local DERO wallet via the **XSWD protocol** (WebSocket):
+
+- **Engram desktop wallet**: `ws://localhost:44326`
+- **DERO CLI wallet**: `ws://localhost:10103`
+
+The XSWD client sends a `SignData` request with the challenge message. The wallet displays the message and asks the user to approve or deny.
+
+If approved, the wallet returns a **PEM-encoded Schnorr signature**.
+
+### 3. Server Verification
+
+The server verifies the signature without needing a DERO node:
+
+1. **Parse** the PEM signature format
+2. **Decode** the DERO address to extract the BN256 public key
+3. **Hash** the message with Keccak-256, reduced modulo the curve order
+4. **Verify** the Schnorr signature against the public key
+5. **Check** domain, nonce, and expiry
+6. **Consume** the nonce (prevents replay)
+7. **Issue** a JWT session token
+
+> [!NOTE]
+> The entire verification is **mathematical** — it uses `@noble/curves` to verify the Schnorr signature on the BN256 curve. No RPC call to a DERO node is needed. This means your auth server doesn't need to run a DERO daemon.
+
+### 4. Session
+
+A standard JWT is issued containing the DERO address. Use it like any other session token:
+
+```ts
+// Server: verify the session
+
+const sessions = createSessionManager({ secret: process.env.JWT_SECRET! });
+const payload = await sessions.verify(token);
+// { address: "dero1qy...", iat: ..., exp: ... }
+```
+
+## Replay Protection
+
+Nonces are single-use and stored server-side:
+
+- **Development**: In-memory store (default)
+- **Production**: Redis store with atomic consume (recommended for multi-instance)
+
+A nonce can only be used once — if an attacker captures a signed message, they can't replay it.
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/cryptography.md -->
+
+---
+title: "Cryptography — Schnorr Signatures on BN256"
+description: "How DeroAuth verifies DERO wallet signatures: Schnorr on BN256, custom generator point, Keccak-256 hashing, and Bech32 address encoding."
+---
+
+# Cryptography
+
+DeroAuth performs signature verification using DERO's native cryptographic primitives — entirely in TypeScript.
+
+## Schnorr Signatures on BN256
+
+DERO uses **Schnorr signatures** on the **BN256** (Barreto-Naehrig 254-bit) elliptic curve. This is fundamentally different from Bitcoin/Ethereum which use ECDSA on secp256k1.
+
+### Signature Scheme
+
+A Schnorr signature consists of `(s, e)` where:
+- `e = H(R || P || M)` — hash of the nonce point, public key, and message
+- `s = r - e * x` — the scalar response (where `x` is the private key, `r` is the nonce)
+
+Verification checks: `s*G + e*P == R`
+
+### Hash Function
+
+DERO uses **Keccak-256** (not SHA-256) for signature hashing. The hash output is **reduced modulo the curve order** to produce a scalar.
+
+```ts
+
+// Keccak-256 of the input, reduced mod curve order
+const scalar = reducedHash(messageBytes);
+```
+
+## DERO's Custom Generator Point
+
+> [!WARNING]
+> **Critical detail**: DERO does **not** use the standard BN256 generator point `(1, 2)`. It uses a custom generator derived from hashing. This was a critical discovery during development — using the standard generator produces invalid verification results.
+
+The custom generator is defined in `dero-auth/crypto` and was reverse-engineered from the DERO Go source code. This is the single most important implementation detail for anyone attempting DERO signature verification.
+
+## Address Format
+
+DERO addresses use **Bech32 encoding** with a 33-byte compressed G1 public key:
+
+```
+dero1qy[...rest of bech32...]
+```
+
+The `dero-auth/crypto` module provides encoding and decoding:
+
+```ts
+
+// Decode address to get the public key bytes
+const publicKeyBytes = decodeAddress("dero1qy...");
+// Returns: Uint8Array (33 bytes, compressed G1 point)
+
+// Encode a public key back to an address
+const address = encodeAddress(publicKeyBytes);
+
+// Validate format
+const isValid = isValidAddress("dero1qy...");
+```
+
+## PEM Signature Format
+
+DERO wallets produce signatures in **PEM format** — a base64-encoded block wrapped in header/footer lines:
+
+```
+-----BEGIN DERO SIGNED MESSAGE-----
+[base64 encoded signature data]
+-----END DERO SIGNED MESSAGE-----
+```
+
+```ts
+
+const { signature, publicKey } = parsePEM(pemString);
+```
+
+## Verification Pipeline
+
+The full verification process:
+
+```ts
+
+const result = verifySignature({
+  message: challengeMessage,
+  signature: pemSignature,
+  address: "dero1qy...",
+});
+
+if (result.valid) {
+  // Signature is mathematically valid
+  // result.address contains the verified DERO address
+}
+```
+
+Under the hood:
+1. Parse PEM to extract raw signature bytes
+2. Decode the DERO address to a compressed G1 public key
+3. Decompress the public key to a full curve point
+4. Hash the message with Keccak-256, reduce mod curve order
+5. Verify the Schnorr equation: `s*G + e*P == R`
+
+## Dependencies
+
+All cryptographic operations use audited libraries:
+
+- **`@noble/curves`** — BN256 curve operations (audited by Cure53)
+- **`@noble/hashes`** — Keccak-256 hashing (audited by Cure53)
+
+No custom cryptographic implementations.
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/nextjs.md -->
+
+---
+title: "Next.js Integration — DeroAuth Route Handlers & Middleware"
+description: "Set up DeroAuth in a Next.js 14/15 App Router project with API route handlers and auth middleware."
+---
+
+# Next.js Integration
+
+DeroAuth provides ready-made API route handlers and auth middleware for Next.js 14+ App Router.
+
+## Setup
+
+### Create Shared Config
+
+```ts
+// lib/dero-auth.ts
+
+export const {
+  challengeHandler,    // POST handler for challenge route
+  verifyHandler,       // POST handler for verify route
+  challengeServer,     // Underlying challenge server (for custom usage)
+  sessionManager,      // Underlying session manager (for custom usage)
+} = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+  statement: "Sign in to My App", // optional message shown to user
+  expirationTime: 300,            // optional: challenge expiry in seconds (default: 300)
+});
+```
+
+### Wire Up API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+
+export const POST = verifyHandler;
+```
+
+### Environment Variables
+
+```env
+# .env.local
+JWT_SECRET=your-jwt-secret-at-least-32-bytes
+```
+
+## Protecting Routes with Middleware
+
+DeroAuth includes a middleware that protects pages and API routes:
+
+```ts
+// middleware.ts
+
+export const middleware = createDeroAuthMiddleware({
+  jwtSecret: process.env.JWT_SECRET!,
+  protectedPaths: ["/dashboard", "/api/protected"],
+  loginPath: "/login",
+});
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/api/protected/:path*"],
+};
+```
+
+Unauthenticated users hitting `/dashboard` are redirected to `/login`. Unauthenticated API requests get a `401` response.
+
+## Reading the Auth Address
+
+In protected API routes or server components:
+
+```ts
+
+export async function GET(request: Request) {
+  const address = await getAuthAddress(request);
+
+  if (!address) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  // address is the verified DERO address
+  return Response.json({ address });
+}
+```
+
+## Full Example: Protected Dashboard
+
+```tsx
+// app/dashboard/page.tsx (Server Component)
+
+export default async function DashboardPage() {
+  const address = await getAuthAddress(headers());
+
+  if (!address) {
+    redirect("/login");
+  }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Connected wallet: {address}</p>
+    </div>
+  );
+}
+```
+
+> [!NOTE]
+> The middleware approach is recommended for protecting multiple routes. Use `getAuthAddress` for fine-grained checks within individual routes or server components.
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/overview.md -->
+
+---
+title: "DeroAuth Overview — Wallet-Based Authentication for DERO"
+description: "DeroAuth enables 'Sign in with your DERO wallet' — privacy-preserving authentication using Schnorr signatures on BN256."
+---
+
+# DeroAuth Overview
+
+**Sign in with your DERO wallet.** No email. No password. Just cryptographic proof of wallet ownership.
+
+`dero-auth` is a TypeScript library that provides wallet-based authentication for DERO. It works like "Sign in with Ethereum" (SIWE), but for DERO's privacy chain.
+
+  **Privacy advantage**: Unlike Ethereum auth (which exposes your full transaction history), authenticating with DERO reveals *nothing* about your on-chain activity. All transactions are encrypted.
+
+## Features
+
+- **Pure TypeScript** signature verification (Schnorr on BN256) — no wallet needed server-side
+- **React components** — drop-in `` button and `useDeroAuth()` hook
+- **Next.js integration** — ready-made API route handlers and auth middleware
+- **XSWD client** — connects to DERO wallets (Engram, CLI) via WebSocket
+- **SIWE-style message format** — human-readable, domain-bound, replay-protected
+- **JWT sessions** — standard token-based session management
+- **Zero personal data** — just a cryptographic address
+
+## How It Works
+
+1. Server generates a **challenge** (human-readable message with domain, nonce, expiry)
+2. User's wallet **signs** the challenge via XSWD (WebSocket to local wallet)
+3. Server **verifies** the Schnorr signature purely in TypeScript — no RPC call to a node
+4. **JWT session** is issued
+
+The entire verification is mathematical — no blockchain query needed.
+
+## Why Not Just Use Ethereum Auth?
+
+| | Ethereum (SIWE) | DERO Auth |
+|---|---|---|
+| **Transaction privacy** | All transactions visible on-chain | Transactions encrypted, invisible to verifier |
+| **Wallet extension** | MetaMask required | Connects to local wallet via WebSocket |
+| **Personal data exposed** | Address links to full history | Address reveals nothing about activity |
+| **Verification** | Pure JS (ecrecover) | Pure JS (Schnorr on BN256) |
+
+## Wallet Compatibility
+
+| Wallet | Connection | Status |
+|---|---|---|
+| Engram (desktop) | XSWD (`ws://localhost:44326`) | Supported |
+| DERO CLI wallet | XSWD (`ws://localhost:10103`) | Supported |
+
+## Package Exports
+
+| Import | Purpose |
+|---|---|
+| `dero-auth` | Core types and message format |
+| `dero-auth/crypto` | Pure crypto: Schnorr verify, BN256, address parsing |
+| `dero-auth/server` | Challenge generation, verification, JWT sessions |
+| `dero-auth/client` | Browser SDK: XSWD wallet connection, signing flow |
+| `dero-auth/react` | `` button, provider, hooks |
+| `dero-auth/next` | Next.js API route handlers, auth middleware |
+
+## Next Steps
+
+- [Quick Start](/dero-auth/quick-start.md) — Add wallet login to your app
+- [Authentication Flow](/dero-auth/auth-flow.md) — Detailed flow walkthrough
+- [Cryptography](/dero-auth/cryptography.md) — Schnorr, BN256, and DERO's unique curve
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/quick-start.md -->
+
+---
+title: "DeroAuth Quick Start — Add Wallet Login"
+description: "Add DERO wallet-based authentication to your app in minutes with dero-auth."
+---
+
+# Quick Start
+
+Add wallet-based login to your app.
+
+## Install
+
+  
+    ```bash
+    bun add dero-auth
+    ```
+  
+  
+    ```bash
+    npm install dero-auth
+    ```
+  
+  
+    ```bash
+    pnpm add dero-auth
+    ```
+  
+
+## Set a JWT Secret
+
+```bash
+export JWT_SECRET="$(openssl rand -base64 32)"
+```
+
+## Next.js App Router
+
+### Create API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+
+const { challengeHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+});
+
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+
+const { verifyHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+});
+
+export const POST = verifyHandler;
+```
+
+### Add the Provider and Button
+
+```tsx
+// app/layout.tsx
+
+export default function Layout({ children }) {
+  return (
+    
+      {children}
+    
+  );
+}
+```
+
+```tsx
+// app/login/page.tsx
+
+export default function LoginPage() {
+  return ;
+}
+```
+
+That's it. The button handles the full flow: wallet connection, challenge signing, and verification.
+
+## Custom Hook (Alternative)
+
+If you don't want the provider pattern:
+
+```tsx
+"use client";
+
+export default function LoginPage() {
+  const { signIn, signOut, isAuthenticated, address, isLoading } = useDeroAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div>
+        <p>Signed in as {address}</p>
+        <button onClick={signOut}>Sign Out</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={signIn} disabled={isLoading}>
+      {isLoading ? "Connecting..." : "Sign In with DERO"}
+    </button>
+  );
+}
+```
+
+## Production: Redis Nonce Store
+
+For production deployments with multiple instances, use a shared nonce store:
+
+```ts
+
+const redis = createClient({ url: process.env.REDIS_URL! });
+await redis.connect();
+
+const nonceStore = createRedisNonceStoreFromNodeRedis(redis, {
+  keyPrefix: "myapp:auth:nonce:",
+});
+
+const { challengeHandler, verifyHandler } = createAuthHandlers({
+  domain: "myapp.com",
+  uri: "https://myapp.com",
+  jwtSecret: process.env.JWT_SECRET!,
+  nonceStore,
+});
+```
+
+> [!NOTE]
+> The default nonce store is in-memory and works for single-instance deployments. For multi-instance setups (e.g., behind a load balancer), use Redis to ensure replay protection works across all instances.
+
+## What's Next
+
+- [Authentication Flow](/dero-auth/auth-flow.md) — Understand the full flow
+- [Cryptography](/dero-auth/cryptography.md) — How Schnorr verification works on DERO
+- [Next.js Integration](/dero-auth/nextjs.md) — Route protection and middleware
+
+---
+
+<!-- source: https://pay.derod.org/dero-auth/react.md -->
+
+---
+title: "React Components — DeroAuth UI"
+description: "Drop-in React components for DeroAuth: SignInWithDero button, DeroAuthProvider, and useDeroAuth hook."
+---
+
+# React Components
+
+DeroAuth provides drop-in React components for wallet-based login.
+
+```tsx
+
+```
+
+## DeroAuthProvider
+
+Wraps your app to provide authentication context:
+
+```tsx
+
+export default function Layout({ children }) {
+  return (
+    
+      {children}
+    
+  );
+}
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `appName` | `string` | required | Displayed in wallet connection prompt |
+| `challengeEndpoint` | `string` | `/api/auth/challenge` | Server challenge endpoint |
+| `verifyEndpoint` | `string` | `/api/auth/verify` | Server verify endpoint |
+| `children` | `ReactNode` | required | Child components |
+
+## SignInWithDero
+
+A pre-built button that handles the entire authentication flow:
+
+```tsx
+
+function LoginPage() {
+  return (
+    <SignInWithDero
+      onSuccess={(session) => console.log("Signed in!", session.address)}
+      onError={(error) => console.error("Auth failed:", error)}
+    />
+  );
+}
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `onSuccess` | `(session) => void` | Callback on successful authentication |
+| `onError` | `(error: Error) => void` | Callback on failure |
+| `label` | `string` | Button text (default: "Sign In with DERO") |
+| `className` | `string` | Additional CSS classes |
+
+The button automatically:
+1. Connects to the local wallet via XSWD
+2. Requests a challenge from the server
+3. Asks the user to sign the challenge
+4. Sends the signature to the server for verification
+5. Stores the JWT session
+
+## useDeroAuth Hook
+
+For building custom login UIs:
+
+```tsx
+"use client";
+
+export default function CustomLogin() {
+  const {
+    signIn,           // Trigger the auth flow
+    signOut,          // Clear the session
+    isAuthenticated,  // Boolean: currently signed in
+    address,          // DERO address (or null)
+    isLoading,        // Boolean: auth in progress
+    error,            // Error object (or null)
+  } = useDeroAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div>
+        <p>Welcome, {address}</p>
+        <button onClick={signOut}>Sign Out</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={signIn} disabled={isLoading}>
+        {isLoading ? "Connecting wallet..." : "Connect Wallet"}
+      </button>
+      {error && <p className="text-red-500">{error.message}</p>}
+    </div>
+  );
+}
+```
+
+## useDeroAuthContext
+
+Same as `useDeroAuth` but requires being inside a `DeroAuthProvider`:
+
+```tsx
+
+function UserBadge() {
+  const { isAuthenticated, address } = useDeroAuthContext();
+
+  if (!isAuthenticated) return null;
+
+  return <span>Connected: {address?.slice(0, 12)}...</span>;
+}
+```
+
+> [!NOTE]
+> Use `useDeroAuth` for standalone usage (no provider needed). Use `useDeroAuthContext` when you have a `DeroAuthProvider` wrapping your app and want shared state across components.
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/api-reference.md -->
+
+---
+title: "DeroPay API Reference"
+description: "Complete API reference for the dero-pay package — all exports, types, and interfaces."
+---
+
+# API Reference
+
+Complete reference for all `dero-pay` package exports.
+
+## Core (`dero-pay`)
+
+Types, pricing utilities, and payment ID generation.
+
+```ts
+
+```
+
+## RPC (`dero-pay/rpc`)
+
+```ts
+
+```
+
+## Server (`dero-pay/server`)
+
+```ts
+
+```
+
+## Client (`dero-pay/client`)
+
+```ts
+
+```
+
+## React (`dero-pay/react`)
+
+```tsx
+
+```
+
+## Next.js (`dero-pay/next`)
+
+```ts
+
+```
+
+### createPaymentHandlers Return Value
+
+```ts
+const {
+  createInvoiceHandler,  // POST — create invoice
+  statusHandler,         // GET  — invoice status by ID
+  listInvoicesHandler,   // GET  — list invoices with filters
+  statsHandler,          // GET  — invoice statistics
+  webhookHandler,        // POST — incoming webhook receiver
+  healthHandler,         // GET  — engine health check
+  escrowActionHandler,   // POST — escrow lifecycle actions
+  listEscrowsHandler,    // GET  — list escrow records
+  getEngine,             // () => Promise<InvoiceEngine>
+} = createPaymentHandlers(config);
+```
+
+## Escrow (`dero-pay/escrow`)
+
+```ts
+
+```
+
+See the [Escrow documentation](/escrow/overview.md) for full escrow API details.
+
+## Configuration Reference
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `walletRpcUrl` | `string` | `localhost:10103` | Wallet RPC endpoint |
+| `daemonRpcUrl` | `string` | `localhost:10102` | Daemon RPC endpoint |
+| `rpcAuth` | `{ username, password }` | — | RPC authentication |
+| `chainId` | `DeroChainId` | `"dero-mainnet"` | Network identifier |
+| `defaultTtlSeconds` | `number` | `900` | Invoice expiration (15 min) |
+| `defaultRequiredConfirmations` | `number` | `3` | Confirmation depth |
+| `pollIntervalMs` | `number` | `5000` | Monitor poll interval |
+| `webhookUrl` | `string` | — | Webhook destination |
+| `webhookSecret` | `string` | — | HMAC signing secret |
+| `webhookMaxRetries` | `number` | `3` | Max delivery attempts |
+| `store` | `InvoiceStore` | `MemoryInvoiceStore` | Storage backend |
+| `enableEscrow` | `boolean` | `false` | Enable escrow subsystem |
+| `escrowFeeBasisPoints` | `number` | `0` | Escrow platform fee in basis points (0 = no fee, 250 = 2.5%) |
+| `escrowBlockExpiration` | `number` | `60` | Escrow block expiry |
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/invoice-engine.md -->
+
+---
+title: "Invoice Engine — Core Payment Orchestrator"
+description: "The InvoiceEngine is the central component of DeroPay, coordinating invoice creation, payment monitoring, storage, and webhook dispatch."
+---
+
+# Invoice Engine
+
+The `InvoiceEngine` is the core orchestrator of DeroPay. It coordinates invoice creation, payment monitoring, storage, and webhook dispatch.
+
+## Configuration
+
+```ts
+
+const engine = new InvoiceEngine({
+  // Required: DERO wallet RPC endpoint
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+
+  // Required: DERO daemon RPC endpoint
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+
+  // Optional: RPC authentication
+  rpcAuth: { username: "", password: "" },
+
+  // Optional: webhook configuration
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+  webhookMaxRetries: 3,
+
+  // Optional: storage backend (defaults to MemoryInvoiceStore)
+  store: new SqliteInvoiceStore({ path: "./invoices.db" }),
+
+  // Optional: polling interval in ms (default: 5000)
+  pollIntervalMs: 5000,
+
+  // Optional: confirmations required (default: 3)
+  defaultRequiredConfirmations: 3,
+
+  // Optional: invoice expiry in seconds (default: 900 — 15 minutes)
+  defaultTtlSeconds: 900,
+
+  // Optional: escrow settings
+  enableEscrow: true,
+  escrowFeeBasisPoints: 0,       // No platform fee (default; set 250 for 2.5%)
+  escrowBlockExpiration: 60,     // blocks until expiry
+});
+```
+
+## Lifecycle
+
+```ts
+// Start the engine (begins payment monitoring)
+await engine.start();
+
+// Create invoices
+const invoice = await engine.createInvoice({
+  name: "Product Name",
+  description: "Product description",
+  amount: 500000, // atomic units (5 DERO)
+  metadata: { orderId: "ORD-123" }, // optional custom data
+});
+
+// Query invoice status
+const status = await engine.getInvoice(invoice.id);
+
+// Stop the engine
+await engine.stop();
+```
+
+## Events
+
+The engine emits events you can listen to:
+
+```ts
+engine.on("invoiceStatusChanged", (invoice, previousStatus) => {
+  // Fires on every status transition
+});
+
+engine.on("paymentDetected", (invoice, payment) => {
+  // Fires when a matching transaction is found (before full confirmation)
+});
+
+engine.on("paymentConfirmed", (invoice, payment) => {
+  // Fires when payment reaches required confirmation depth
+});
+
+engine.on("error", (error) => {
+  // Fires on engine errors (RPC failures, etc.)
+});
+```
+
+## How Payment Detection Works
+
+1. When an invoice is created, DeroPay generates a **unique payment ID** and combines it with the merchant's DERO address into an **integrated address**
+2. The `PaymentMonitor` polls the wallet RPC for incoming transfers
+3. Each transfer is checked for a matching payment ID
+4. When found, the amount is verified and confirmations are tracked
+5. Once the required confirmations are reached, the invoice is marked `completed`
+
+> [!NOTE]
+> **Integrated addresses** are a DERO feature where a payment ID is embedded directly in the address. This means each invoice has a unique address, making payment matching deterministic.
+
+## Pricing Utilities
+
+DeroPay includes helpers for converting between DERO and atomic units:
+
+```ts
+
+deroToAtomic("5.0");     // 500_000n (BigInt)
+deroToAtomic("0.001");   // 100n
+atomicToDero(500_000n);  // "5.0"
+formatDero(500_000n);    // "5.00000 DERO"
+```
+
+> [!WARNING]
+> DERO uses **5 decimal places** (1 DERO = 100,000 atomic units). Always use `deroToAtomic()` for conversions.
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/nextjs.md -->
+
+---
+title: "Next.js Integration — DeroPay Route Handlers & Middleware"
+description: "Set up DeroPay in a Next.js 14/15 App Router project with ready-made API handlers and middleware."
+---
+
+# Next.js Integration
+
+DeroPay provides ready-made API route handlers and middleware for Next.js 14+ App Router.
+
+```ts
+
+```
+
+## Setup
+
+### Create the Payment Handlers
+
+```ts
+// lib/deropay.ts
+
+export const {
+  createInvoiceHandler,  // POST — create a new invoice
+  statusHandler,         // GET  — check invoice status
+  listInvoicesHandler,   // GET  — list all invoices
+  statsHandler,          // GET  — invoice statistics
+  webhookHandler,        // POST — receive webhooks
+  healthHandler,         // GET  — engine health check
+  escrowActionHandler,   // POST — perform escrow action
+  listEscrowsHandler,    // GET  — list escrow records
+  getEngine,             // () => Promise<InvoiceEngine>
+} = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+### Wire Up the API Routes
+
+```ts
+// app/api/pay/create/route.ts
+
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+
+export const GET = statusHandler;
+```
+
+```ts
+// app/api/webhooks/dero/route.ts
+
+export const POST = webhookHandler;
+```
+
+### Environment Variables
+
+```env
+# .env.local
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+WEBHOOK_SECRET=your-webhook-secret-here
+```
+
+### Client-Side Payment Page
+
+```tsx
+// app/pay/[invoiceId]/page.tsx
+
+export default function PayPage({
+  params,
+}: {
+  params: { invoiceId: string };
+}) {
+  return (
+    
+      <InvoiceView
+        invoiceId={params.invoiceId}
+        onCompleted={() => window.location.href = "/thank-you"}
+      />
+      
+    
+  );
+}
+```
+
+## Creating Invoices from Server Components
+
+```tsx
+// app/checkout/page.tsx (Server Component)
+
+export default async function CheckoutPage() {
+  async function handleCheckout(formData: FormData) {
+    "use server";
+    const invoice = await createInvoice({
+      name: "Order",
+      amount: deroToAtomic("10.0"),
+    });
+    redirect(`/pay/${invoice.id}`);
+  }
+
+  return (
+    <form action={handleCheckout}>
+      <button type="submit">Pay 10 DERO</button>
+    </form>
+  );
+}
+```
+
+## x402 Payment Guard
+
+The x402 guard lets you charge for API access using standard HTTP `402 Payment Required` semantics — no accounts, no API keys, no subscriptions.
+
+```ts
+// lib/deropay.ts
+
+export const paymentHandlers = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+});
+
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  policy: {
+    name: "Premium API Access",
+    amountAtomic: deroToAtomic("0.10"),
+    requiredConfirmations: 3,
+    resource: "/api/protected/report",
+  },
+});
+```
+
+```ts
+// app/api/protected/report/route.ts
+
+export const GET = x402Guard(async () => {
+  return Response.json({ report: "paid content" });
+});
+```
+
+For the full feature set — dynamic pricing, quotas, replay protection, key rotation, and audit events — see the [x402 Payment Guard](/dero-pay/x402.md) reference.
+
+## API Key Middleware
+
+DeroPay includes middleware for protecting payment API routes with API keys:
+
+```ts
+// middleware.ts
+
+export const middleware = createDeroPayMiddleware({
+  apiKeys: [process.env.DEROPAY_API_KEY!],
+  protectedPaths: ["/api/pay/create", "/api/pay/escrow"],
+  publicPaths: ["/api/pay/status", "/api/pay/health"],
+  headerName: "X-DeroPay-ApiKey", // default
+});
+
+export const config = {
+  matcher: ["/api/pay/:path*"],
+};
+```
+
+Requests to protected paths must include the API key in the header. Public paths are accessible without authentication.
+
+> [!NOTE]
+> The payment handlers are designed for the **App Router** (`app/` directory). For Pages Router, use the `InvoiceEngine` directly in API routes under `pages/api/`.
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/overview.md -->
+
+---
+title: "DeroPay Overview — Payment Processing for DERO"
+description: "DeroPay is a TypeScript SDK for accepting DERO payments with invoices, payment monitoring, webhooks, escrow, and a merchant dashboard."
+---
+
+# DeroPay Overview
+
+**DeroPay** is a full payment processing SDK for DERO — invoices, payment monitoring, webhooks, escrow, and a merchant dashboard. Think "Stripe for DERO" but self-hosted and privacy-preserving.
+
+> [!NOTE]
+> No actively maintained payment processor exists for current DERO (HE/Stargate). DeroPay is the first.
+
+## Features
+
+- **Invoice Engine** — Create invoices with unique integrated addresses, track payments, manage lifecycle
+- **Payment Monitor** — Polls the DERO wallet for incoming transactions, tracks confirmations
+- **Webhook Dispatcher** — HMAC-signed HTTP POST notifications on payment state changes
+- **Pluggable Storage** — In-memory (dev) and SQLite (production) backends, or bring your own
+- **x402 Payment Guard** — Protect API routes with HTTP `402 Payment Required`; clients pay DERO and retry with a signed receipt
+- **Escrow System** — On-chain smart contract with full escrow lifecycle (deposit, release, refund, dispute, arbitration)
+- **React Components** — Drop-in `<PayWithDero>`, `<InvoiceView>`, `<PaymentStatus>` components
+- **Next.js Integration** — Ready-made API route handlers and middleware
+- **XSWD Client** — Browser-side wallet connection for "pay from wallet" UX
+- **Self-Hosted Dashboard** — Admin UI for invoice management, payment history, wallet status
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant Merchant
+    participant DeroPay
+    participant Customer
+    participant Wallet as DERO Wallet
+    participant Chain as DERO Network
+
+    Merchant->>DeroPay: Create invoice (amount, description)
+    DeroPay->>DeroPay: Generate payment ID + integrated address
+    DeroPay-->>Customer: Show payment page (QR, address, timer)
+    Customer->>Wallet: Send DERO to integrated address
+    Wallet->>Chain: Encrypted transaction
+    DeroPay->>Wallet: Poll for matching transactions
+    Wallet-->>DeroPay: Transaction found
+    DeroPay->>DeroPay: Verify amount, track confirmations
+    DeroPay->>Merchant: Fire webhook (HMAC-signed)
+    DeroPay-->>Customer: Payment confirmed
+```
+
+## Invoice States
+
+```
+created → pending → confirming → completed
+                  ↘ expired
+                  ↘ partial (underpaid, still waiting)
+```
+
+| State | Description |
+|---|---|
+| `created` | Invoice generated, not yet displayed to customer |
+| `pending` | Awaiting payment, timer running |
+| `confirming` | Transaction detected, waiting for confirmations (default: 3) |
+| `completed` | Fully paid and confirmed |
+| `expired` | Payment window closed (default TTL: 900s / 15 min) |
+| `partial` | Some DERO received but less than required amount |
+
+## Architecture
+
+```
+dero-pay/
+├── core/        # Types, payment ID generation, pricing utilities
+├── rpc/         # Wallet & Daemon RPC clients (HTTP JSON-RPC)
+├── monitor/     # Payment polling engine with confirmation tracking
+├── webhook/     # HMAC-signed webhook dispatcher with retry
+├── store/       # Pluggable storage (memory, SQLite)
+├── server/      # Invoice engine orchestrator
+├── client/      # Browser XSWD client + payment session
+├── react/       # React components (Provider, PayWithDero, InvoiceView)
+├── next/        # Next.js API handlers + middleware
+└── escrow/      # On-chain escrow contract wrapper + lifecycle manager
+```
+
+## Package Exports
+
+| Import Path | Description |
+|---|---|
+| `dero-pay` | Core types, payment ID generation, pricing utilities (`deroToAtomic`, `formatDero`) |
+| `dero-pay/rpc` | Wallet and Daemon RPC clients |
+| `dero-pay/server` | Invoice engine, storage, monitor, webhooks |
+| `dero-pay/client` | Browser-side XSWD payment client |
+| `dero-pay/react` | React components and provider |
+| `dero-pay/next` | Next.js API route handlers and middleware |
+| `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
+
+## Next Steps
+
+- [Quick Start](/dero-pay/quick-start.md) — Accept your first payment
+- [Invoice Engine](/dero-pay/invoice-engine.md) — Deep dive into the core
+- [x402 Payment Guard](/dero-pay/x402.md) — Protect API routes with HTTP 402
+- [Escrow System](/escrow/overview.md) — On-chain escrow for trustless transactions
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/payment-monitor.md -->
+
+---
+title: "Payment Monitor — Transaction Polling & Confirmation Tracking"
+description: "The PaymentMonitor polls the DERO wallet for incoming transactions and tracks confirmations until invoices are complete."
+---
+
+# Payment Monitor
+
+The `PaymentMonitor` is the component that watches for incoming DERO payments by polling the wallet RPC.
+
+## How It Works
+
+1. The monitor runs on a configurable interval (default: 5 seconds)
+2. Each poll calls `GetTransfers` on the wallet RPC
+3. Incoming transfers are matched against pending invoices by **payment ID**
+4. When a match is found, the invoice transitions from `pending` → `confirming`
+5. The monitor continues tracking until the required number of confirmations is reached
+6. Once confirmed, the invoice moves to `completed`
+
+## Configuration
+
+The payment monitor is managed by the `InvoiceEngine` — you typically don't create one directly. Configuration is passed through the engine:
+
+```ts
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+
+  // Monitor-specific options
+  pollInterval: 5000,          // How often to check (ms)
+  confirmationsRequired: 1,    // Blocks to wait after detection
+});
+```
+
+## Confirmations
+
+DERO's DAG-based block structure means confirmations work differently than linear blockchains:
+
+- **1 confirmation** (default) — The transaction is included in a block
+- **Higher values** — More blocks have been mined since inclusion
+
+> [!NOTE]
+> For most use cases, 1 confirmation is sufficient on DERO. The encrypted transaction model and DAG structure make double-spend attacks significantly harder than on transparent chains.
+
+## Partial Payments
+
+If a customer sends less DERO than the invoice amount:
+
+- The invoice transitions to `partial` status
+- The received amount is tracked
+- The monitor continues watching for additional payments
+- If the total reaches the invoice amount, it moves to `confirming` → `completed`
+- If the expiry window closes first, it moves to `expired` (with the partial amount recorded)
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/quick-start.md -->
+
+---
+title: "DeroPay Quick Start — Accept DERO Payments"
+description: "Get started with DeroPay in under 5 minutes. Create invoices, monitor payments, and handle webhooks."
+---
+
+# Quick Start
+
+Accept your first DERO payment in under 5 minutes.
+
+## Install
+
+  
+    ```bash
+    bun add dero-pay
+    ```
+  
+  
+    ```bash
+    npm install dero-pay
+    ```
+  
+  
+    ```bash
+    pnpm add dero-pay
+    ```
+  
+
+## Server-Side Usage
+
+### Create an Invoice Engine
+
+```ts
+
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+  defaultTtlSeconds: 900,            // 15 min invoice window
+  defaultRequiredConfirmations: 3,   // blocks to wait
+});
+
+await engine.start();
+```
+
+### Create an Invoice
+
+```ts
+const invoice = await engine.createInvoice({
+  name: "Widget Pro",
+  description: "Premium widget subscription",
+  amount: deroToAtomic("5.0"), // 5 DERO (500,000 atomic units)
+});
+
+console.log(invoice.integratedAddress); // Customer sends DERO here
+console.log(invoice.id);               // Track status with this ID
+```
+
+### Listen for Payment Events
+
+```ts
+engine.on("invoiceStatusChanged", (invoice, previousStatus) => {
+  console.log(`Invoice ${invoice.id}: ${previousStatus} → ${invoice.status}`);
+
+  if (invoice.status === "completed") {
+    // Fulfill the order
+  }
+});
+```
+
+## Next.js App Router
+
+DeroPay provides ready-made route handlers for Next.js:
+
+```ts
+// app/api/pay/create/route.ts
+
+const { createInvoiceHandler, statusHandler } = createPaymentHandlers({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+export const GET = statusHandler;
+```
+
+## React Components
+
+Drop-in components for your payment UI:
+
+```tsx
+
+function PaymentPage({ invoiceId }: { invoiceId: string }) {
+  return (
+    
+      <InvoiceView
+        invoiceId={invoiceId}
+        onCompleted={() => console.log("Paid!")}
+      />
+      
+    
+  );
+}
+```
+
+> [!NOTE]
+> The `<PayWithDero>` button connects to the customer's local DERO wallet via XSWD, letting them pay directly from their wallet with one click.
+
+## What's Next
+
+- [Invoice Engine](/dero-pay/invoice-engine.md) — Full engine configuration and lifecycle
+- [Webhooks](/dero-pay/webhooks.md) — HMAC-signed webhook verification
+- [React Components](/dero-pay/react.md) — All available components and props
+- [Next.js Integration](/dero-pay/nextjs.md) — Complete Next.js setup guide
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/react.md -->
+
+---
+title: "React Components — Payment UI"
+description: "Drop-in React components for DeroPay: PayWithDero button, InvoiceView, PaymentStatus, and DeroPayProvider."
+---
+
+# React Components
+
+DeroPay provides drop-in React components for building payment UIs.
+
+```tsx
+
+```
+
+## DeroPayProvider
+
+Wraps your app (or payment section) to provide DeroPay context:
+
+```tsx
+
+function App({ children }) {
+  return (
+    
+      {children}
+    
+  );
+}
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `appName` | `string` | Your app name (shown in wallet connection prompts) |
+| `statusEndpoint` | `string` | API endpoint for invoice status polling |
+| `children` | `ReactNode` | Child components |
+
+## InvoiceView
+
+Displays a complete payment interface with QR code, address, amount, and countdown:
+
+```tsx
+<InvoiceView
+  invoiceId="inv_abc123"
+  onCompleted={() => router.push("/thank-you")}
+  onExpired={() => console.log("Payment expired")}
+/>
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `invoiceId` | `string` | The invoice ID to display |
+| `onCompleted` | `() => void` | Callback when payment completes |
+| `onExpired` | `() => void` | Callback when invoice expires |
+| `showQR` | `boolean` | Show QR code (default: `true`) |
+| `className` | `string` | Additional CSS classes |
+
+## PayWithDero
+
+A button that connects to the customer's local DERO wallet via XSWD and initiates a direct payment:
+
+```tsx
+<PayWithDero
+  invoiceId="inv_abc123"
+  onSuccess={() => console.log("Payment sent!")}
+  onError={(err) => console.error(err)}
+/>
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `invoiceId` | `string` | The invoice to pay |
+| `onSuccess` | `() => void` | Callback on successful send |
+| `onError` | `(error: Error) => void` | Callback on failure |
+| `label` | `string` | Button text (default: "Pay with DERO") |
+| `className` | `string` | Additional CSS classes |
+
+> [!NOTE]
+> The `PayWithDero` button uses the **XSWD protocol** to connect to the customer's locally-running DERO wallet (Engram or CLI). The customer approves the transaction in their wallet — no browser extension needed.
+
+## PaymentStatus
+
+A compact status indicator:
+
+```tsx
+
+```
+
+Shows the current state with appropriate icons and colors (pending, confirming, completed, expired).
+
+## EscrowInvoiceView
+
+A specialized view for escrow-backed invoices, showing deposit status, escrow state, and resolution controls:
+
+```tsx
+<EscrowInvoiceView
+  invoiceId="inv_abc123"
+  onReleased={() => console.log("Funds released")}
+/>
+```
+
+## useDeroPayContext
+
+Hook for building fully custom payment UIs:
+
+```tsx
+"use client";
+
+function CustomPaymentUI({ invoiceId }: { invoiceId: string }) {
+  const ctx = useDeroPayContext();
+  // Access provider state and methods
+}
+```
+
+## Full Example
+
+```tsx
+
+function PaymentPage({ invoiceId }: { invoiceId: string }) {
+  return (
+    
+      <div className="max-w-md mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">Complete Your Payment</h1>
+        <InvoiceView
+          invoiceId={invoiceId}
+          onCompleted={() => console.log("Paid!")}
+        />
+        <div className="mt-4">
+          
+        </div>
+      </div>
+    
+  );
+}
+```
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/rpc.md -->
+
+---
+title: "RPC Clients — DERO Wallet & Daemon Communication"
+description: "DeroPay provides typed JSON-RPC clients for the DERO wallet and daemon, handling all low-level communication."
+---
+
+# RPC Clients
+
+DeroPay provides typed JSON-RPC clients for communicating with the DERO wallet and daemon.
+
+```ts
+
+```
+
+## Wallet RPC Client
+
+The wallet client handles payment-related operations:
+
+```ts
+const wallet = new WalletRpcClient({
+  url: "http://127.0.0.1:10103/json_rpc",
+  // Optional: auth: { username: "", password: "" }
+});
+
+// Get wallet address
+const address = await wallet.getAddress();
+
+// Get balance
+const balance = await wallet.getBalance();
+
+// Get incoming transfers
+const transfers = await wallet.getTransfers({
+  in: true,
+  minHeight: 1000000,
+});
+
+// Make an integrated address (with embedded payment ID)
+const integrated = await wallet.makeIntegratedAddress({
+  paymentId: "abc123...",
+});
+
+// Split an integrated address back to base address + payment ID
+const { address, paymentId } = await wallet.splitIntegratedAddress({
+  integratedAddress: "deri1q...",
+});
+
+// Send DERO
+const result = await wallet.transfer({
+  destinations: [{ address: "dero1q...", amount: 500_000n }], // 5 DERO
+});
+```
+
+## Daemon RPC Client
+
+The daemon client handles blockchain queries:
+
+```ts
+const daemon = new DaemonRpcClient({
+  url: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Get daemon info (height, version, network)
+const info = await daemon.getInfo();
+
+// Get transaction details
+const tx = await daemon.getTransaction({ txid: "..." });
+
+// Get smart contract state
+const sc = await daemon.getSC({ scid: "...", code: true });
+
+// Install a smart contract
+const result = await daemon.installSC({ code: "..." });
+
+// Invoke a smart contract function
+const invokeResult = await daemon.invokeSC({
+  scid: "...",
+  sc_rpc: [{ name: "entrypoint", datatype: "S", value: "Release" }],
+});
+```
+
+## Configuration Types
+
+```ts
+
+// Both accept:
+// { url: string; auth?: { username: string; password: string } }
+```
+
+> [!NOTE]
+> The `InvoiceEngine` uses these clients internally — you typically don't need to use them directly unless you're building custom payment flows or need direct access to the DERO node.
+
+## Connection
+
+Both clients communicate over HTTP JSON-RPC 2.0. Make sure the wallet and daemon are running with their RPC servers enabled:
+
+```bash
+# Wallet (mainnet)
+dero-wallet-cli --rpc-server --rpc-bind=127.0.0.1:10103
+
+# Daemon (mainnet)
+derod --rpc-bind=127.0.0.1:10102
+```
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/storage.md -->
+
+---
+title: "Storage Backends — Invoice Persistence"
+description: "DeroPay supports pluggable storage backends. Use in-memory for development and SQLite for production, or implement your own."
+---
+
+# Storage Backends
+
+DeroPay uses a pluggable storage system for invoice persistence. Two backends are included, and you can implement your own.
+
+## Built-in Backends
+
+  
+    The default backend — stores everything in memory. Data is lost when the process restarts.
+
+    ```ts
+
+    // MemoryInvoiceStore is the default — no config needed
+    const engine = new InvoiceEngine({
+      walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+      daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+      // store defaults to new MemoryInvoiceStore()
+    });
+    ```
+
+    Good for: development, testing, prototyping.
+  
+  
+    Persistent storage using SQLite via `better-sqlite3`. Invoices survive restarts.
+
+    ```ts
+
+    const store = new SqliteInvoiceStore({ path: "./data/invoices.db" });
+
+    const engine = new InvoiceEngine({
+      walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+      daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+      store,
+    });
+    ```
+
+    > [!NOTE]
+> `better-sqlite3` is an optional peer dependency. Install it separately:
+>       ```bash
+>       bun add better-sqlite3
+>       ```
+  
+
+## Custom Storage
+
+Implement the `InvoiceStore` interface to use any database:
+
+```ts
+
+const myStore: InvoiceStore = {
+  async save(invoice: Invoice): Promise<void> {
+    // Persist the invoice
+  },
+
+  async get(id: string): Promise<Invoice | null> {
+    // Retrieve by ID
+  },
+
+  async getByPaymentId(paymentId: string): Promise<Invoice | null> {
+    // Retrieve by payment ID (used by the monitor)
+  },
+
+  async update(id: string, updates: Partial<Invoice>): Promise<void> {
+    // Update invoice fields
+  },
+
+  async list(filter?: InvoiceFilter): Promise<Invoice[]> {
+    // List invoices with optional filtering
+  },
+};
+```
+
+This makes it straightforward to use PostgreSQL, MySQL, Redis, or any other storage backend your application already uses.
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/webhooks.md -->
+
+---
+title: "Webhooks — HMAC-Signed Payment Notifications"
+description: "DeroPay sends HMAC-SHA256 signed webhooks on payment state changes. Learn how to configure and verify them."
+---
+
+# Webhooks
+
+DeroPay sends HMAC-SHA256 signed HTTP POST notifications when invoice states change. This lets your backend react to payments in real-time.
+
+## Configuration
+
+```ts
+const engine = new InvoiceEngine({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+  webhookUrl: "https://mystore.com/webhooks/dero",
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+## Webhook Payload
+
+When an invoice status changes, DeroPay POSTs a JSON payload:
+
+```json
+{
+  "event": "invoice.completed",
+  "invoiceId": "inv_abc123",
+  "status": "completed",
+  "previousStatus": "confirming",
+  "amount": 5000000000000,
+  "paidAmount": 5000000000000,
+  "timestamp": "2026-02-16T12:00:00.000Z",
+  "metadata": { "orderId": "ORD-123" }
+}
+```
+
+## Signature Verification
+
+Every webhook includes an `X-DeroPay-Signature` header containing the HMAC-SHA256 signature of the request body.
+
+**Always verify webhooks before processing:**
+
+```ts
+
+// In your webhook handler
+export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get("X-DeroPay-Signature")!;
+
+  const isValid = verifyWebhookSignature(
+    body,
+    signature,
+    process.env.WEBHOOK_SECRET!
+  );
+
+  if (!isValid) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+
+  switch (event.event) {
+    case "invoice.completed":
+      // Fulfill the order
+      break;
+    case "invoice.expired":
+      // Handle expiration
+      break;
+    case "invoice.partial":
+      // Handle underpayment
+      break;
+  }
+
+  return new Response("OK", { status: 200 });
+}
+```
+
+> [!WARNING]
+> **Security**: Always verify the webhook signature. Without verification, an attacker could send fake payment confirmations to your endpoint.
+
+## Webhook Events
+
+| Event | Trigger |
+|---|---|
+| `invoice.pending` | Invoice is awaiting payment |
+| `invoice.confirming` | Transaction detected, waiting for confirmations |
+| `invoice.completed` | Payment fully confirmed |
+| `invoice.expired` | Payment window closed |
+| `invoice.partial` | Underpayment detected |
+
+## Retry Behavior
+
+If your webhook endpoint returns a non-2xx status code, DeroPay will retry with exponential backoff. Failed webhooks are logged and can be inspected in the merchant dashboard.
+
+---
+
+<!-- source: https://pay.derod.org/dero-pay/x402.md -->
+
+---
+title: "x402 Payment Guard — DERO-Native HTTP 402 for APIs"
+description: "Protect API routes with HTTP 402 Payment Required. Clients pay DERO, receive a signed receipt, and retry. No accounts, no API keys, no subscriptions."
+---
+
+# x402 Payment Guard
+
+DeroPay implements the [x402 protocol](https://x402.org/) natively for DERO — protect any API route or resource with an HTTP `402 Payment Required` challenge. Clients pay DERO, receive a signed receipt, and retry. No accounts, no API keys, no subscriptions required.
+
+> [!NOTE]
+> This is a DERO-native implementation. It uses the x402 HTTP pattern (challenge → pay → retry with proof) but settles in DERO via DeroPay's invoice and monitoring infrastructure, not EVM stablecoins.
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant Client as Client / AI Agent
+    participant API as Protected API Route
+    participant DeroPay
+    participant Chain as DERO Network
+
+    Client->>API: GET /api/protected/report
+    API-->>Client: 402 Payment Required + challenge (invoice, address, amount)
+    Client->>Chain: Send DERO to integrated address
+    DeroPay->>Chain: Monitor for payment + confirmations
+    Client->>DeroPay: POST /api/pay/receipts/issue (invoiceId)
+    DeroPay-->>Client: Signed receipt token
+    Client->>API: GET /api/protected/report + X-DeroPay-Receipt: <token>
+    API-->>Client: 200 OK + protected content
+```
+
+The critical design choice: the protected route **never touches the chain on the hot path**. Receipt verification is a local HMAC signature check — fast, reliable, and scales horizontally.
+
+## Quick Setup
+
+### Install and configure
+
+```ts
+// lib/deropay.ts
+
+export const paymentHandlers = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+});
+
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  policy: {
+    name: "Premium API Access",
+    amountAtomic: deroToAtomic("0.10"),
+    requiredConfirmations: 3,
+    resource: "/api/protected/report",
+  },
+});
+```
+
+### Protect a route
+
+```ts
+// app/api/protected/report/route.ts
+
+export const GET = x402Guard(async () => {
+  return Response.json({ report: "paid content" });
+});
+```
+
+### Expose receipt endpoints
+
+```ts
+// app/api/pay/receipts/issue/route.ts
+
+export const POST = paymentHandlers.issueReceiptHandler;
+```
+
+```ts
+// app/api/pay/receipts/verify/route.ts
+
+export const POST = paymentHandlers.verifyReceiptHandler;
+```
+
+### Add environment variables
+
+```env
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+DEROPAY_RECEIPT_SECRET=your-signing-secret-here
+```
+
+## The Challenge Response
+
+When a client hits a protected route without a valid receipt, they receive:
+
+```http
+HTTP/1.1 402 Payment Required
+Content-Type: application/json
+WWW-Authenticate: X402 protocol="x402-deropay-draft", asset="DERO", network="dero-mainnet", amount="100000000000", invoice_id="inv_abc123", address="deroi...", resource="/api/protected/report"
+Cache-Control: no-store
+```
+
+```json
+{
+  "error": "payment_required",
+  "payment": {
+    "protocol": "x402-deropay-draft",
+    "network": "dero-mainnet",
+    "asset": "DERO",
+    "amountAtomic": "100000000000",
+    "amountDisplay": "0.1",
+    "invoiceId": "inv_abc123",
+    "integratedAddress": "deroi...",
+    "expiresAt": "2026-04-04T12:10:00.000Z",
+    "requiredConfirmations": 3,
+    "resource": "/api/protected/report"
+  }
+}
+```
+
+Both the JSON body and the `WWW-Authenticate` header carry the same information — machine clients can use either.
+
+## Retrying with a Receipt
+
+After payment is confirmed, issue a receipt and retry the request with one of these headers:
+
+```bash
+# Option 1: DeroPay-native header
+curl https://your-api.com/api/protected/report \
+  -H "X-DeroPay-Receipt: <token>"
+
+# Option 2: Standard Authorization header
+curl https://your-api.com/api/protected/report \
+  -H 'Authorization: X402 proof="<token>"'
+```
+
+Both are accepted. The `Authorization` form improves compatibility with HTTP clients and agent frameworks that expect standard auth headers.
+
+Build the authorization header programmatically:
+
+```ts
+
+const headerValue = formatX402AuthorizationHeader(receiptToken);
+// => X402 proof="<token>"
+```
+
+## Issuing a Receipt
+
+After the invoice completes, call the issue endpoint:
+
+```bash
+curl -X POST https://your-api.com/api/pay/receipts/issue \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoiceId": "inv_abc123",
+    "resource": "/api/protected/report",
+    "ttlSeconds": 600
+  }'
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOi...",
+  "claims": {
+    "invoiceId": "inv_abc123",
+    "resource": "/api/protected/report",
+    "amountAtomic": "100000000000",
+    "expiresAt": 1712232600000
+  }
+}
+```
+
+## Dynamic Pricing
+
+For metered APIs (LLM inference, compute, storage), use `X402PolicyResolver` — a function that reads the request and returns a policy per call:
+
+```ts
+
+export const meteredGuard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  policy: async (request) => {
+    const url = new URL(request.url);
+    const tokens = Number(url.searchParams.get("tokens") ?? "1000");
+    // Price per 100k tokens = 0.1 DERO
+    const amountAtomic = deroToAtomic((tokens / 100_000).toFixed(5));
+
+    return {
+      name: "Metered inference request",
+      amountAtomic,
+      resource: "/api/protected/inference",
+      metadata: { tokens },
+    };
+  },
+});
+```
+
+```ts
+// app/api/protected/inference/route.ts
+
+export const POST = meteredGuard(async (request) => {
+  const { prompt } = await request.json();
+  // ... call your model
+  return Response.json({ output: "..." });
+});
+```
+
+## Usage Quotas
+
+Add route-level caps directly to the policy to prevent abuse without a separate rate-limiter:
+
+```ts
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  policy: {
+    name: "Premium API Access",
+    amountAtomic: deroToAtomic("0.10"),
+    requiredConfirmations: 3,
+    resource: "/api/protected/report",
+
+    // Max 500 receipt uses per UTC day across this route
+    maxReceiptsPerDay: 500,
+
+    // Max 10 DERO total per rolling hour
+    maxAtomicPerWindow: {
+      amountAtomic: deroToAtomic("10"),
+      windowSeconds: 3600,
+    },
+  },
+});
+```
+
+When a quota is exceeded, the guard returns `429 Too Many Requests` and emits an audit event.
+
+> [!WARNING]
+> **Multi-instance deployments:** Quota enforcement requires a shared persistent store. Each instance must use the same `SqliteInvoiceStore` (or a custom shared backend) — per-instance in-memory stores will each enforce limits independently, allowing more traffic than intended.
+
+## Replay Protection
+
+Enable single-use receipts to prevent a token from being reused after the first successful request:
+
+```ts
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  enforceSingleUseReceipts: true, // mark jti as used after first use
+  policy: {
+    name: "One-time report download",
+    amountAtomic: deroToAtomic("1.0"),
+    resource: "/api/protected/report",
+  },
+});
+```
+
+Each receipt contains a unique `jti` (JWT ID). When single-use mode is enabled, the store marks the `jti` on first use — subsequent submissions of the same token return `409 Conflict`.
+
+This requires the store to implement `markReceiptJtiUsed`. Both `MemoryInvoiceStore` and `SqliteInvoiceStore` support this.
+
+## Key Rotation
+
+Run two signing keys simultaneously for zero-downtime secret rotation:
+
+```ts
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+
+  // Map of keyId → secret
+  receiptSecrets: {
+    "v2": process.env.DEROPAY_RECEIPT_SECRET_V2!,
+    "v1": process.env.DEROPAY_RECEIPT_SECRET_V1!, // keep during rotation window
+  },
+
+  policy: { ... },
+});
+```
+
+```ts
+// When issuing receipts, specify the active key
+export const paymentHandlers = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET_V2!,
+  receiptKeyId: "v2", // embeds kid in new receipts
+});
+```
+
+The guard verifies against all keys in the keyring. Old receipts signed with `v1` keep working until they expire. Once no `v1` receipts remain in circulation, remove it from the keyring.
+
+## Audit Events
+
+Every x402 lifecycle event fires a structured `x402Audit` event on the `InvoiceEngine` event bus:
+
+```ts
+
+const engine = new InvoiceEngine({ ... });
+
+engine.on("x402Audit", (event) => {
+  // pipe to your log aggregator, SIEM, or alerting system
+  console.log("[x402]", JSON.stringify(event));
+});
+```
+
+| Event type | When it fires |
+|---|---|
+| `x402.challenge_issued` | A new 402 challenge was returned (invoice created) |
+| `x402.receipt_issued` | A signed receipt was issued after payment confirmed |
+| `x402.receipt_used` | A valid receipt was accepted and the handler was called |
+| `x402.receipt_rejected` | A receipt failed verification (see `reason` field) |
+
+The `reason` field on `receipt_rejected` events:
+
+| Reason | Meaning |
+|---|---|
+| `invalid_or_expired_receipt` | Signature invalid, token expired, or resource mismatch |
+| `receipt_replay_detected` | `jti` already marked as used (replay attempt) |
+| `receipt_daily_quota_exceeded` | `maxReceiptsPerDay` limit hit |
+| `atomic_window_quota_exceeded` | `maxAtomicPerWindow` limit hit |
+| `replay_store_not_configured` | Single-use mode enabled but store lacks `markReceiptJtiUsed` |
+| `quota_store_not_configured` | Quota policy set but store lacks `reserveX402Usage` |
+
+## Security Summary
+
+| Layer | Mechanism |
+|---|---|
+| Authenticity | HMAC-SHA256 signed receipt — tampered tokens fail immediately |
+| Expiry | Short-lived TTL (default 10 min) — old tokens stop working automatically |
+| Resource binding | Receipt for `/report` cannot unlock `/inference` |
+| Replay protection | Optional `jti` one-time-use enforcement via store |
+| Amount enforcement | Receipt must satisfy `minAmountAtomic` for the route's policy |
+| Key rotation | `kid` in receipt header + keyring verification |
+| Quota enforcement | Store-backed usage reservations with atomic window tracking |
+| Audit trail | Structured events on every action for SIEM/logging |
+
+## Example App
+
+A fully runnable Next.js example demonstrating both a static paid report route and a dynamic metered inference route is available in the monorepo:
+
+```
+apps/x402-example/
+```
+
+Run it from the monorepo root:
+
+```bash
+bun run dev:x402-example
+```
+
+Then open `http://localhost:3000`.
+
+---
+
+<!-- source: https://pay.derod.org/escrow/overview.md -->
+
+---
+title: "Escrow System — Trustless On-Chain Payments"
+description: "DeroPay includes a full escrow system with an on-chain smart contract and TypeScript SDK for trustless buyer-seller transactions."
+---
+
+# Escrow System
+
+DeroPay includes a full on-chain escrow system for trustless buyer-seller transactions. Funds are held in a DERO smart contract and released based on predefined conditions.
+
+## Why Escrow?
+
+Standard invoices work for trusted merchants, but many scenarios require a neutral third party:
+
+- **Marketplaces** — Buyer pays, seller ships, funds release on confirmation
+- **Freelance work** — Client deposits, freelancer delivers, funds release on approval
+- **P2P trades** — Neither party trusts the other; contract holds funds until both agree
+- **Dispute resolution** — An arbitrator can intervene if buyer and seller disagree
+
+## How It Works
+
+```mermaid
+stateDiagram-v2
+    [*] --> AwaitingDeposit: Create escrow
+    AwaitingDeposit --> Funded: Buyer deposits
+    Funded --> Released: Seller confirmed, funds released
+    Funded --> Refunded: Buyer requests refund (before expiry)
+    Funded --> Expired: Time limit reached
+    Funded --> Disputed: Either party disputes
+    Disputed --> Arbitrated: Arbitrator resolves
+```
+
+## Status Codes
+
+| Code | Status | Description |
+|---|---|---|
+| 0 | `awaiting_deposit` | Escrow created, waiting for buyer's DERO |
+| 1 | `funded` | Buyer has deposited, awaiting seller action |
+| 2 | `released` | Funds sent to seller |
+| 3 | `refunded` | Funds returned to buyer |
+| 4 | `expired_claimed` | Time limit reached, seller claimed funds |
+| 5 | `disputed` | Dispute raised, awaiting arbitrator |
+| 6 | `arbitrated` | Arbitrator has resolved the dispute |
+
+## Components
+
+### Smart Contract (`escrow.bas`)
+
+A DERO smart contract written in BASIC that holds funds and enforces escrow rules. See [Smart Contract](/escrow/smart-contract.md).
+
+### TypeScript SDK
+
+- **`EscrowContract`** — Low-level wrapper around the contract's RPC functions
+- **`EscrowManager`** — High-level lifecycle manager that handles the full escrow flow
+
+See [TypeScript SDK](/escrow/sdk.md).
+
+> [!NOTE]
+> The escrow contract supports **platform fees** (in basis points), so marketplaces can take a cut of each transaction automatically at the contract level.
+
+> [!WARNING]
+> Escrow deploys a **fresh contract for each transaction**. If you need fast, single-transaction payments without buyer protection, see the [Payment Router](/payment-router/overview.md) instead. For a full comparison, see [Escrow vs. Router](/payment-router/escrow-vs-router.md).
+
+---
+
+<!-- source: https://pay.derod.org/escrow/sdk.md -->
+
+---
+title: "Escrow TypeScript SDK — EscrowContract & EscrowManager"
+description: "Use the dero-pay/escrow module to create, fund, release, refund, and arbitrate escrow transactions programmatically."
+---
+
+# Escrow TypeScript SDK
+
+The `dero-pay/escrow` module provides two levels of abstraction for working with escrow:
+
+```ts
+
+```
+
+## EscrowManager (High-Level)
+
+The recommended way to work with escrow. Manages the full lifecycle:
+
+```ts
+
+const escrow = new EscrowManager({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Create a new escrow
+const escrowId = await escrow.create({
+  buyerAddress: "dero1qy...",
+  sellerAddress: "dero1qx...",
+  amount: 500_000,          // 5 DERO in atomic units (100,000 per DERO)
+  expirySeconds: 86400,     // 24 hours
+  platformFeeBps: 0,        // No platform fee (set 250 for 2.5%)
+  arbitratorAddress: "dero1qz...", // optional
+});
+
+// Buyer deposits
+await escrow.deposit(escrowId);
+
+// Seller releases (after delivery)
+await escrow.release(escrowId);
+
+// Or: buyer requests refund
+await escrow.refund(escrowId);
+
+// Or: either party disputes
+await escrow.dispute(escrowId);
+
+// Arbitrator resolves (sends to buyer or seller)
+await escrow.arbitrate(escrowId, { releaseTo: "seller" });
+
+// Check status
+const status = await escrow.getStatus(escrowId);
+```
+
+## EscrowContract (Low-Level)
+
+Direct wrapper around the smart contract's RPC functions:
+
+```ts
+
+const wallet = new WalletRPC("http://127.0.0.1:10103/json_rpc");
+const contract = new EscrowContract(wallet, contractAddress);
+
+// Call contract functions directly
+await contract.deposit(amount);
+await contract.release();
+await contract.refund();
+await contract.claimExpired();
+await contract.dispute();
+await contract.arbitrate(recipientAddress);
+
+// Read contract state
+const status = await contract.getStatus();
+const balance = await contract.getBalance();
+```
+
+## Status Types
+
+```ts
+
+// EscrowStatusCode constants:
+// AWAITING_DEPOSIT: 0
+// FUNDED: 1
+// RELEASED: 2
+// REFUNDED: 3
+// EXPIRED_CLAIMED: 4
+// DISPUTED: 5
+// ARBITRATED: 6
+
+statusCodeToString(2); // "released"
+```
+
+> [!NOTE]
+> The `EscrowManager` handles contract deployment, status tracking, and state validation. Use `EscrowContract` directly only if you need fine-grained control or are integrating with an existing contract deployment.
+
+---
+
+<!-- source: https://pay.derod.org/escrow/smart-contract.md -->
+
+---
+title: "Escrow Smart Contract — On-Chain DERO Contract"
+description: "The escrow.bas smart contract holds DERO funds in escrow with support for deposits, releases, refunds, disputes, and arbitration."
+---
+
+# Escrow Smart Contract
+
+The escrow contract is written in DERO's BASIC-like smart contract language and deployed on-chain. It holds funds and enforces escrow rules without any trusted intermediary.
+
+## Contract Functions
+
+| Function | Who Can Call | Description |
+|---|---|---|
+| `Deposit` | Buyer | Send DERO into escrow |
+| `Release` | Seller | Confirm delivery, release funds to seller |
+| `Refund` | Buyer | Request refund (if allowed by state) |
+| `ClaimExpired` | Buyer | Claim funds after expiry time |
+| `Dispute` | Buyer or Seller | Raise a dispute |
+| `Arbitrate` | Arbitrator | Resolve dispute (send to buyer or seller) |
+
+## Roles
+
+- **Buyer** — Deposits DERO into escrow
+- **Seller** — Confirms delivery to trigger fund release
+- **Arbitrator** — Optional third party who resolves disputes
+
+All roles are identified by their DERO address, set at escrow creation time.
+
+## Platform Fees
+
+The contract supports an optional platform fee in **basis points** (1 basis point = 0.01%):
+
+- Set at escrow creation
+- Automatically deducted when funds are released
+- Sent to the platform address (the contract deployer)
+- Not deducted on refunds
+
+```
+Example: 250 basis points = 2.5% platform fee
+On a 100 DERO escrow: 2.5 DERO → platform, 97.5 DERO → seller
+```
+
+## State Transitions
+
+```
+Deposit()       → status 0 → 1 (awaiting_deposit → funded)
+Release()       → status 1 → 2 (funded → released)
+Refund()        → status 1 → 3 (funded → refunded)
+ClaimExpired()  → status 1 → 4 (funded → expired_claimed, only after expiry time)
+Dispute()       → status 1 → 5 (funded → disputed)
+Arbitrate()     → status 5 → 6 (disputed → arbitrated)
+```
+
+> [!WARNING]
+> The contract is **immutable** once deployed. Each escrow transaction deploys a fresh instance of the contract, so there's no shared state between different escrows.
+
+## Deployment
+
+The contract is deployed via the DERO wallet RPC when a new escrow is created through the SDK. You don't need to deploy it manually — the `EscrowManager` handles this.
+
+See [TypeScript SDK](/escrow/sdk.md) for the programmatic interface.
+
+---
+
+<!-- source: https://pay.derod.org/guides/embeddable-widget.md -->
+
+---
+title: "Guide: Embeddable Payment Widget"
+description: "Add a 'Pay with DERO' button to any website with a single script tag. No framework required."
+---
+
+# Embeddable Payment Widget
+
+Drop a single `<script>` tag on any website to get a "Pay with DERO" button. No framework, no build step, no dependencies.
+
+The widget is a 13KB JavaScript file that creates a button, and when clicked, opens a payment modal with QR code, address, amount, and live status polling — all inside a Shadow DOM so it won't conflict with your site's styles.
+
+## Quick Start
+
+### Add the Script Tag
+
+```html
+<script src="https://cdn.deropay.com/widget.js"></script>
+```
+
+Or self-host it:
+
+```html
+<script src="/js/widget.global.js"></script>
+```
+
+### Add a Payment Button
+
+```html
+<div id="deropay-button"
+  data-gateway="https://your-gateway:3080"
+  data-api-key="your-api-key"
+  data-amount="150000"
+  data-name="Dero Hoodie"
+></div>
+```
+
+That's it. A styled "Pay with DERO" button appears, and clicking it creates an invoice and opens the payment modal.
+
+## Fiat Pricing
+
+Price in USD, EUR, or any supported currency — the gateway converts to DERO automatically:
+
+```html
+<div id="deropay-button"
+  data-gateway="https://your-gateway:3080"
+  data-api-key="your-api-key"
+  data-fiat-amount="29.99"
+  data-currency="usd"
+  data-name="T-Shirt"
+></div>
+```
+
+## Configuration
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `data-gateway` | Yes | Base URL of your DeroPay gateway server |
+| `data-api-key` | Yes | API key for invoice creation |
+| `data-amount` | * | Amount in DERO atomic units (100,000 = 1 DERO) |
+| `data-fiat-amount` | * | Amount in fiat (requires `data-currency`) |
+| `data-currency` | * | Fiat currency code (`usd`, `eur`, `gbp`, etc.) |
+| `data-name` | No | Invoice name / item description |
+| `data-callback-url` | No | URL to POST when payment completes |
+
+\* Provide either `data-amount` OR `data-fiat-amount` + `data-currency`.
+
+## Listening for Payment Completion
+
+The widget fires a custom event when payment is confirmed:
+
+```javascript
+document.getElementById("deropay-button")
+  .addEventListener("deropay:completed", (event) => {
+    console.log("Payment complete!", event.detail);
+    // { invoiceId: "inv_abc123", amount: "150000" }
+
+    // Redirect to thank-you page, update UI, etc.
+    window.location.href = "/thank-you";
+  });
+```
+
+## Multiple Buttons on One Page
+
+Use the class `deropay-button` or the `data-deropay` attribute for multiple buttons:
+
+```html
+<div class="deropay-button"
+  data-gateway="https://gw.example.com"
+  data-api-key="pk_..."
+  data-amount="150000"
+  data-name="Hoodie"
+></div>
+
+<div class="deropay-button"
+  data-gateway="https://gw.example.com"
+  data-api-key="pk_..."
+  data-amount="25000"
+  data-name="Sticker Pack"
+></div>
+```
+
+Each button operates independently — separate invoices, separate modals.
+
+## How It Works Under the Hood
+
+1. Widget reads configuration from `data-*` attributes
+2. On click, creates an invoice via `POST /invoices` on your gateway
+3. Opens a modal (inside Shadow DOM) with QR code, address, amount, countdown
+4. Polls the gateway's `/status` endpoint every 4 seconds
+5. On confirmation, shows success state and fires `deropay:completed` event
+
+## Technical Details
+
+- **13KB** minified IIFE bundle — zero external dependencies
+- **Shadow DOM** isolates all styles from the host page
+- **QR code** generated client-side (no external service)
+- Works in all modern browsers
+- Self-hostable — serve `widget.global.js` from your own domain
+
+> [!WARNING]
+> The widget uses your API key client-side to create invoices. Use a **public/restricted API key** that can only create invoices, not read payment data. The gateway's API key auth is designed for this — invoice creation is the only write operation the widget performs.
+
+## Building from Source
+
+```bash
+cd packages/deropay-widget
+bun install
+bun run build
+# Output: dist/widget.global.js
+```
+
+---
+
+<!-- source: https://pay.derod.org/guides/gateway-server.md -->
+
+---
+title: "Guide: DeroPay Gateway Server"
+description: "Deploy the standalone DeroPay gateway server — the foundation for all ecommerce plugins, widgets, and payment links."
+---
+
+# DeroPay Gateway Server
+
+The gateway server is a standalone HTTP server that wraps the `dero-pay` SDK into a clean REST API. It connects to your DERO wallet, creates invoices, monitors payments, fires webhooks, and manages escrow — all accessible via standard HTTP endpoints.
+
+This is the same architecture as BTCPay Server: the gateway is the engine, and everything else (plugins, widgets, payment links) is a thin client.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           YOUR INFRASTRUCTURE            │
+│                                          │
+│  ┌──────────┐    ┌──────────┐           │
+│  │ DERO     │    │ DERO     │           │
+│  │ Daemon   │    │ Wallet   │           │
+│  │ :10102   │    │ :10103   │           │
+│  └────┬─────┘    └────┬─────┘           │
+│       └──────┬────────┘                  │
+│              │                           │
+│       ┌──────▼──────┐                    │
+│       │  DeroPay    │                    │
+│       │  Gateway    │ ← your API key     │
+│       │  :3080      │                    │
+│       └──────┬──────┘                    │
+│              │                           │
+└──────────────┼───────────────────────────┘
+               │ REST API
+    ┌──────────┼──────────────┐
+    │          │              │
+┌───▼───┐ ┌───▼────┐ ┌──────▼─────┐
+│Widget │ │WooCom  │ │Payment     │
+│       │ │Plugin  │ │Links       │
+└───────┘ └────────┘ └────────────┘
+```
+
+Everything runs on your own infrastructure. You control the wallet, the daemon, the gateway, and the data.
+
+### Install and Configure
+
+```bash
+git clone https://github.com/DHEBP/DeroPay.git
+cd DeroPay/apps/gateway
+cp .env.example .env
+```
+
+Edit `.env` with your wallet details:
+
+```env
+DEROPAY_WALLET_RPC_URL=http://127.0.0.1:10103/json_rpc
+DEROPAY_DAEMON_RPC_URL=http://127.0.0.1:10102/json_rpc
+DEROPAY_API_KEY=your-secret-api-key
+DEROPAY_WEBHOOK_URL=https://yourstore.com/webhook
+DEROPAY_WEBHOOK_SECRET=your-webhook-secret
+```
+
+### Generate an API Key
+
+```bash
+bun run src/generate-key.ts
+```
+
+### Start the Server
+
+  
+```bash
+bun install
+bun run start
+```
+  
+  
+```bash
+docker compose up -d
+```
+
+The Docker Compose file includes the gateway, DERO daemon, and DERO wallet — a complete stack.
+  
+
+### Verify It's Running
+
+```bash
+curl http://localhost:3080/health
+```
+
+```json
+{
+  "status": "ok",
+  "wallet": "connected",
+  "balance": "125.00000"
+}
+```
+
+## API Endpoints
+
+### Public (no API key)
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `GET` | `/health` | Wallet connectivity + balance |
+| `GET` | `/status?invoiceId=x` | Invoice status (for checkout widgets) |
+| `GET` | `/price` | Current DERO price (USD, BTC) |
+| `GET` | `/convert?amount=9.99&currency=usd` | Fiat → DERO conversion |
+
+### Authenticated (requires `x-api-key` header)
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `POST` | `/invoices` | Create an invoice |
+| `GET` | `/invoices/:id` | Get invoice details |
+| `GET` | `/invoices` | List/filter invoices |
+| `GET` | `/stats` | Aggregate payment stats |
+| `POST` | `/escrow/:id/:action` | Escrow operations |
+| `GET` | `/escrows` | List escrow invoices |
+
+### Creating an Invoice
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Order #1234",
+    "amount": 150000,
+    "ttl": 900
+  }'
+```
+
+With fiat pricing (auto-converts to DERO):
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "T-Shirt",
+    "fiatAmount": 29.99,
+    "currency": "usd"
+  }'
+```
+
+> [!NOTE]
+> The gateway fetches live DERO prices from CoinGecko and TradeOgre (with fallback). Merchants price products in fiat; the gateway converts at checkout time.
+
+## Webhooks
+
+The gateway sends HMAC-SHA256 signed HTTP POST notifications on every invoice state change:
+
+```json
+{
+  "invoiceId": "inv_abc123",
+  "status": "completed",
+  "amount": "150000",
+  "amountReceived": "150000",
+  "payments": [{ "txHash": "...", "amount": "150000" }]
+}
+```
+
+Verify the signature:
+
+```typescript
+
+const isValid = verifyWebhookSignature(
+  rawBody,
+  request.headers["x-deropay-signature"],
+  process.env.WEBHOOK_SECRET
+);
+```
+
+## What's Next
+
+The gateway is the foundation. Connect it to:
+
+- [**Payment Links**](/guides/payment-links.md) — share a checkout URL, no website needed
+- [**Embeddable Widget**](/guides/embeddable-widget.md) — drop a script tag on any website
+- [**Medusa.js Plugin**](/guides/medusa-plugin.md) — integrate with Medusa ecommerce
+- [**WooCommerce Plugin**](/guides/woocommerce.md) — integrate with WordPress/WooCommerce
+
+---
+
+<!-- source: https://pay.derod.org/guides/medusa-plugin.md -->
+
+---
+title: "Guide: Medusa.js Payment Plugin"
+description: "Accept DERO payments in your Medusa.js v2 store with the DeroPay payment provider plugin."
+---
+
+# Medusa.js Payment Plugin
+
+The `medusa-payment-deropay` package is a Medusa v2 payment module provider that connects your Medusa store to a DeroPay gateway server. Customers can pay with DERO at checkout.
+
+## Prerequisites
+
+- A running [DeroPay gateway server](/guides/gateway-server.md)
+- A Medusa.js v2 store
+
+### Install the Plugin
+
+```bash
+bun add medusa-payment-deropay
+```
+
+### Configure in `medusa-config.ts`
+
+```typescript
+module.exports = defineConfig({
+  // ...
+  modules: [
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "medusa-payment-deropay",
+            id: "deropay",
+            options: {
+              gatewayUrl: "https://your-gateway:3080",
+              apiKey: "your-api-key",
+              webhookSecret: "your-webhook-secret",
+            },
+          },
+        ],
+      },
+    },
+  ],
+});
+```
+
+### Enable in a Region
+
+In the Medusa Admin, go to **Settings → Regions** and enable the "deropay" payment provider for the regions where you want to accept DERO.
+
+### Configure Webhooks
+
+Set your DeroPay gateway to send webhooks to your Medusa instance:
+
+```
+Webhook URL: https://your-medusa-store.com/hooks/payment/deropay_deropay
+```
+
+## Configuration Options
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `gatewayUrl` | Yes | Base URL of your DeroPay gateway server |
+| `apiKey` | Yes | API key for the gateway |
+| `webhookSecret` | No | HMAC-SHA256 secret for webhook verification |
+
+## How It Works
+
+### Payment Flow
+
+1. **Customer selects DERO** at checkout → Medusa calls `initiatePayment`
+2. Plugin creates an invoice on your gateway via `POST /invoices`
+3. Invoice data (address, QR, amount) is stored in the payment session
+4. **Your storefront** displays the payment details to the customer
+5. Customer sends DERO from their wallet
+6. Gateway detects payment → sends webhook → Medusa auto-completes the order
+
+### Fiat Conversion
+
+If your Medusa store prices products in USD/EUR/etc., the plugin automatically sends the fiat amount and currency to the gateway, which converts to DERO at the current market rate.
+
+### Capture Behavior
+
+DERO payments settle on-chain instantly — there's no separate "capture" step. When the gateway confirms the payment, it's done. The plugin's `capturePayment` method is a no-op.
+
+### Refunds
+
+> [!WARNING]
+> On-chain DERO payments cannot be automatically refunded. The plugin logs a warning and returns success — process refunds manually by sending DERO back to the customer's address.
+
+## Storefront Integration
+
+On your storefront, retrieve the payment session data to display the DERO payment interface:
+
+```typescript
+// After initiating payment, the session data contains:
+const sessionData = paymentSession.data;
+
+// Display these to the customer:
+sessionData.integratedAddress  // DERO address to send to
+sessionData.amount             // Amount in atomic units
+sessionData.expiresAt          // Invoice expiry timestamp
+```
+
+You can use the [embeddable widget](/guides/embeddable-widget.md) or build a custom payment UI using this data.
+
+## Self-Hosted, Non-Custodial
+
+Both the Medusa store and the DeroPay gateway run on your infrastructure. No third-party payment service is involved. Funds go directly from the customer's wallet to yours.
+
+---
+
+<!-- source: https://pay.derod.org/guides/merchant-dashboard.md -->
+
+---
+title: "Merchant Dashboard — Self-Hosted Admin UI"
+description: "Set up and run the DeroPay merchant dashboard for invoice management, payment history, and wallet status."
+---
+
+# Merchant Dashboard
+
+DeroPay includes a self-hosted merchant dashboard — a Next.js admin UI for managing invoices, viewing payment history, and monitoring wallet status.
+
+## Features
+
+- **Invoice management** — Create, view, and track invoices
+- **Payment history** — Searchable list of all transactions
+- **Wallet status** — Balance, connection health, sync status
+- **Real-time updates** — Live invoice status changes
+
+## Setup
+
+### Navigate to the Dashboard
+
+The dashboard is located in the DeroPay monorepo:
+
+```bash
+cd apps/dashboard
+```
+
+### Configure Environment
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your wallet settings:
+
+```env
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+WEBHOOK_SECRET=your-webhook-secret
+```
+
+### Install and Run
+
+```bash
+bun install
+bun dev
+```
+
+Open [http://localhost:3100](http://localhost:3100).
+
+## Architecture
+
+The dashboard is a standalone Next.js 15 app that imports `dero-pay` as a workspace dependency. It communicates directly with your DERO wallet and daemon via JSON-RPC.
+
+```
+Dashboard (localhost:3100)
+    ↓ dero-pay SDK
+    ↓ JSON-RPC
+DERO Wallet (localhost:10103)
+DERO Daemon (localhost:10102)
+```
+
+> [!NOTE]
+> The dashboard runs on port **3100** by default to avoid conflicts with your main application on port 3000.
+
+## Deployment
+
+For production, the dashboard should be:
+- Deployed behind authentication (it has full access to your payment engine)
+- Connected to your production wallet RPC
+- Not exposed to the public internet
+
+Consider using DeroAuth itself to protect the dashboard — authenticate with your merchant wallet to access the admin UI.
+
+---
+
+<!-- source: https://pay.derod.org/guides/nextjs-auth.md -->
+
+---
+title: "Guide: DERO Wallet Auth in Next.js"
+description: "End-to-end guide for adding DERO wallet authentication to a Next.js 15 App Router project."
+---
+
+# DERO Wallet Auth in Next.js
+
+Add "Sign in with DERO" to your Next.js 15 app — from installation to protected routes.
+
+## What You'll Build
+
+- Challenge and verify API routes
+- A login page with the `` button
+- Middleware-based route protection
+- A protected dashboard showing the user's DERO address
+
+### Install Dependencies
+
+```bash
+bun add dero-auth
+```
+
+### Set Environment Variables
+
+```env
+# .env.local
+JWT_SECRET=your-jwt-secret-at-least-32-bytes-long
+```
+
+Generate a strong secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### Create Auth Handlers
+
+```ts
+// lib/dero-auth.ts
+
+export const { challengeHandler, verifyHandler } = createAuthHandlers({
+  domain: "localhost:3000",
+  uri: "http://localhost:3000",
+  jwtSecret: process.env.JWT_SECRET!,
+  statement: "Sign in to My App",
+});
+```
+
+### Create API Routes
+
+```ts
+// app/api/auth/challenge/route.ts
+
+export const POST = challengeHandler;
+```
+
+```ts
+// app/api/auth/verify/route.ts
+
+export const POST = verifyHandler;
+```
+
+### Add the Auth Provider
+
+```tsx
+// app/layout.tsx
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        
+          {children}
+        
+      </body>
+    </html>
+  );
+}
+```
+
+### Create the Login Page
+
+```tsx
+// app/login/page.tsx
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-8">Welcome</h1>
+        <SignInWithDero
+          onSuccess={() => window.location.href = "/dashboard"}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### Protect Routes with Middleware
+
+```ts
+// middleware.ts
+
+export const middleware = createDeroAuthMiddleware({
+  jwtSecret: process.env.JWT_SECRET!,
+  protectedPaths: ["/dashboard"],
+  loginPath: "/login",
+});
+
+export const config = {
+  matcher: ["/dashboard/:path*"],
+};
+```
+
+### Create the Protected Dashboard
+
+```tsx
+// app/dashboard/page.tsx
+
+export default async function DashboardPage() {
+  const address = await getAuthAddress(headers());
+
+  if (!address) {
+    redirect("/login");
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <p className="text-gray-600">Connected wallet:</p>
+      <code className="block mt-2 p-3 bg-gray-100 rounded text-sm">
+        {address}
+      </code>
+    </div>
+  );
+}
+```
+
+> [!NOTE]
+> The user's DERO wallet (Engram or CLI) must be running locally for the XSWD connection to work. See [Prerequisites](/guides/prerequisites.md).
+
+---
+
+<!-- source: https://pay.derod.org/guides/nextjs-payments.md -->
+
+---
+title: "Guide: Accept DERO Payments in Next.js"
+description: "End-to-end guide for integrating DeroPay into a Next.js 15 App Router project."
+---
+
+# Accept DERO Payments in Next.js
+
+A complete guide for integrating DeroPay into a Next.js 15 App Router project — from installation to webhook handling.
+
+## What You'll Build
+
+- API routes for creating invoices and checking status
+- A payment page with QR code and "Pay with DERO" button
+- A webhook endpoint for fulfilling orders
+- Server-side invoice creation from checkout
+
+### Install Dependencies
+
+```bash
+bun add dero-pay
+```
+
+### Set Environment Variables
+
+```env
+# .env.local
+DERO_WALLET_RPC=http://127.0.0.1:10103/json_rpc
+DERO_DAEMON_RPC=http://127.0.0.1:10102/json_rpc
+WEBHOOK_SECRET=your-secret-here
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Create the Payment Engine
+
+```ts
+// lib/deropay.ts
+
+export const {
+  createInvoiceHandler,
+  statusHandler,
+  webhookHandler,
+  engine,
+} = createPaymentHandlers({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+  webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/dero`,
+  webhookSecret: process.env.WEBHOOK_SECRET!,
+});
+```
+
+### Create API Routes
+
+```ts
+// app/api/pay/create/route.ts
+
+export const POST = createInvoiceHandler;
+```
+
+```ts
+// app/api/pay/status/route.ts
+
+export const GET = statusHandler;
+```
+
+```ts
+// app/api/webhooks/dero/route.ts
+
+export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get("X-DeroPay-Signature")!;
+
+  if (!verifyWebhookSignature(body, signature, process.env.WEBHOOK_SECRET!)) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+
+  if (event.event === "invoice.completed") {
+    // Fulfill the order using event.metadata.orderId
+    console.log("Payment completed:", event.invoiceId);
+  }
+
+  return new Response("OK");
+}
+```
+
+### Create the Payment Page
+
+```tsx
+// app/pay/[invoiceId]/page.tsx
+"use client";
+
+export default function PayPage({
+  params,
+}: {
+  params: { invoiceId: string };
+}) {
+  const router = useRouter();
+
+  return (
+    
+      <div className="max-w-md mx-auto p-8">
+        <h1 className="text-2xl font-bold mb-6">Complete Payment</h1>
+        <InvoiceView
+          invoiceId={params.invoiceId}
+          onCompleted={() => router.push("/thank-you")}
+        />
+        <div className="mt-4">
+          
+        </div>
+      </div>
+    
+  );
+}
+```
+
+### Create the Checkout Flow
+
+```tsx
+// app/checkout/page.tsx
+
+export default function CheckoutPage() {
+  async function checkout(formData: FormData) {
+    "use server";
+
+    const invoice = await engine.createInvoice({
+      name: "Premium Plan",
+      description: "Monthly subscription",
+      amount: deroToAtomic("10.0"), // 10 DERO
+      metadata: { orderId: "ORD-" + Date.now() },
+    });
+
+    redirect(`/pay/${invoice.id}`);
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-4">Checkout</h1>
+      <p className="mb-6">Premium Plan — 10 DERO/month</p>
+      <form action={checkout}>
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium"
+        >
+          Pay with DERO
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+> [!NOTE]
+> Make sure your DERO wallet and daemon are running before starting the dev server. See [Prerequisites](/guides/prerequisites.md) for setup instructions.
+
+---
+
+<!-- source: https://pay.derod.org/guides/payment-links.md -->
+
+---
+title: "Guide: Payment Links & Hosted Checkout"
+description: "Create shareable payment links for DERO — no website needed. Works via email, social media, QR posters, or messaging."
+---
+
+# Payment Links & Hosted Checkout
+
+Payment links let **any merchant** accept DERO — even without a website. Create an invoice, get a link, share it anywhere.
+
+## How It Works
+
+1. You create an invoice on your gateway (via API, dashboard, or CLI)
+2. You get a checkout URL
+3. You share it — email, social media, QR code on a poster, text message
+4. Customer opens the link, sees the payment page, sends DERO
+5. Page auto-updates to "Payment Confirmed"
+
+## The Checkout Page
+
+The hosted checkout page (`apps/checkout/`) is a static site that displays a payment interface for any invoice. It shows:
+
+- DERO amount
+- QR code (scannable by any DERO wallet)
+- Integrated address (with copy button)
+- Countdown timer
+- Live status updates (polling every 4 seconds)
+- Success animation on confirmation
+
+The page is mobile-optimized — designed for links shared via messaging apps where customers open on their phone.
+
+### Create an Invoice
+
+```bash
+curl -X POST http://localhost:3080/invoices \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "name": "Consulting Session",
+    "fiatAmount": 50.00,
+    "currency": "usd"
+  }'
+```
+
+Response:
+
+```json
+{
+  "id": "inv_abc123",
+  "amount": "250000",
+  "integratedAddress": "deto1q...",
+  "expiresAt": "2026-03-03T12:15:00Z"
+}
+```
+
+### Build the Checkout URL
+
+```
+https://checkout.yoursite.com/?gateway=https://gateway.yoursite.com&invoiceId=inv_abc123
+```
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `gateway` | Yes | Base URL of your DeroPay gateway |
+| `invoiceId` | Yes | Invoice ID from step 1 |
+
+### Share the Link
+
+Send it however you want:
+- **Email**: "Click here to pay for your consulting session"
+- **QR poster**: Print a QR code that encodes the checkout URL
+- **Social media**: Post the link with a description
+- **Invoice PDF**: Include the link in a traditional invoice document
+- **Point of sale**: Display the QR on a tablet at your counter
+
+## Self-Hosting the Checkout Page
+
+The checkout page is a static site — deploy it anywhere:
+
+```bash
+cd apps/checkout
+bun install
+bun run build
+# Output: dist/ — deploy to Vercel, Netlify, S3, or serve alongside your gateway
+```
+
+> [!NOTE]
+> The checkout page only uses the **public** `/status` endpoint on your gateway. No API key is exposed to customers. The merchant creates the invoice server-side (with their API key) and only shares the resulting URL.
+
+## Use Cases
+
+| Scenario | How |
+|----------|-----|
+| **Freelancer** | Send a payment link after completing work |
+| **Market vendor** | Print a QR code poster at your booth |
+| **Online service** | Email a payment link with the order confirmation |
+| **Donation** | Post a "Support with DERO" link on your website or social |
+| **Invoice** | Include a "Pay Now" link in a PDF invoice |
+
+## Design
+
+The checkout page follows the DeroPay design system — emerald green accents on a dark theme, mobile-first layout, and clean typography. It's branded but minimal, keeping the focus on the payment.
+
+---
+
+<!-- source: https://pay.derod.org/guides/prerequisites.md -->
+
+---
+title: "Prerequisites — DERO Wallet & Environment Setup"
+description: "Set up a DERO wallet and development environment for DeroPay and DeroAuth."
+---
+
+# Prerequisites
+
+Before using DeroPay or DeroAuth, you need a running DERO wallet and a Node.js environment.
+
+## Requirements
+
+- **Node.js** >= 20.0.0
+- **DERO wallet** — Engram (desktop) or DERO CLI wallet
+- **DERO daemon** — synced to mainnet or testnet
+
+## DERO Wallet Setup
+
+  
+    **Engram** is the official desktop wallet for DERO with built-in XSWD support.
+
+    1. Download from [dero.io](https://dero.io)
+    2. Create or restore a wallet
+    3. XSWD is enabled automatically on `ws://localhost:44326`
+
+    > [!NOTE]
+> Engram is recommended for development — it provides the best XSWD experience for both auth and payments.
+  
+  
+    The CLI wallet requires the `--rpc-server` flag to enable RPC access:
+
+    ```bash
+    # Mainnet
+    dero-wallet-cli \
+      --wallet-file wallet.db \
+      --rpc-server \
+      --rpc-bind=127.0.0.1:10103
+
+    # Testnet
+    dero-wallet-cli \
+      --wallet-file wallet.db \
+      --rpc-server \
+      --rpc-bind=127.0.0.1:40403 \
+      --testnet
+    ```
+  
+
+## DERO Daemon
+
+The daemon must be running and synced for payment monitoring:
+
+```bash
+# Mainnet
+derod --rpc-bind=127.0.0.1:10102
+
+# Testnet
+derod --rpc-bind=127.0.0.1:40402 --testnet
+```
+
+## Default Ports
+
+| Service | Mainnet | Testnet |
+|---|---|---|
+| Wallet RPC | `127.0.0.1:10103` | `127.0.0.1:40403` |
+| Daemon RPC | `127.0.0.1:10102` | `127.0.0.1:40402` |
+| Engram XSWD | `ws://localhost:44326` | `ws://localhost:44326` |
+
+## Install the SDKs
+
+  
+    ```bash
+    # Payments
+    bun add dero-pay
+
+    # Authentication
+    bun add dero-auth
+
+    # Both
+    bun add dero-pay dero-auth
+    ```
+  
+  
+    ```bash
+    npm install dero-pay
+    npm install dero-auth
+    ```
+  
+  
+    ```bash
+    pnpm add dero-pay
+    pnpm add dero-auth
+    ```
+  
+
+> [!WARNING]
+> Both packages are **ESM-only** (`"type": "module"`). Make sure your project supports ES modules.
+
+## Next Steps
+
+- [DeroPay Quick Start](/dero-pay/quick-start.md) — Accept your first payment
+- [DeroAuth Quick Start](/dero-auth/quick-start.md) — Add wallet login
+
+---
+
+<!-- source: https://pay.derod.org/guides/woocommerce.md -->
+
+---
+title: "Guide: WooCommerce Plugin"
+description: "Accept DERO payments on your WordPress/WooCommerce store with the DeroPay payment gateway plugin."
+---
+
+# WooCommerce Plugin
+
+The DeroPay for WooCommerce plugin adds DERO as a payment method in your WooCommerce store. It's a thin PHP adapter that connects to your DeroPay gateway server.
+
+## Prerequisites
+
+- WordPress with WooCommerce installed
+- A running [DeroPay gateway server](/guides/gateway-server.md)
+
+### Install the Plugin
+
+1. Download the latest `deropay-for-woocommerce.zip` from the [GitHub Releases](https://github.com/DHEBP/DeroPay/releases) page.
+2. In your WordPress admin dashboard, go to **Plugins → Add New → Upload Plugin**.
+3. Select the `.zip` file, install, and activate the plugin.
+
+### Configure the Gateway
+
+Go to **WooCommerce → Settings → Payments → DeroPay** and enter:
+
+| Setting | Value |
+|---------|-------|
+| **Enable** | Yes |
+| **Gateway URL** | `https://your-gateway:3080` |
+| **API Key** | Your gateway API key |
+| **Webhook Secret** | Your webhook secret (must match gateway config) |
+
+### Test a Payment
+
+1. Add a product to your cart
+2. Go to checkout
+3. Select "Pay with DERO"
+4. You'll see the DERO amount, QR code, and integrated address
+5. Send DERO from your wallet
+6. Order status updates automatically via webhook
+
+## How It Works
+
+```
+Customer → WooCommerce → DeroPay Plugin → Gateway Server → DERO Wallet
+                                              ↓
+                                         Webhook back
+                                              ↓
+                                    Order marked "Processing"
+```
+
+1. Customer selects "Pay with DERO" at checkout
+2. Plugin calls `POST /invoices` on your gateway with the order total
+3. Gateway creates an invoice and returns the payment details
+4. Plugin displays QR code and address on the "Order Received" page
+5. Gateway monitors the wallet for incoming payment
+6. On confirmation, gateway sends a webhook to WooCommerce
+7. Plugin verifies the HMAC signature and marks the order as "Processing"
+
+## Fiat Pricing
+
+WooCommerce stores typically price products in USD, EUR, etc. The plugin sends the fiat amount and currency to the gateway, which converts to DERO at the current market rate. The customer sees both the fiat price and the DERO equivalent.
+
+## Webhook Endpoint
+
+The plugin registers a webhook endpoint at:
+
+```
+https://yourstore.com/?wc-api=deropay_webhook
+```
+
+Configure your DeroPay gateway to send webhooks to this URL.
+
+> [!NOTE]
+> The webhook handler verifies the HMAC-SHA256 signature before processing. Make sure the webhook secret matches between your gateway and WooCommerce settings.
+
+## Plugin Files
+
+| File | Purpose |
+|------|---------|
+| `deropay-for-woocommerce.php` | Main plugin file, registers gateway + webhook |
+| `includes/class-deropay-gateway.php` | `WC_Payment_Gateway` implementation |
+| `includes/class-deropay-api-client.php` | HTTP client for the gateway REST API |
+| `includes/class-deropay-webhook-handler.php` | HMAC-verified webhook handler |
+| `assets/dero-icon.svg` | Payment method icon |
+
+---
+
+<!-- source: https://pay.derod.org/payment-router/escrow-vs-router.md -->
+
+---
+title: "Escrow vs. Payment Router — Which Smart Contract to Use"
+description: "A comparison of DeroPay's two smart contracts: escrow for buyer-protected transactions and payment router for instant merchant payments."
+---
+
+# Escrow vs. Payment Router
+
+DeroPay includes two smart contracts for on-chain payments. They serve different use cases and have fundamentally different deployment models.
+
+## At a Glance
+
+| | Escrow | Payment Router |
+|---|---|---|
+| **Deployment model** | One contract per transaction | One contract per merchant (reusable) |
+| **Transactions per payment** | 3 (deploy + deposit + confirm) | 1 (pay) |
+| **Settlement time** | ~54 seconds minimum | ~18 seconds (one block) |
+| **Buyer protection** | Yes — refunds, disputes, arbitration | No |
+| **Fee recipient** | Contract deployer (platform) | Configurable by merchant |
+| **Dispute resolution** | Yes (arbitrator role) | No |
+| **Pausable** | No | Yes (merchant can pause/resume) |
+| **On-chain state** | Per-transaction (amount, status, addresses) | Aggregate (total processed, count, fees) |
+| **SCID persistence** | Ephemeral — new SCID for each escrow | Persistent — same SCID for all payments |
+
+## When to Use Escrow
+
+Use escrow when the buyer needs protection or the transaction requires trust:
+
+- **Marketplaces** — Buyer pays, seller ships, funds release on confirmation
+- **Freelance contracts** — Client deposits, freelancer delivers, funds release on approval
+- **P2P trades** — Neither party trusts the other
+- **High-value purchases** — Where the buyer wants the ability to dispute or get a refund
+- **Any transaction where delivery isn't instant**
+
+The escrow contract deploys a **fresh instance for each transaction**. Each escrow has its own SCID, its own state, and its own lifecycle (funded → released/refunded/disputed). There is no shared state between different escrows.
+
+```ts
+
+const escrow = await manager.create({
+  seller: "dero1qy...seller",
+  amount: 500_000,       // 5 DERO
+  expirySeconds: 86400,  // 24 hours
+});
+// escrow.scid is unique to this transaction
+```
+
+## When to Use the Payment Router
+
+Use the payment router when the merchant just needs to get paid:
+
+- **Retail / e-commerce** — Customer pays, product ships immediately
+- **Subscriptions** — Recurring payments to the same merchant
+- **Donations** — One-time or recurring contributions
+- **Digital goods** — Instant delivery, no buyer protection needed
+- **Any "pay and go" transaction**
+
+The payment router is deployed **once** by the merchant and handles **every subsequent payment** through the same contract. The SCID is permanent and can be shared publicly.
+
+```ts
+
+// Deploy once
+const router = await manager.deployRouter({ feeBasisPoints: 0 });
+// router.scid is reused for every payment
+
+// Use for every payment
+await manager.pay(router.scid, "inv_001", 100_000n);
+await manager.pay(router.scid, "inv_002", 50_000n);
+await manager.pay(router.scid, "inv_003", 200_000n);
+// All through the same contract
+```
+
+## Cost Comparison
+
+| | Escrow (per transaction) | Payment Router (per transaction) |
+|---|---|---|
+| **Contract deployment** | 1 deploy TX (gas fee) | 0 (already deployed) |
+| **Payment** | 1 deposit TX + 1 release TX | 1 pay TX |
+| **Total on-chain TXs** | 3 | 1 |
+| **Total gas cost** | ~3× base fee | ~1× base fee |
+
+Over many payments, the router is significantly cheaper because the deployment cost is amortized across all payments.
+
+## Can I Use Both?
+
+Yes. A merchant can deploy a payment router for standard checkout and use escrow for high-value or trust-sensitive transactions. The two systems are independent — they use different contracts, different SDK modules, and different state.
+
+```ts
+
+// Standard payments through the router
+const router = new RouterManager({ ... });
+await router.pay(scid, "inv_standard_001", 10_000n);
+
+// High-value escrow for a custom project
+const escrow = new EscrowManager({ ... });
+await escrow.create({ seller: "dero1q...", amount: 5_000_000 });
+```
+
+> [!NOTE]
+> **Rule of thumb:** If the customer receives what they paid for immediately (digital goods, retail), use the payment router. If there's a delay between payment and delivery (freelance work, shipped goods, services), use escrow.
+
+---
+
+<!-- source: https://pay.derod.org/payment-router/overview.md -->
+
+---
+title: "Payment Router — Instant On-Chain Payments"
+description: "A reusable per-merchant smart contract for fast, single-transaction DERO payments with optional fee splitting."
+---
+
+# Payment Router
+
+The payment router is a reusable smart contract that a merchant deploys once and uses for unlimited payments. Customers call `Pay()` with DERO attached, and the contract instantly forwards the funds to the merchant — with an optional fee split to a configurable recipient.
+
+## Why a Payment Router?
+
+Standard DeroPay invoices use the wallet's integrated addresses to match payments. That works well, but the payment router adds on-chain settlement:
+
+- **Single transaction** — Customer sends DERO, merchant receives it in the same block (~18 seconds)
+- **On-chain fee splitting** — Optional automatic split between merchant and a fee recipient (partner, referral, platform)
+- **Reusable** — One contract handles every payment. No per-transaction deployment
+- **Verifiable** — Anyone can read the contract source and fee structure on-chain
+- **Pausable** — Merchant can pause and resume the router at any time
+
+## How It Works
+
+```
+Customer calls Pay("inv_123") with 10 DERO attached
+         │
+         ▼
+┌─────────────────────────┐
+│   Payment Router SC     │
+│                         │
+│  feeBasisPoints: 250    │  (2.5%)
+│  merchant: dero1q...    │
+│  feeRecipient: dero1q...│
+└─────────┬───────────────┘
+          │
+    ┌─────┴─────┐
+    │           │
+    ▼           ▼
+ 9.75 DERO   0.25 DERO
+ → merchant  → feeRecipient
+```
+
+Everything happens atomically in a single on-chain transaction.
+
+## On-Chain State
+
+The contract tracks aggregate statistics:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `merchant` | Address | Deployer's address — receives payouts |
+| `feeRecipient` | Address | Receives the fee split |
+| `feeBasisPoints` | Uint64 | Fee rate (100 = 1%, 250 = 2.5%, 0 = no fee) |
+| `totalProcessed` | Uint64 | Cumulative DERO processed (atomic units) |
+| `totalFees` | Uint64 | Cumulative fees collected (atomic units) |
+| `paymentCount` | Uint64 | Number of payments processed |
+| `paused` | Uint64 | 0 = active, 1 = paused |
+
+## Components
+
+### Smart Contract (`payment-router.bas`)
+
+A DERO smart contract written in DVM-BASIC that handles payment splitting and tracks statistics. See [Smart Contract](/payment-router/smart-contract.md).
+
+### TypeScript SDK
+
+- **`RouterContract`** — Low-level wrapper around the contract's RPC functions
+- **`RouterManager`** — High-level lifecycle manager that handles deployment, payments, and state queries
+
+See [TypeScript SDK](/payment-router/sdk.md).
+
+> [!NOTE]
+> The payment router is **deployed once per merchant** and reused for every payment. This is fundamentally different from the [escrow system](/escrow/overview.md), which deploys a fresh contract for each transaction. See [Escrow vs. Router](/payment-router/escrow-vs-router.md) for a detailed comparison.
+
+> [!WARNING]
+> The fee structure is **immutable** once deployed. The merchant verifies the contract source and fee rate before deploying. This prevents anyone from changing the terms after the fact.
+
+---
+
+<!-- source: https://pay.derod.org/payment-router/sdk.md -->
+
+---
+title: "Payment Router TypeScript SDK — RouterContract & RouterManager"
+description: "Use the dero-pay/router module to deploy payment routers, send payments, and query on-chain state programmatically."
+---
+
+# Payment Router TypeScript SDK
+
+The `dero-pay/router` module provides two levels of abstraction for working with payment routers:
+
+```ts
+
+```
+
+## RouterManager (High-Level)
+
+The recommended way to work with payment routers. Manages deployment, payments, and state queries:
+
+```ts
+
+const manager = new RouterManager({
+  walletRpcUrl: "http://127.0.0.1:10103/json_rpc",
+  daemonRpcUrl: "http://127.0.0.1:10102/json_rpc",
+});
+
+// Deploy a router with no fee (merchant keeps 100%)
+const router = await manager.deployRouter();
+console.log("SCID:", router.scid);
+
+// Deploy a router with 2.5% fee to a partner
+const router = await manager.deployRouter({
+  feeRecipientAddress: "dero1qy...partner-address",
+  feeBasisPoints: 250,
+});
+
+// Send a payment through the router
+const txid = await manager.pay(router.scid, "inv_abc123", 50_000n);
+
+// Query on-chain state
+const state = await manager.getOnChainState(router.scid);
+console.log("Payments:", state.paymentCount);
+console.log("Total:", state.totalProcessed);
+
+// Pause/resume
+await manager.pause(router.scid);
+await manager.resume(router.scid);
+
+// Update merchant address
+await manager.updateMerchant(router.scid, "dero1qy...new-address");
+
+// Withdraw trapped funds
+await manager.withdrawTrapped(router.scid, 1000n);
+```
+
+### Events
+
+```ts
+manager.on("routerDeployed", (router) => {
+  console.log("Deployed:", router.scid);
+});
+
+manager.on("routerDeployFailed", (router, error) => {
+  console.error("Failed:", error.message);
+});
+
+manager.on("paymentProcessed", (scid, invoiceId, txid) => {
+  console.log("Payment:", invoiceId, "TXID:", txid);
+});
+
+manager.on("error", (error) => {
+  console.error("Error:", error.message);
+});
+```
+
+### Import Existing Routers
+
+If you persist router records (e.g. in a database), you can re-import them on restart:
+
+```ts
+manager.importRouter({
+  id: "local-uuid",
+  scid: "abc123...",
+  deployTxid: "abc123...",
+  status: "active",
+  feeRecipientAddress: "dero1qy...",
+  feeBasisPoints: 250,
+  createdAt: "2026-03-03T00:00:00Z",
+  metadata: {},
+});
+```
+
+## RouterContract (Low-Level)
+
+Direct wrapper around the smart contract's RPC functions:
+
+```ts
+
+const wallet = new WalletRpcClient({ url: "http://127.0.0.1:10103/json_rpc" });
+const daemon = new DaemonRpcClient({ url: "http://127.0.0.1:10102/json_rpc" });
+const contract = new RouterContract(wallet, daemon);
+
+// Deploy
+const scid = await contract.deploy({ feeBasisPoints: 0 });
+
+// Pay
+const txid = await contract.pay(scid, "inv_001", 100_000n);
+
+// Admin
+await contract.updateMerchant(scid, "dero1qy...");
+await contract.pause(scid);
+await contract.resume(scid);
+await contract.withdrawTrapped(scid, 5000n);
+
+// Query state
+const state = await contract.getState(scid);
+
+// Check existence
+const exists = await contract.exists(scid);
+```
+
+## On-Chain State Type
+
+```ts
+type RouterOnChainState = {
+  scid: string;
+  merchant: string;
+  feeRecipient: string;
+  feeBasisPoints: number;
+  totalProcessed: bigint;
+  totalFees: bigint;
+  paymentCount: number;
+  paused: boolean;
+  scBalance: number;
+};
+```
+
+## Key Constants
+
+- **DERO decimals:** 5 (1 DERO = 100,000 atomic units)
+- **Basis points:** 10,000 = 100%. Use 250 for 2.5%, 100 for 1%, 0 for no fee.
+- **Settlement time:** ~18 seconds (one DERO block)
+
+> [!NOTE]
+> The `RouterManager` handles deployment and event tracking. Use `RouterContract` directly only if you need fine-grained control or are building a custom integration.
+
+> [!WARNING]
+> After deploying a router, wait at least **45 seconds** before sending the first payment. DERO's encrypted balances require the deploy transaction to fully confirm before subsequent transactions can be broadcast. See [Prerequisites](/guides/prerequisites.md) for more on DERO transaction timing.
+
+---
+
+<!-- source: https://pay.derod.org/payment-router/smart-contract.md -->
+
+---
+title: "Payment Router Smart Contract — On-Chain DERO Contract"
+description: "The payment-router.bas smart contract handles instant payment splitting between a merchant and an optional fee recipient."
+---
+
+# Payment Router Smart Contract
+
+The payment router contract is written in DERO's DVM-BASIC smart contract language. It receives payments and instantly forwards them to the merchant, with an optional fee split.
+
+## Contract Functions
+
+| Function | Who Can Call | Description |
+|---|---|---|
+| `Initialize` | Deployer | Set up merchant, fee recipient, and fee rate |
+| `Pay` | Anyone | Send DERO through the router (splits to merchant + fee recipient) |
+| `UpdateMerchant` | Merchant | Change the merchant address |
+| `Pause` | Merchant | Stop accepting payments |
+| `Resume` | Merchant | Resume accepting payments |
+| `WithdrawTrapped` | Merchant | Recover any DERO accidentally trapped in the contract |
+| `GetStats` | Anyone | Returns `totalProcessed` |
+
+## Roles
+
+- **Merchant** — The wallet that deploys the contract. Receives payment payouts. Can pause, resume, update their address, and withdraw trapped funds.
+- **Fee Recipient** — An optional address that receives a percentage of each payment. Set at deployment, cannot be changed.
+
+## Deployment Model
+
+> [!WARNING]
+> The payment router is deployed **once per merchant** and reused for every payment. The merchant deploys it from their own wallet and owns it permanently. This is the opposite of the escrow contract, which deploys a fresh instance per transaction.
+
+The deployer's wallet address automatically becomes the `merchant`. The contract stores aggregate statistics (`totalProcessed`, `totalFees`, `paymentCount`) that accumulate across all payments.
+
+## Fee Splitting
+
+The contract supports an optional fee split in **basis points** (1 basis point = 0.01%):
+
+- Set at deployment via `feeBasisPoints` — immutable after deploy
+- Automatically deducted from every payment
+- Sent to the `feeRecipient` address
+- If `feeBasisPoints` is 0, no fee is taken (merchant receives 100%)
+
+```
+Example: 250 basis points = 2.5% fee
+On a 10 DERO payment: 0.25 DERO → fee recipient, 9.75 DERO → merchant
+```
+
+## Security Features
+
+The contract includes several hardened security measures:
+
+| Guard | Purpose |
+|-------|---------|
+| `DEROVALUE() > 0` on non-payable functions | Prevents accidental DERO trapping |
+| `feeBasisPoints <= 10000` | Fee cannot exceed 100% |
+| `merchant != feeRecipient` (when fee > 0) | Prevents misconfigured self-fee |
+| `payout > 0` / `fee > 0` guards | No zero-value transfers |
+| `paused` flag | Merchant can halt payments |
+| `SIGNER()` checks | Only merchant can call admin functions |
+| `EXISTS("merchant")` | Prevents re-initialization |
+
+## Payment Flow
+
+```
+Pay("inv_123") with DEROVALUE() = 10,000 atomic
+         │
+         ├── fee = 10000 × 250 / 10000 = 250 atomic
+         ├── payout = 10000 - 250 = 9750 atomic
+         │
+         ├── SEND_DERO_TO_ADDRESS(merchant, 9750)
+         ├── SEND_DERO_TO_ADDRESS(feeRecipient, 250)
+         │
+         ├── totalProcessed += 10000
+         ├── totalFees += 250
+         └── paymentCount += 1
+```
+
+## Mainnet Validation
+
+The payment router has been deployed and tested on DERO mainnet (2026-03-03):
+
+- Full cycle: deploy → pay (0.1 DERO) → verify split → pay (0.05 DERO) → verify accumulation
+- All funds forwarded correctly (SC balance = 0 after each payment)
+- Fee counters accumulated as expected
+- No trapped funds
+
+See [TypeScript SDK](/payment-router/sdk.md) for the programmatic interface.
