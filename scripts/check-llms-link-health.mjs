@@ -18,6 +18,7 @@
  */
 
 import { readFile, access } from 'node:fs/promises'
+import { lookup } from 'node:dns/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -94,6 +95,35 @@ async function resolveSlugSource(siteDir, slug) {
   return null
 }
 
+/**
+ * Guard against a dead canonical domain. The structural check above passes
+ * even when a site's whole domain does not resolve — that is exactly how
+ * `pay.derod.org` shipped into every citation while being an NXDOMAIN.
+ *
+ * Network-aware so it never false-fails an offline runner: if EVERY domain
+ * fails to resolve we assume no network and SKIP. A genuinely dead single
+ * domain shows up as "some resolve, one doesn't" and FAILS.
+ */
+async function checkDomainsResolve(sites) {
+  const domains = [...new Set(sites.map((s) => s.domain))]
+  const results = await Promise.all(
+    domains.map(async (domain) => {
+      try {
+        await lookup(domain)
+        return { domain, resolves: true }
+      } catch (err) {
+        return { domain, resolves: false, code: err.code || String(err) }
+      }
+    }),
+  )
+  const dead = results.filter((r) => !r.resolves)
+  const alive = results.filter((r) => r.resolves)
+  if (alive.length === 0) {
+    return { skipped: true, reason: `no network (0/${domains.length} domains resolved)` }
+  }
+  return { fail: dead.length > 0, dead, resolved: alive.length, total: domains.length }
+}
+
 async function checkSite(site) {
   const llmsPath = path.join(MONOREPO, site.dir, 'public', 'llms.txt')
   if (!(await exists(llmsPath))) {
@@ -128,12 +158,24 @@ async function main() {
       for (const slug of r.broken) console.log(`    - ${slug} → no pages/${slug}.{mdx,md} or pages/${slug}/index.{mdx,md}`)
     }
   }
+  // Canonical-domain resolution guard (catches dead-domain citations).
+  const dns = await checkDomainsResolve(SITES)
+  if (dns.skipped) {
+    console.log(`  ${'domains'.padEnd(16)} SKIP — ${dns.reason}`)
+  } else if (!dns.fail) {
+    console.log(`  ${'domains'.padEnd(16)} OK   ${dns.resolved}/${dns.total} canonical domains resolve`)
+  } else {
+    anyFail = true
+    console.log(`  ${'domains'.padEnd(16)} FAIL ${dns.dead.length} canonical domain(s) do not resolve:`)
+    for (const d of dns.dead) console.log(`    - ${d.domain} → ${d.code} (dead canonical domain; every citation to it 404s)`)
+  }
+
   console.log()
   if (anyFail) {
-    console.error('[check-llms-link-health] FAIL — fix llms.txt link rows or restore the missing pages, then rerun.')
+    console.error('[check-llms-link-health] FAIL — fix llms.txt link rows / restore missing pages / repoint the dead domain, then rerun.')
     process.exit(1)
   }
-  console.log('[check-llms-link-health] OK — every llms.txt link row resolves to a source page.')
+  console.log('[check-llms-link-health] OK — every llms.txt link row resolves to a source page, and every canonical domain resolves.')
 }
 
 main().catch((err) => {
