@@ -998,15 +998,18 @@ Types, pricing utilities, and payment ID generation.
 
 ```ts
 const {
-  createInvoiceHandler,  // POST — create invoice
-  statusHandler,         // GET  — invoice status by ID
-  listInvoicesHandler,   // GET  — list invoices with filters
-  statsHandler,          // GET  — invoice statistics
-  webhookHandler,        // POST — incoming webhook receiver
-  healthHandler,         // GET  — engine health check
-  escrowActionHandler,   // POST — escrow lifecycle actions
-  listEscrowsHandler,    // GET  — list escrow records
-  getEngine,             // () => Promise<InvoiceEngine>
+  createInvoiceHandler,      // POST — create invoice
+  statusHandler,             // GET  — invoice status by ID
+  listInvoicesHandler,       // GET  — list invoices with filters
+  statsHandler,              // GET  — invoice statistics
+  webhookHandler,            // POST — incoming webhook receiver
+  healthHandler,             // GET  — engine health check
+  escrowActionHandler,       // POST — escrow lifecycle actions
+  listEscrowsHandler,        // GET  — list escrow records
+  claimEscrowInvoiceHandler, // POST — claim a pre-minted escrow invoice
+  issueReceiptHandler,       // POST — issue an x402 receipt after payment
+  verifyReceiptHandler,      // POST — verify an x402 receipt token
+  getEngine,                 // () => Promise<InvoiceEngine>
 } = createPaymentHandlers(config);
 ```
 
@@ -1024,7 +1027,7 @@ Focused subpaths are published for tree-shaking and cross-runtime use:
 |---|---|
 | `dero-pay/x402/types` | Zod schemas + inferred types (`PaymentPayload`, `PaymentRequirements`) |
 | `dero-pay/x402/server` | `build402Response`, `parsePaymentHeader`, facilitator client |
-| `dero-pay/x402/client` | `selectAcceptsEntry`, `buildPaymentHeader` |
+| `dero-pay/x402/client` | `selectAcceptsEntry`, `buildPaymentHeader`, `payDeroRail` (async convenience payer) |
 | `dero-pay/x402/next` | `withX402` App Router wrapper |
 
 See the [x402 Payment Guard](/dero-pay/x402.md) page for the full guard flow.
@@ -1040,6 +1043,34 @@ The autonomous agent-side payer — settles x402 challenges under a spend policy
 See [Autonomous Agent Payer](/dero-pay/agent.md) for the full flow and safety properties.
 
 ## Escrow (`dero-pay/escrow`)
+
+```ts
+
+```
+
+See [PREMINT Keeper](/escrow/keeper.md) for the pre-mint inventory flow.
+
+## Router (`dero-pay/router`)
+
+```ts
+
+```
+
+See the [Payment Router SDK](/payment-router/sdk.md) for full usage.
+
+## Gateway (`dero-pay/gateway`)
+
+HTTP client for external platforms (Medusa, WooCommerce, etc.) to create invoices and check status against a running gateway server.
+
+```ts
+
+```
+
+See the [Gateway Server](/guides/gateway-server.md) guide for the server side.
+
+## Bridge (`dero-pay/bridge`)
+
+An outbound-only host daemon that pushes durable, at-least-once payment webhooks to a merchant — `InvoiceEngine` + a durable outbox + a delivery worker, with zero inbound listeners. Also ships a `deropay-bridge` CLI binary.
 
 ```ts
 
@@ -1464,7 +1495,8 @@ dero-pay/
 | `dero-pay/agent` | Autonomous agent-side payer — spend policy, paying-fetch, MCP paid-tool guards |
 | `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
 | `dero-pay/router` | Payment router contract wrapper and manager |
-| `dero-pay/gateway` | Standalone gateway server building blocks |
+| `dero-pay/gateway` | HTTP client for external platforms to talk to a gateway |
+| `dero-pay/bridge` | Outbound-only daemon for durable, at-least-once payment webhooks |
 
 > [!NOTE]
 > Every subpath is published **dual-format** — an ESM build for `import` and a CommonJS build for `require` — so CommonJS backends (e.g. a Medusa plugin) can consume the SDK directly.
@@ -2478,7 +2510,8 @@ const manager = new EscrowManager({
   daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
 
   // Turn on the PREMINT keeper by giving it an inventory store.
-  escrowInventory: new SqliteEscrowInventoryStore("./escrow-inventory.db"),
+  // SqliteEscrowInventoryStore wraps a better-sqlite3 Database instance.
+  escrowInventory: new SqliteEscrowInventoryStore(new Database("./escrow-inventory.db")),
 
   // Optional pool tuning (defaults shown).
   keeperOptions: {
@@ -2495,8 +2528,11 @@ Two inventory stores ship in `dero-pay/escrow`:
 
 | Store | Use |
 |---|---|
-| `MemoryEscrowInventoryStore` | Development / tests, single process only |
-| `SqliteEscrowInventoryStore` | Production — pops boxes atomically across processes |
+| `MemoryEscrowInventoryStore` | Development / tests, single process only — `new MemoryEscrowInventoryStore()` |
+| `SqliteEscrowInventoryStore` | Production — pops boxes atomically across processes; wraps a `better-sqlite3` `Database` instance |
+
+> [!NOTE]
+> `better-sqlite3` is an optional peer dependency (`bun add better-sqlite3`). `SqliteEscrowInventoryStore` takes a constructed `Database` instance — `new SqliteEscrowInventoryStore(new Database("./escrow-inventory.db"))` — not a path string (unlike `SqliteInvoiceStore`, which takes `{ path }`).
 
 > [!WARNING]
 > **Multi-process deployments need a durable, atomically-popping store.** Two workers must never claim the same box. `SqliteEscrowInventoryStore` reports `durable = true`; the in-memory store does not and is safe only for a single process. The engine asserts durability for multi-process use.
@@ -2511,7 +2547,7 @@ Each keeper tick does two things: confirm minted boxes, then refill if the pool 
 | `confirmed` | Passed the GetSC gate — empty, owned by us, pool-ready |
 | `claimed` | Popped by a checkout to bind |
 
-**Confirm gate.** A minted box becomes pool-ready **only** once `GetSC` proves it reads back as `owner set` + `bound == 0` + `status == 0` — empty and ours. Anything else stays `minted` and is retried next tick, so an unconfirmed SCID is never handed to a checkout (binding one would fail with "SC not found").
+**Confirm gate.** A minted box becomes pool-ready **only** once `GetSC` proves it reads back as `owner set` + `bound == 0` + `statusCode == 0` — empty and ours. Anything else stays `minted` and is retried next tick, so an unconfirmed SCID is never handed to a checkout (binding one would fail with "SC not found").
 
 **Refill without over-minting.** When the ready count drops below `refillBelow`, the keeper mints up to `targetReady`. The deficit subtracts *both* confirmed and still-in-flight minted boxes, so a burst of ticks before the first mint confirms does not over-mint the pool.
 
@@ -2530,7 +2566,7 @@ The exported `EscrowKeeper` class exposes `readyCount()` and emits events (`boxC
 
 ```ts
 
-const inventory = new SqliteEscrowInventoryStore("./escrow-inventory.db");
+const inventory = new SqliteEscrowInventoryStore(new Database("./escrow-inventory.db"));
 
 const manager = new EscrowManager({
   // ...
@@ -2808,15 +2844,14 @@ The widget is a 13KB JavaScript file that creates a button, and when clicked, op
 
 ### Add the Script Tag
 
-```html
-<script src="https://cdn.deropay.com/widget.js"></script>
-```
-
-Or self-host it:
+Self-host the widget (recommended today) — build `dist/widget.global.js` from the `deropay-widget` package and serve it from your own origin:
 
 ```html
 <script src="/js/widget.global.js"></script>
 ```
+
+> [!WARNING]
+> A hosted CDN build at `https://cdn.deropay.com/widget.js` is planned but **not live yet** — self-host until it is announced.
 
 ### Add a Payment Button
 

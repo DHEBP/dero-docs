@@ -31,6 +31,10 @@ import {
   ATOMIC_UNITS_PER_DERO,     // 100_000n (10^5)
   DERO_DECIMALS,             // 5
 
+  // x402 receipt headers
+  formatX402AuthorizationHeader,  // Build `X402 proof="<token>"`
+  parseX402AuthorizationHeader,   // Extract a proof token from an Authorization header
+
   // Types
   type Invoice,
   type InvoiceStatus,        // "created" | "pending" | "confirming" | "completed" | "expired" | "partial"
@@ -151,9 +155,14 @@ import {
   createPaymentHandlers,    // Factory for API route handlers
   createDeroPayMiddleware,  // API key middleware
   generateApiKey,           // Generate a random API key
+  createX402RouteGuard,     // App Router x402 payment guard (see /dero-pay/x402)
 
   type PaymentHandlersConfig,
   type DeroPayMiddlewareConfig,
+  type X402PaymentPolicy,
+  type X402PolicyResolver,   // (request) => policy, for metered pricing
+  type X402RouteGuardConfig,
+  type X402ChallengeResponse,
 } from "dero-pay/next";
 ```
 
@@ -161,15 +170,18 @@ import {
 
 ```ts
 const {
-  createInvoiceHandler,  // POST — create invoice
-  statusHandler,         // GET  — invoice status by ID
-  listInvoicesHandler,   // GET  — list invoices with filters
-  statsHandler,          // GET  — invoice statistics
-  webhookHandler,        // POST — incoming webhook receiver
-  healthHandler,         // GET  — engine health check
-  escrowActionHandler,   // POST — escrow lifecycle actions
-  listEscrowsHandler,    // GET  — list escrow records
-  getEngine,             // () => Promise<InvoiceEngine>
+  createInvoiceHandler,      // POST — create invoice
+  statusHandler,             // GET  — invoice status by ID
+  listInvoicesHandler,       // GET  — list invoices with filters
+  statsHandler,              // GET  — invoice statistics
+  webhookHandler,            // POST — incoming webhook receiver
+  healthHandler,             // GET  — engine health check
+  escrowActionHandler,       // POST — escrow lifecycle actions
+  listEscrowsHandler,        // GET  — list escrow records
+  claimEscrowInvoiceHandler, // POST — claim a pre-minted escrow invoice
+  issueReceiptHandler,       // POST — issue an x402 receipt after payment
+  verifyReceiptHandler,      // POST — verify an x402 receipt token
+  getEngine,                 // () => Promise<InvoiceEngine>
 } = createPaymentHandlers(config);
 ```
 
@@ -196,7 +208,7 @@ Focused subpaths are published for tree-shaking and cross-runtime use:
 |---|---|
 | `dero-pay/x402/types` | Zod schemas + inferred types (`PaymentPayload`, `PaymentRequirements`) |
 | `dero-pay/x402/server` | `build402Response`, `parsePaymentHeader`, facilitator client |
-| `dero-pay/x402/client` | `selectAcceptsEntry`, `buildPaymentHeader` |
+| `dero-pay/x402/client` | `selectAcceptsEntry`, `buildPaymentHeader`, `payDeroRail` (async convenience payer) |
 | `dero-pay/x402/next` | `withX402` App Router wrapper |
 
 See the [x402 Payment Guard](/dero-pay/x402) page for the full guard flow.
@@ -249,6 +261,11 @@ import {
   EscrowStatusCode,       // { AWAITING_DEPOSIT: 0, FUNDED: 1, ... }
   statusCodeToString,     // Convert code to human-readable string
 
+  // PREMINT keeper + inventory (see /escrow/keeper)
+  EscrowKeeper,                 // Background pre-mint pool loop
+  MemoryEscrowInventoryStore,   // In-memory pool store (single process)
+  SqliteEscrowInventoryStore,   // Durable pool store (wraps a better-sqlite3 Database)
+
   type EscrowStatus,
   type EscrowStatusCodeValue,
   type EscrowOnChainState,
@@ -257,7 +274,77 @@ import {
   type EscrowManagerEvents,
   type EscrowManagerConfig,
   type CreateEscrowParams,
+  type EscrowKeeperOptions,
+  type EscrowKeeperEvents,
+  type EscrowInventoryStore,
+  type EscrowInventoryState,
 } from "dero-pay/escrow";
+```
+
+See [PREMINT Keeper](/escrow/keeper) for the pre-mint inventory flow.
+
+## Router (`dero-pay/router`)
+
+```ts
+import {
+  RouterContract,   // Payment router contract RPC wrapper
+  RouterManager,    // Deploy + payment lifecycle manager
+
+  type RouterOnChainState,
+  type DeployRouterParams,
+  type RouterRecord,
+  type RouterStatus,
+  type RouterManagerEvents,
+  type RouterManagerConfig,
+} from "dero-pay/router";
+```
+
+See the [Payment Router SDK](/payment-router/sdk) for full usage.
+
+## Gateway (`dero-pay/gateway`)
+
+HTTP client for external platforms (Medusa, WooCommerce, etc.) to create invoices and check status against a running gateway server.
+
+```ts
+import {
+  GatewayClient,        // HTTP client for a DeroPay gateway
+  GatewayClientError,
+
+  type GatewayClientConfig,
+  type GatewayInvoice,
+  type GatewayPayment,
+  type GatewayEscrow,
+  type GatewayInfo,
+  type GatewayError,
+  type CreateInvoiceInput,
+} from "dero-pay/gateway";
+```
+
+See the [Gateway Server](/guides/gateway-server) guide for the server side.
+
+## Bridge (`dero-pay/bridge`)
+
+An outbound-only host daemon that pushes durable, at-least-once payment webhooks to a merchant — `InvoiceEngine` + a durable outbox + a delivery worker, with zero inbound listeners. Also ships a `deropay-bridge` CLI binary.
+
+```ts
+import {
+  PayoutBridge,             // The outbound webhook daemon
+  loadConfig,               // Load + validate bridge config
+  isAcceptableWebhookUrl,   // Guard against non-loopback/unsafe URLs
+  writeHeartbeat,
+  readHeartbeat,
+  evaluateHealth,
+
+  // Durability primitives (reusable when embedding the bridge)
+  WebhookOutbox,
+  WebhookDeliveryWorker,
+  OutboxWebhookSink,
+
+  type BridgeConfig,
+  type OutboxRecord,
+  type OutboxStatus,
+  type DeadLetter,
+} from "dero-pay/bridge";
 ```
 
 See the [Escrow documentation](/escrow/overview) for full escrow API details.

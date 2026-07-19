@@ -17,15 +17,15 @@ The widget is a 13KB JavaScript file that creates a button, and when clicked, op
 
 ### Add the Script Tag
 
-```html
-<script src="https://cdn.deropay.com/widget.js"></script>
-```
-
-Or self-host it:
+Self-host the widget (recommended today) — build `dist/widget.global.js` from the `deropay-widget` package and serve it from your own origin:
 
 ```html
 <script src="/js/widget.global.js"></script>
 ```
+
+<Callout type="warning">
+  A hosted CDN build at `https://cdn.deropay.com/widget.js` is planned but **not live yet** — self-host until it is announced.
+</Callout>
 
 ### Add a Payment Button
 

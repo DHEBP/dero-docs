@@ -101,7 +101,8 @@ dero-pay/
 | `dero-pay/agent` | Autonomous agent-side payer — spend policy, paying-fetch, MCP paid-tool guards |
 | `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
 | `dero-pay/router` | Payment router contract wrapper and manager |
-| `dero-pay/gateway` | Standalone gateway server building blocks |
+| `dero-pay/gateway` | HTTP client for external platforms to talk to a gateway |
+| `dero-pay/bridge` | Outbound-only daemon for durable, at-least-once payment webhooks |
 
 <Callout type="info">
   Every subpath is published **dual-format** — an ESM build for `import` and a CommonJS build for `require` — so CommonJS backends (e.g. a Medusa plugin) can consume the SDK directly.
