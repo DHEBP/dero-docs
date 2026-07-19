@@ -903,7 +903,10 @@ Receipts are cached per `(origin, path)` and attached proactively until `claims.
 Both policy classes implement the same `SpendGuard` interface (`reserve(origin, amountAtomic, context) → { commit, release }`), so they drop into `createPayingFetch` and `createPayingToolCaller` interchangeably.
 
 - **`SpendPolicy`** — origin allowlist, per-request cap, optional rolling-window cap. Reservation-based: two concurrent payments cannot both slip under a nearly exhausted window.
-- **`CredentialPolicy`** — macaroon-style attenuable capabilities built from HMAC chains (`mintSpendCredential`, `attenuate`, `verifyCredentialSignature`). A holder can only ever *narrow* a credential — tighter spend cap, fewer origins, shorter expiry, narrower `resource-prefix` (matched against the challenge's `resource`, e.g. `/api/`). Hand an attenuated credential to a sub-agent instead of a wallet.
+- **`CredentialPolicy`** — macaroon-style attenuable capabilities built from HMAC chains (`mintSpendCredential`, `attenuate`, `verifyCredentialSignature`). Attenuation tightens the **spend cap** (lowest wins), shortens **expiry** (earliest wins), and narrows the **`resource-prefix`** (every required prefix must match the challenge's `resource`, e.g. `/api/`). Hand an attenuated credential to a sub-agent instead of a wallet.
+
+> [!WARNING]
+> A credential only restricts on the caveats it actually carries — one minted with no spend cap, no origin, or no expiry is **unrestricted on that axis**. Always set the caveats you depend on. Note the `origin` caveat currently matches *any-of* (adding an origin widens the allowed set rather than narrowing it), so do not rely on origin caveats alone to confine a sub-agent — pair them with a `resource-prefix` and a spend cap. For strict deny-by-default origin control, use `SpendPolicy`.
 
 ## MCP Paid Tools
 
