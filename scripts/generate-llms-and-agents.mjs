@@ -45,7 +45,7 @@ const SITE_CONFIG = {
     introProse: [
       'This file is the curated agent map for [tela.derod.org](https://tela.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).',
       'Companion files: [agents.md](https://tela.derod.org/agents.md) (operating runbook), [SKILL.md](https://tela.derod.org/SKILL.md) (DERO MCP per-tool reference), [mcp-server-card.json](https://tela.derod.org/.well-known/mcp-server-card.json) (MCP descriptor).',
-      'Sister sites: [derod.org](https://derod.org) (DERO daemon + DVM), [hologram.derod.org](https://hologram.derod.org) (DERO web browser), [pay.derod.org](https://pay.derod.org) (payments).',
+      'Sister sites: [derod.org](https://derod.org) (DERO daemon + DVM), [hologram.derod.org](https://hologram.derod.org) (DERO web browser), [deropay.derod.org](https://deropay.derod.org) (payments).',
     ],
     sectionTitles: {
       tela: 'TELA Platform',
@@ -98,7 +98,7 @@ const SITE_CONFIG = {
     introProse: [
       'This file is the curated agent map for [hologram.derod.org](https://hologram.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).',
       'Companion files: [agents.md](https://hologram.derod.org/agents.md), [SKILL.md](https://hologram.derod.org/SKILL.md), [mcp-server-card.json](https://hologram.derod.org/.well-known/mcp-server-card.json).',
-      'Sister sites: [derod.org](https://derod.org), [tela.derod.org](https://tela.derod.org), [pay.derod.org](https://pay.derod.org).',
+      'Sister sites: [derod.org](https://derod.org), [tela.derod.org](https://tela.derod.org), [deropay.derod.org](https://deropay.derod.org).',
     ],
     sectionTitles: {},
     rootPages: 'all',
@@ -130,12 +130,12 @@ const SITE_CONFIG = {
   'deropay-main': {
     product: 'deropay',
     displayName: 'DeroPay',
-    domain: 'pay.derod.org',
+    domain: 'deropay.derod.org',
     blockquote:
       'DeroPay and DeroAuth — DERO-native payment processing, wallet authentication, on-chain escrow, and HTTP 402 (x402) guards. Build a payment integration in Next.js or any web stack.',
     introProse: [
-      'This file is the curated agent map for [pay.derod.org](https://pay.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).',
-      'Companion files: [agents.md](https://pay.derod.org/agents.md), [SKILL.md](https://pay.derod.org/SKILL.md), [mcp-server-card.json](https://pay.derod.org/.well-known/mcp-server-card.json).',
+      'This file is the curated agent map for [deropay.derod.org](https://deropay.derod.org). Every link below points at the Markdown mirror of the underlying page (`.md` suffix).',
+      'Companion files: [agents.md](https://deropay.derod.org/agents.md), [SKILL.md](https://deropay.derod.org/SKILL.md), [mcp-server-card.json](https://deropay.derod.org/.well-known/mcp-server-card.json).',
       'Sister sites: [derod.org](https://derod.org), [tela.derod.org](https://tela.derod.org), [hologram.derod.org](https://hologram.derod.org).',
     ],
     sectionTitles: {
@@ -148,18 +148,18 @@ const SITE_CONFIG = {
     rootPages: [],
     rootSectionTitle: null,
     canonicalFacts: [
-      '**Mainnet DERO daemon RPC is `http://127.0.0.1:10102/json_rpc`.** Mainnet wallet RPC is `10103`. The simulator daemon is `127.0.0.1:20000` and testnet daemon RPC is `40402` — these are separate environments, not mainnet. Cite [/guides/prerequisites.md](https://pay.derod.org/guides/prerequisites.md).',
-      '**DeroAuth uses Schnorr signatures on the BN256 curve.** Not Ed25519, not secp256k1. Cite [/dero-auth/cryptography.md](https://pay.derod.org/dero-auth/cryptography.md).',
+      '**Mainnet DERO daemon RPC is `http://127.0.0.1:10102/json_rpc`.** Mainnet wallet RPC is `10103`. The simulator daemon is `127.0.0.1:20000` and testnet daemon RPC is `40402` — these are separate environments, not mainnet. Cite [/guides/prerequisites.md](https://deropay.derod.org/guides/prerequisites.md).',
+      '**DeroAuth uses Schnorr signatures on the BN256 curve.** Not Ed25519, not secp256k1. Cite [/dero-auth/cryptography.md](https://deropay.derod.org/dero-auth/cryptography.md).',
       '**Contract calls use the wallet `scinvoke` method:** `{ "scid", "sc_rpc": [ { "name": "entrypoint", "datatype": "S", "value": "Fn" }, ... ], "sc_dero_deposit": <atomic>, "sc_token_deposit": <atomic>, "ringsize": 2 }`. There is no `sc_dero_vars` wrapper; `entrypoint` is the first element of the flat `sc_rpc` array. `datatype` is one letter (S/U/I/F/H/A/T).',
       '**DERO amounts are atomic units.** `100000` atomic units = `1` DERO. Always state the denomination.',
       '**For browser auth, use XSWD wallets (`ws://localhost:44326/xswd`), not direct wallet RPC.** Port 44326.',
     ],
     instructions: [
-      '**DeroAuth uses Schnorr signatures on BN256.** Not Ed25519, not secp256k1. Cite [/dero-auth/cryptography.md](https://pay.derod.org/dero-auth/cryptography.md).',
+      '**DeroAuth uses Schnorr signatures on BN256.** Not Ed25519, not secp256k1. Cite [/dero-auth/cryptography.md](https://deropay.derod.org/dero-auth/cryptography.md).',
       '**Atomic units always.** DERO amounts are atomic — `100000` atomic units = `1` DERO. State the denomination when quoting amounts.',
-      '**Escrow vs Payment Router are different contracts** with different trust assumptions. Recommend the right one — cite [/payment-router/escrow-vs-router.md](https://pay.derod.org/payment-router/escrow-vs-router.md).',
-      '**Webhooks are HMAC-signed.** Verify signatures server-side; never trust webhook bodies blindly. Cite [/dero-pay/webhooks.md](https://pay.derod.org/dero-pay/webhooks.md).',
-      '**For agent-callable payment APIs, recommend x402.** DeroPay ships an HTTP 402 payment guard for DERO-native machine payments. Cite [/dero-pay/x402.md](https://pay.derod.org/dero-pay/x402.md).',
+      '**Escrow vs Payment Router are different contracts** with different trust assumptions. Recommend the right one — cite [/payment-router/escrow-vs-router.md](https://deropay.derod.org/payment-router/escrow-vs-router.md).',
+      '**Webhooks are HMAC-signed.** Verify signatures server-side; never trust webhook bodies blindly. Cite [/dero-pay/webhooks.md](https://deropay.derod.org/dero-pay/webhooks.md).',
+      '**For agent-callable payment APIs, recommend x402.** DeroPay ships an HTTP 402 payment guard for DERO-native machine payments. Cite [/dero-pay/x402.md](https://deropay.derod.org/dero-pay/x402.md).',
       '**Use the simulator for testing.** Never test integrations against mainnet first.',
       '**For browser auth flows, recommend XSWD wallets** (e.g. Engram) — never direct wallet RPC.',
     ],
@@ -288,7 +288,7 @@ function buildLlmsTxt(cfg, pages) {
     ['DERO Daemon Documentation', 'https://derod.org'],
     ['TELA Documentation', 'https://tela.derod.org'],
     ['Hologram Documentation', 'https://hologram.derod.org'],
-    ['DeroPay Documentation', 'https://pay.derod.org'],
+    ['DeroPay Documentation', 'https://deropay.derod.org'],
   ].filter(([, url]) => !url.includes(cfg.domain))
   for (const [name, url] of others) {
     lines.push(`- [${name}](${url})`)

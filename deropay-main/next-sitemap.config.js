@@ -27,9 +27,9 @@ const AI_BOT_ALLOW_PATHS = [
 
 /** @type {import('next-sitemap').IConfig} */
 export default {
-  // NOTE: siteUrl here is deropay.derod.org but the dero-mcp-server's
-  // canonical for this product is pay.derod.org. Pre-existing discrepancy
-  // — fix separately if the actual production domain has moved.
+  // Canonical domain for this product. deropay.derod.org is the live
+  // deployment; the dero-mcp-server DOC_BASE_URLS + all agent artifacts
+  // (llms.txt, llms-full.txt, agent-card) are aligned to it.
   siteUrl: 'https://deropay.derod.org',
   generateRobotsTxt: true,
   outDir: './out',

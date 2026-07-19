@@ -83,7 +83,7 @@
       "sister_sites": [
         { "name": "TELA", "url": "https://tela.derod.org" },
         { "name": "Hologram", "url": "https://hologram.derod.org" },
-        { "name": "DeroPay", "url": "https://pay.derod.org" }
+        { "name": "DeroPay", "url": "https://deropay.derod.org" }
       ],
       "discovery": {
         "llms_txt": "https://derod.org/llms.txt",

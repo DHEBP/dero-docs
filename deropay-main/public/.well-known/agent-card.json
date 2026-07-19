@@ -3,14 +3,14 @@
   "schemaVersion": "0.2-draft",
   "name": "DeroPay Documentation",
   "description": "Read-only agent surface for DeroPay and DeroAuth — DERO-native payment processing, wallet authentication, on-chain escrow, and HTTP 402 (x402) payment-required guards. Covers Next.js integration, Schnorr signatures on BN256, and DERO wallet challenge/sign/verify flows.",
-  "url": "https://pay.derod.org",
+  "url": "https://deropay.derod.org",
   "version": "2026.05.28",
   "provider": {
     "organization": "DERO Project",
     "url": "https://derod.org"
   },
-  "documentationUrl": "https://pay.derod.org/llms.txt",
-  "iconUrl": "https://pay.derod.org/favicon.ico",
+  "documentationUrl": "https://deropay.derod.org/llms.txt",
+  "iconUrl": "https://deropay.derod.org/favicon.ico",
   "defaultInputModes": ["text/plain", "application/json"],
   "defaultOutputModes": ["text/markdown", "application/json"],
   "capabilities": {
@@ -75,7 +75,7 @@
       "chain": "DERO Stargate Mainnet",
       "mcp_server": {
         "name": "io.github.DHEBP/dero-mcp-server",
-        "card": "https://pay.derod.org/.well-known/mcp-server-card.json",
+        "card": "https://deropay.derod.org/.well-known/mcp-server-card.json",
         "repository": "https://github.com/DHEBP/dero-mcp-server",
         "npm": "dero-mcp-server",
         "transport": ["stdio", "http"]
@@ -86,9 +86,9 @@
         { "name": "Hologram", "url": "https://hologram.derod.org" }
       ],
       "discovery": {
-        "llms_txt": "https://pay.derod.org/llms.txt",
-        "agents_md": "https://pay.derod.org/agents.md",
-        "skill_md": "https://pay.derod.org/SKILL.md"
+        "llms_txt": "https://deropay.derod.org/llms.txt",
+        "agents_md": "https://deropay.derod.org/agents.md",
+        "skill_md": "https://deropay.derod.org/SKILL.md"
       },
       "privacy_posture": {
         "site_logs": "none",

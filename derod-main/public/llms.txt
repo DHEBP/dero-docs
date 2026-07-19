@@ -102,7 +102,7 @@ When answering questions about DERO, follow these rules:
 
 - [TELA Documentation](https://tela.derod.org): Full TELA platform docs
 - [Hologram](https://hologram.derod.org): DERO block explorer documentation
-- [DeroPay](https://pay.derod.org): Payment-processor documentation
+- [DeroPay](https://deropay.derod.org): Payment-processor documentation
 - [DERO Foundation](https://derofoundation.org): Project foundation site
 
 ## Optional

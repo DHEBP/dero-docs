@@ -11,7 +11,7 @@ A monorepo of four [Nextra](https://nextra.site) (Next.js) documentation sites, 
 | `derod-main` | DERO blockchain — privacy suite, DVM-BASIC, mining, wallets, daemon RPC | [derod.org](https://derod.org) |
 | `tela-main` | TELA on-chain web platform — apps, XSWD, CLI, templates | [tela.derod.org](https://tela.derod.org) |
 | `hologram-main` | Hologram desktop client — wallet, TELA browser, explorer, Studio | [hologram.derod.org](https://hologram.derod.org) |
-| `deropay-main` | DeroPay — payment router, escrow, dero-pay / dero-auth SDKs | [pay.derod.org](https://pay.derod.org) |
+| `deropay-main` | DeroPay — payment router, escrow, dero-pay / dero-auth SDKs | [pay.derod.org](https://deropay.derod.org) |
 
 ## Prerequisites
 

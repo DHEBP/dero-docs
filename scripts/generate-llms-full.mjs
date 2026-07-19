@@ -47,7 +47,7 @@ const SITES = {
   'derod-main': { product: 'derod', domain: 'derod.org', displayName: 'DERO Blockchain' },
   'tela-main': { product: 'tela', domain: 'tela.derod.org', displayName: 'TELA' },
   'hologram-main': { product: 'hologram', domain: 'hologram.derod.org', displayName: 'Hologram' },
-  'deropay-main': { product: 'deropay', domain: 'pay.derod.org', displayName: 'DeroPay' },
+  'deropay-main': { product: 'deropay', domain: 'deropay.derod.org', displayName: 'DeroPay' },
 }
 
 async function buildLlmsFull(site, cfg, pages) {

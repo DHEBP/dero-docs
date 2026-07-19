@@ -11,7 +11,7 @@ Four production docs sites for [DERO](https://derod.org) — the privacy-first L
 | **DERO** | Privacy suite, DVM-BASIC smart contracts, mining, wallets, daemon RPC | [derod.org](https://derod.org) |
 | **TELA** | On-chain web platform — TELA apps, XSWD wallet protocol, CLI, templates | [tela.derod.org](https://tela.derod.org) |
 | **Hologram** | Desktop client — wallet, TELA browser, explorer, Studio, simulator, telaHost Bridge API | [hologram.derod.org](https://hologram.derod.org) |
-| **DeroPay** | Payments + auth — dero-pay SDK, payment router, escrow, dero-auth SDK | [pay.derod.org](https://pay.derod.org) |
+| **DeroPay** | Payments + auth — dero-pay SDK, payment router, escrow, dero-auth SDK | [pay.derod.org](https://deropay.derod.org) |
 
 The sites are the product. This repo is just where they live.
 

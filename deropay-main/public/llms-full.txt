@@ -1,10 +1,10 @@
 # DeroPay — Full Documentation Corpus
 
-> Every documentation page for pay.derod.org, inlined as Markdown for long-context LLM ingestion. Curated link list: https://pay.derod.org/llms.txt. Each page is also available individually at https://pay.derod.org/<path>.md.
+> Every documentation page for deropay.derod.org, inlined as Markdown for long-context LLM ingestion. Curated link list: https://deropay.derod.org/llms.txt. Each page is also available individually at https://deropay.derod.org/<path>.md.
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/api-reference.md -->
+<!-- source: https://deropay.derod.org/dero-auth/api-reference.md -->
 
 ---
 title: "DeroAuth API Reference"
@@ -123,7 +123,7 @@ type DeroMiddlewareConfig = {
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/auth-flow.md -->
+<!-- source: https://deropay.derod.org/dero-auth/auth-flow.md -->
 
 ---
 title: "Authentication Flow — Challenge, Sign, Verify"
@@ -236,7 +236,7 @@ A nonce can only be used once — if an attacker captures a signed message, they
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/cryptography.md -->
+<!-- source: https://deropay.derod.org/dero-auth/cryptography.md -->
 
 ---
 title: "Cryptography — Schnorr Signatures on BN256"
@@ -350,7 +350,7 @@ No custom cryptographic implementations.
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/nextjs.md -->
+<!-- source: https://deropay.derod.org/dero-auth/nextjs.md -->
 
 ---
 title: "Next.js Integration — DeroAuth Route Handlers & Middleware"
@@ -467,7 +467,7 @@ export default async function DashboardPage() {
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/overview.md -->
+<!-- source: https://deropay.derod.org/dero-auth/overview.md -->
 
 ---
 title: "DeroAuth Overview — Wallet-Based Authentication for DERO"
@@ -536,7 +536,7 @@ The entire verification is mathematical — no blockchain query needed.
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/quick-start.md -->
+<!-- source: https://deropay.derod.org/dero-auth/quick-start.md -->
 
 ---
 title: "DeroAuth Quick Start — Add Wallet Login"
@@ -682,7 +682,7 @@ const { challengeHandler, verifyHandler } = createAuthHandlers({
 
 ---
 
-<!-- source: https://pay.derod.org/dero-auth/react.md -->
+<!-- source: https://deropay.derod.org/dero-auth/react.md -->
 
 ---
 title: "React Components — DeroAuth UI"
@@ -806,7 +806,7 @@ function UserBadge() {
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/agent.md -->
+<!-- source: https://deropay.derod.org/dero-pay/agent.md -->
 
 ---
 title: "Autonomous Agent Payer — dero-pay/agent"
@@ -943,7 +943,7 @@ A runnable end-to-end demo pays the [x402 example app](/dero-pay/x402.md#example
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/api-reference.md -->
+<!-- source: https://deropay.derod.org/dero-pay/api-reference.md -->
 
 ---
 title: "DeroPay API Reference"
@@ -1099,7 +1099,7 @@ See the [Escrow documentation](/escrow/overview.md) for full escrow API details.
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/invoice-engine.md -->
+<!-- source: https://deropay.derod.org/dero-pay/invoice-engine.md -->
 
 ---
 title: "Invoice Engine — Core Payment Orchestrator"
@@ -1219,7 +1219,7 @@ formatDero(500_000n);    // "5.00000 DERO"
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/nextjs.md -->
+<!-- source: https://deropay.derod.org/dero-pay/nextjs.md -->
 
 ---
 title: "Next.js Integration — DeroPay Route Handlers & Middleware"
@@ -1393,7 +1393,7 @@ Requests to protected paths must include the API key in the header. Public paths
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/overview.md -->
+<!-- source: https://deropay.derod.org/dero-pay/overview.md -->
 
 ---
 title: "DeroPay Overview — Payment Processing for DERO"
@@ -1511,7 +1511,7 @@ dero-pay/
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/payment-monitor.md -->
+<!-- source: https://deropay.derod.org/dero-pay/payment-monitor.md -->
 
 ---
 title: "Payment Monitor — Transaction Polling & Confirmation Tracking"
@@ -1568,7 +1568,7 @@ If a customer sends less DERO than the invoice amount:
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/quick-start.md -->
+<!-- source: https://deropay.derod.org/dero-pay/quick-start.md -->
 
 ---
 title: "DeroPay Quick Start — Accept DERO Payments"
@@ -1694,7 +1694,7 @@ function PaymentPage({ invoiceId }: { invoiceId: string }) {
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/react.md -->
+<!-- source: https://deropay.derod.org/dero-pay/react.md -->
 
 ---
 title: "React Components — Payment UI"
@@ -1831,7 +1831,7 @@ function PaymentPage({ invoiceId }: { invoiceId: string }) {
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/rpc.md -->
+<!-- source: https://deropay.derod.org/dero-pay/rpc.md -->
 
 ---
 title: "RPC Clients — DERO Wallet & Daemon Communication"
@@ -1937,7 +1937,7 @@ derod --rpc-bind=127.0.0.1:10102
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/storage.md -->
+<!-- source: https://deropay.derod.org/dero-pay/storage.md -->
 
 ---
 title: "Storage Backends — Invoice Persistence"
@@ -2019,7 +2019,7 @@ This makes it straightforward to use PostgreSQL, MySQL, Redis, or any other stor
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/webhooks.md -->
+<!-- source: https://deropay.derod.org/dero-pay/webhooks.md -->
 
 ---
 title: "Webhooks — HMAC-Signed Payment Notifications"
@@ -2118,7 +2118,7 @@ If your webhook endpoint returns a non-2xx status code, DeroPay will retry with 
 
 ---
 
-<!-- source: https://pay.derod.org/dero-pay/x402.md -->
+<!-- source: https://deropay.derod.org/dero-pay/x402.md -->
 
 ---
 title: "x402 Payment Guard — DERO-Native HTTP 402 for APIs"
@@ -2483,7 +2483,7 @@ Then open `http://localhost:3000`.
 
 ---
 
-<!-- source: https://pay.derod.org/escrow/keeper.md -->
+<!-- source: https://deropay.derod.org/escrow/keeper.md -->
 
 ---
 title: "PREMINT Keeper — Pre-Minted Escrow Inventory"
@@ -2593,7 +2593,7 @@ Keeper ticks are non-fatal: a mint RPC error or `GetSC` error emits `error` and 
 
 ---
 
-<!-- source: https://pay.derod.org/escrow/overview.md -->
+<!-- source: https://deropay.derod.org/escrow/overview.md -->
 
 ---
 title: "Escrow System — Trustless On-Chain Payments"
@@ -2666,7 +2666,7 @@ Escrow deploys a fresh contract per transaction, and minting a contract takes ab
 
 ---
 
-<!-- source: https://pay.derod.org/escrow/sdk.md -->
+<!-- source: https://deropay.derod.org/escrow/sdk.md -->
 
 ---
 title: "Escrow TypeScript SDK — EscrowContract & EscrowManager"
@@ -2764,7 +2764,7 @@ statusCodeToString(2); // "released"
 
 ---
 
-<!-- source: https://pay.derod.org/escrow/smart-contract.md -->
+<!-- source: https://deropay.derod.org/escrow/smart-contract.md -->
 
 ---
 title: "Escrow Smart Contract — On-Chain DERO Contract"
@@ -2830,7 +2830,7 @@ See [TypeScript SDK](/escrow/sdk.md) for the programmatic interface.
 
 ---
 
-<!-- source: https://pay.derod.org/guides/embeddable-widget.md -->
+<!-- source: https://deropay.derod.org/guides/embeddable-widget.md -->
 
 ---
 title: "Guide: Embeddable Payment Widget"
@@ -2964,7 +2964,7 @@ bun run build
 
 ---
 
-<!-- source: https://pay.derod.org/guides/gateway-server.md -->
+<!-- source: https://deropay.derod.org/guides/gateway-server.md -->
 
 ---
 title: "Guide: DeroPay Gateway Server"
@@ -3149,7 +3149,7 @@ The gateway is the foundation. Connect it to:
 
 ---
 
-<!-- source: https://pay.derod.org/guides/medusa-plugin.md -->
+<!-- source: https://deropay.derod.org/guides/medusa-plugin.md -->
 
 ---
 title: "Guide: Medusa.js Payment Plugin"
@@ -3263,7 +3263,7 @@ Both the Medusa store and the DeroPay gateway run on your infrastructure. No thi
 
 ---
 
-<!-- source: https://pay.derod.org/guides/merchant-dashboard.md -->
+<!-- source: https://deropay.derod.org/guides/merchant-dashboard.md -->
 
 ---
 title: "Merchant Dashboard — Self-Hosted Admin UI"
@@ -3340,7 +3340,7 @@ Consider using DeroAuth itself to protect the dashboard — authenticate with yo
 
 ---
 
-<!-- source: https://pay.derod.org/guides/nextjs-auth.md -->
+<!-- source: https://deropay.derod.org/guides/nextjs-auth.md -->
 
 ---
 title: "Guide: DERO Wallet Auth in Next.js"
@@ -3490,7 +3490,7 @@ export default async function DashboardPage() {
 
 ---
 
-<!-- source: https://pay.derod.org/guides/nextjs-payments.md -->
+<!-- source: https://deropay.derod.org/guides/nextjs-payments.md -->
 
 ---
 title: "Guide: Accept DERO Payments in Next.js"
@@ -3649,7 +3649,7 @@ export default function CheckoutPage() {
 
 ---
 
-<!-- source: https://pay.derod.org/guides/payment-links.md -->
+<!-- source: https://deropay.derod.org/guides/payment-links.md -->
 
 ---
 title: "Guide: Payment Links & Hosted Checkout"
@@ -3755,7 +3755,7 @@ The checkout page follows the DeroPay design system — emerald green accents on
 
 ---
 
-<!-- source: https://pay.derod.org/guides/prerequisites.md -->
+<!-- source: https://deropay.derod.org/guides/prerequisites.md -->
 
 ---
 title: "Prerequisites — DERO Wallet & Environment Setup"
@@ -3860,7 +3860,7 @@ derod --rpc-bind=127.0.0.1:40402 --testnet
 
 ---
 
-<!-- source: https://pay.derod.org/guides/woocommerce.md -->
+<!-- source: https://deropay.derod.org/guides/woocommerce.md -->
 
 ---
 title: "Guide: WooCommerce Plugin"
@@ -3949,7 +3949,7 @@ Configure your DeroPay gateway to send webhooks to this URL.
 
 ---
 
-<!-- source: https://pay.derod.org/payment-router/escrow-vs-router.md -->
+<!-- source: https://deropay.derod.org/payment-router/escrow-vs-router.md -->
 
 ---
 title: "Escrow vs. Payment Router — Which Smart Contract to Use"
@@ -4052,7 +4052,7 @@ await escrow.create({ seller: "dero1q...", amount: 5_000_000 });
 
 ---
 
-<!-- source: https://pay.derod.org/payment-router/overview.md -->
+<!-- source: https://deropay.derod.org/payment-router/overview.md -->
 
 ---
 title: "Payment Router — Instant On-Chain Payments"
@@ -4131,7 +4131,7 @@ See [TypeScript SDK](/payment-router/sdk.md).
 
 ---
 
-<!-- source: https://pay.derod.org/payment-router/sdk.md -->
+<!-- source: https://deropay.derod.org/payment-router/sdk.md -->
 
 ---
 title: "Payment Router TypeScript SDK — RouterContract & RouterManager"
@@ -4282,7 +4282,7 @@ type RouterOnChainState = {
 
 ---
 
-<!-- source: https://pay.derod.org/payment-router/smart-contract.md -->
+<!-- source: https://deropay.derod.org/payment-router/smart-contract.md -->
 
 ---
 title: "Payment Router Smart Contract — On-Chain DERO Contract"

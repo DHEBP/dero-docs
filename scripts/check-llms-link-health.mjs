@@ -28,7 +28,7 @@ const SITES = [
   { dir: 'derod-main',    domain: 'derod.org' },
   { dir: 'tela-main',     domain: 'tela.derod.org' },
   { dir: 'hologram-main', domain: 'hologram.derod.org' },
-  { dir: 'deropay-main',  domain: 'pay.derod.org' },
+  { dir: 'deropay-main',  domain: 'deropay.derod.org' },
 ]
 
 async function exists(p) {

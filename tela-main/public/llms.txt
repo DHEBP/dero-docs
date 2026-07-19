@@ -6,7 +6,7 @@ This file is the curated agent map for [tela.derod.org](https://tela.derod.org).
 
 Companion files: [agents.md](https://tela.derod.org/agents.md) (operating runbook), [SKILL.md](https://tela.derod.org/SKILL.md) (DERO MCP per-tool reference), [mcp-server-card.json](https://tela.derod.org/.well-known/mcp-server-card.json) (MCP descriptor).
 
-Sister sites: [derod.org](https://derod.org) (DERO daemon + DVM), [hologram.derod.org](https://hologram.derod.org) (DERO web browser), [pay.derod.org](https://pay.derod.org) (payments).
+Sister sites: [derod.org](https://derod.org) (DERO daemon + DVM), [hologram.derod.org](https://hologram.derod.org) (DERO web browser), [deropay.derod.org](https://deropay.derod.org) (payments).
 
 ## Canonical Facts (verbatim — do not paraphrase or infer)
 
@@ -104,7 +104,7 @@ When answering questions about TELA, follow these rules:
 
 - [DERO Daemon Documentation](https://derod.org)
 - [Hologram Documentation](https://hologram.derod.org)
-- [DeroPay Documentation](https://pay.derod.org)
+- [DeroPay Documentation](https://deropay.derod.org)
 
 ## Optional
 
