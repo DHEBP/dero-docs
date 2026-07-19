@@ -881,7 +881,8 @@ The payer is built for autonomous operation, where a mistaken payment is real fu
 
 - **Deny-by-default.** An empty `allowOrigins` authorizes nothing. Every payment is reserved against the policy before the wallet is touched; denials throw `SpendPolicyError` / `CredentialError`.
 - **Loopback-only wallet.** `createWalletRpcPayer` refuses non-loopback wallet URLs unless `allowNonLoopback: true` — an autonomous payer pointed at a remote wallet is a key-exfiltration hazard.
-- **Never pays the same demand twice.** Concurrent calls that hit the same `(origin, resource, amount)` challenge share one payment. A call that times out while settling throws `X402SettlementTimeoutError` (`"deadline"`) and leaves a pending record — the next call resumes polling that invoice instead of paying again. A 402 that persists after the receipt was issued throws `X402PaymentRejectedError` rather than paying again.
+- **`createPayingFetch` never pays the same demand twice.** Concurrent calls through the auto-fetch that hit the same `(origin, resource, amount)` challenge share one in-flight payment. A call that times out while settling throws `X402SettlementTimeoutError` (`"deadline"`) and leaves a pending record — the next call resumes polling that invoice instead of paying again. A 402 that persists after the receipt was issued throws `X402PaymentRejectedError` rather than paying again.
+- **Origins bound *who*, not *where*.** The allowlist and spend caps constrain which servers you pay and how much — but the recipient (the integrated address the challenge names) is server-supplied, and there is no destination allowlist. An allowlisted server can direct the deposit anywhere within the cap; do not treat an allowlisted origin as a trusted recipient.
 - **Loud unpayables.** A 402 the payer cannot honor (foreign protocol, wrong network, malformed body) throws `X402UnpayableError` by default, so agent code cannot mistake an unpaid body for a paid one. Set `unpayable: "passthrough"` to hand the 402 back instead.
 - **Evidence.** Every settled payment invokes `onPayment` with `{ at, origin, resource, network, invoiceId, integratedAddress, amountAtomic, txid, receiptJti, receiptExpiresAt }`.
 
@@ -916,6 +917,9 @@ Both policy classes implement the same `SpendGuard` interface (`reserve(origin, 
 - The payment travels as the reserved tool argument `x402Payment`, carrying either the paid invoice's id (fresh redemption) or a receipt token (reuse, when the guard runs `singleUse: false`).
 - The guard mints invoices through the merchant's own `InvoiceEngine` and verifies receipts locally with the shared `receiptSecret`. Replaying the paid call *is* the settlement poll: the guard re-issues the SAME invoice's challenge until confirmations land, and the caller refuses to pay a second invoice for the same call (`X402ToolPaymentRejectedError`).
 - With `singleUse: true` (default) every redemption and receipt `jti` is burned in the store's replay ledger, so one payment unlocks exactly one call.
+
+> [!WARNING]
+> Unlike `createPayingFetch`, the `createPayingToolCaller` path does **not** currently de-duplicate *concurrent* identical tool calls (there is no shared in-flight guard). Two paid calls fired in parallel for the same tool can each mint and pay an invoice. Serialize paid tool calls if a double-pay would matter, until the in-flight guard lands.
 
 ```ts
 // server
