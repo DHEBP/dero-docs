@@ -1,0 +1,112 @@
+---
+title: "PREMINT Keeper — Pre-Minted Escrow Inventory"
+description: "The EscrowKeeper keeps a pool of pre-minted, confirmed empty escrow boxes stocked so checkout only has to bind order terms — moving the ~1-block mint-confirm latency off the hot path."
+---
+
+import { Callout } from 'nextra/components';
+
+# PREMINT Keeper
+
+Escrow deploys a fresh contract per transaction. Minting that contract and waiting for it to confirm takes about one block (~18s on mainnet), and doing it inline means every buyer waits through it at checkout. The **PREMINT keeper** removes that wait: a background loop mints empty escrow boxes *ahead of demand*, and checkout claims a pre-confirmed box and only has to **bind** the order terms.
+
+```
+mint (empty box)  ──▶  confirm (GetSC gate)  ──▶  pool: ready  ──▶  claimEscrow binds terms
+     keeper loop            keeper loop                                (fast — no mint wait)
+```
+
+<Callout type="info">
+  The keeper is optional. Omit it and `EscrowManager` keeps its original mint-on-demand behavior. When the pool is empty, checkout also falls back to inline mint automatically — the keeper is a latency optimization, never a hard dependency.
+</Callout>
+
+## Enabling It
+
+Pass an inventory store to `EscrowManager`. When present, the manager builds a background `EscrowKeeper` that mints into that store; `claimEscrow` then binds a pooled box instead of minting inline.
+
+```ts
+import {
+  EscrowManager,
+  SqliteEscrowInventoryStore,
+} from "dero-pay/escrow";
+
+const manager = new EscrowManager({
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+
+  // Turn on the PREMINT keeper by giving it an inventory store.
+  escrowInventory: new SqliteEscrowInventoryStore("./escrow-inventory.db"),
+
+  // Optional pool tuning (defaults shown).
+  keeperOptions: {
+    targetReady: 5,    // confirmed boxes to keep on hand
+    refillBelow: 2,    // refill when ready count drops below this
+    pollMs: 10_000,    // interval between confirm + refill ticks
+  },
+});
+
+await manager.start(); // starts the keeper loop (no-op if no inventory store)
+```
+
+Two inventory stores ship in `dero-pay/escrow`:
+
+| Store | Use |
+|---|---|
+| `MemoryEscrowInventoryStore` | Development / tests, single process only |
+| `SqliteEscrowInventoryStore` | Production — pops boxes atomically across processes |
+
+<Callout type="warning">
+  **Multi-process deployments need a durable, atomically-popping store.** Two workers must never claim the same box. `SqliteEscrowInventoryStore` reports `durable = true`; the in-memory store does not and is safe only for a single process. The engine asserts durability for multi-process use.
+</Callout>
+
+## How the Pool Works
+
+Each keeper tick does two things: confirm minted boxes, then refill if the pool is low. Boxes move through three states:
+
+| State | Meaning |
+|---|---|
+| `minted` | SCID broadcast, not yet confirmed on-chain |
+| `confirmed` | Passed the GetSC gate — empty, owned by us, pool-ready |
+| `claimed` | Popped by a checkout to bind |
+
+**Confirm gate.** A minted box becomes pool-ready **only** once `GetSC` proves it reads back as `owner set` + `bound == 0` + `status == 0` — empty and ours. Anything else stays `minted` and is retried next tick, so an unconfirmed SCID is never handed to a checkout (binding one would fail with "SC not found").
+
+**Refill without over-minting.** When the ready count drops below `refillBelow`, the keeper mints up to `targetReady`. The deficit subtracts *both* confirmed and still-in-flight minted boxes, so a burst of ticks before the first mint confirms does not over-mint the pool.
+
+**Failed-bind recovery.** If a bind fails after a box is popped, the box is returned to the keeper (not leaked in the `claimed` state). The next tick re-verifies it via `GetSC` and either re-pools it (bind never landed) or retires it (bind landed, `bound != 0`).
+
+## The Trap — Same Owner Mints and Binds
+
+The escrow contract's `Bind` is owner-gated (`IF SIGNER() != LOAD("owner")`), and `Initialize` sets `owner = SIGNER()` at mint. **A box minted by wallet A can only be bound by wallet A.** The keeper therefore mints with the manager's *own* `EscrowContract` instance — the same platform wallet that binds in `claimEscrow`. Do not hand the keeper a second signer.
+
+<Callout type="warning">
+  One platform wallet mints **and** binds. Splitting the minter and the binder across two wallets breaks the owner-gated `Bind` — every pooled box would be unbindable.
+</Callout>
+
+## Monitoring Stock
+
+The exported `EscrowKeeper` class exposes `readyCount()` and emits events (`boxConfirmed`, `boxMinted`, `error`) so an app can alert on low inventory. Reading the store directly also works, since the same `EscrowInventoryStore` the manager mints into is yours to query:
+
+```ts
+import { SqliteEscrowInventoryStore } from "dero-pay/escrow";
+
+const inventory = new SqliteEscrowInventoryStore("./escrow-inventory.db");
+
+const manager = new EscrowManager({
+  // ...
+  escrowInventory: inventory,
+});
+
+// Alert on low stock straight from the shared store.
+const ready = await inventory.countReady();
+if (ready < 2) alertOncall("escrow pool low");
+```
+
+<Callout type="info">
+  `EscrowManager` builds and owns its keeper internally. To wire keeper *events* (`boxConfirmed` / `boxMinted` / `error`) you can construct an `EscrowKeeper` directly against the same `EscrowContract` and store — but the minter must remain the platform wallet (see The Trap above).
+</Callout>
+
+Keeper ticks are non-fatal: a mint RPC error or `GetSC` error emits `error` and the loop continues on the next tick.
+
+## See Also
+
+- [Escrow Overview](/escrow/overview) — the full escrow lifecycle
+- [TypeScript SDK](/escrow/sdk) — `EscrowContract` and `EscrowManager`

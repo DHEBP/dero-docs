@@ -56,8 +56,16 @@ A DERO smart contract written in BASIC that holds funds and enforces escrow rule
 
 See [TypeScript SDK](/escrow/sdk).
 
+### Pre-Minted Inventory (Keeper)
+
+Escrow deploys a fresh contract per transaction, and minting a contract takes about one block to confirm. To keep that latency off the checkout path, `EscrowManager` can run a background **PREMINT keeper** that mints empty escrow boxes ahead of demand and hands a confirmed one to each checkout — so checkout only has to *bind* the order terms, not mint-confirm-bind. See [PREMINT Keeper](/escrow/keeper).
+
 <Callout type="info">
   The escrow contract supports **platform fees** (in basis points), so marketplaces can take a cut of each transaction automatically at the contract level.
+</Callout>
+
+<Callout type="info">
+  **Refund safety is mainnet-proven.** A rejected or underpaid deposit refunds the buyer and leaves the contract pristine — funds are never stranded. This was verified end-to-end on DERO mainnet (block 7,348,673): the escrow box remained fund-safe and reusable after a rejected deposit.
 </Callout>
 
 <Callout type="warning">

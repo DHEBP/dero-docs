@@ -13,6 +13,16 @@ DeroPay implements the [x402 protocol](https://x402.org/) natively for DERO — 
   This is a DERO-native implementation. It uses the x402 HTTP pattern (challenge → pay → retry with proof) but settles in DERO via DeroPay's invoice and monitoring infrastructure, not EVM stablecoins.
 </Callout>
 
+## Installable Exports
+
+The x402 rail ships as published subpaths of `dero-pay` — no monorepo checkout or in-tree build step:
+
+- **`dero-pay/next`** — `createX402RouteGuard` + `createPaymentHandlers`, the App Router guard used throughout this page.
+- **`dero-pay/x402`** — framework-agnostic x402 primitives (`withX402`, `build402Response`, `parsePaymentHeader`, `FacilitatorHttpClient`) plus the spend-policy and paying-fetch toolkit, for non-Next stacks. Also exposed as focused subpaths: `dero-pay/x402/{types,server,client,next}`.
+- **`dero-pay/agent`** — the autonomous agent-side payer that settles these challenges without a facilitator. See [Autonomous Agent Payer](/dero-pay/agent).
+
+Every subpath ships **dual-format** (ESM `import` and CommonJS `require`), so CommonJS backends can consume the same guard.
+
 ## How It Works
 
 ```mermaid

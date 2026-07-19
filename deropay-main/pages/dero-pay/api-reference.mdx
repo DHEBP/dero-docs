@@ -7,6 +7,8 @@ description: "Complete API reference for the dero-pay package — all exports, t
 
 Complete reference for all `dero-pay` package exports.
 
+Every subpath below is published **dual-format**: an ESM build resolved by `import` and a CommonJS build resolved by `require`, each with its own type declarations. The `./package.json` export is also exposed so tools can resolve the manifest directly. This means a CommonJS backend can `require("dero-pay/server")` while an ESM app `import`s the same package.
+
 ## Core (`dero-pay`)
 
 Types, pricing utilities, and payment ID generation.
@@ -170,6 +172,71 @@ const {
   getEngine,             // () => Promise<InvoiceEngine>
 } = createPaymentHandlers(config);
 ```
+
+## x402 (`dero-pay/x402`)
+
+Framework-agnostic HTTP 402 primitives — use these when you are not on Next.js (the `dero-pay/next` `createX402RouteGuard` is the App Router wrapper over the same rail).
+
+```ts
+import {
+  withX402,               // Wrap any handler with a 402 challenge → verify flow
+  build402Response,       // Construct the 402 body (accepts[] payment requirements)
+  parsePaymentHeader,     // Parse an inbound X-Payment / Authorization header
+  FacilitatorHttpClient,  // Optional verify/settle client for a facilitator
+
+  type PaymentPayload,
+  type PaymentRequirements,
+  type WithX402Options,
+} from "dero-pay/x402";
+```
+
+Focused subpaths are published for tree-shaking and cross-runtime use:
+
+| Import Path | Contents |
+|---|---|
+| `dero-pay/x402/types` | Zod schemas + inferred types (`PaymentPayload`, `PaymentRequirements`) |
+| `dero-pay/x402/server` | `build402Response`, `parsePaymentHeader`, facilitator client |
+| `dero-pay/x402/client` | `selectAcceptsEntry`, `buildPaymentHeader` |
+| `dero-pay/x402/next` | `withX402` App Router wrapper |
+
+See the [x402 Payment Guard](/dero-pay/x402) page for the full guard flow.
+
+## Agent (`dero-pay/agent`)
+
+The autonomous agent-side payer — settles x402 challenges under a spend policy with no facilitator.
+
+```ts
+import {
+  // Auto-payer
+  createPayingFetch,          // fetch() that transparently settles 402 challenges
+  X402PaymentRejectedError,
+  X402UnpayableError,
+  X402SettlementTimeoutError,
+
+  // Spend policy + attenuable credentials
+  SpendPolicy,                // origin allowlist, per-request + rolling-window caps
+  SpendPolicyError,
+  mintSpendCredential,        // macaroon-style capability
+  attenuate,                  // narrow a credential (holder can only tighten)
+  verifyCredentialSignature,
+  CredentialPolicy,
+
+  // Wallet payers
+  createWalletRpcPayer,       // loopback-only wallet RPC payer
+  createXswdPayer,            // browser XSWD payer
+
+  // MCP paid tools
+  createPaidToolGuard,        // server: gate an MCP tool behind payment
+  createPayingToolCaller,     // client: auto-pay an MCP tool call
+
+  type PayingFetchConfig,
+  type SpendPolicyConfig,
+  type SpendCredential,
+  type PaymentEvidence,
+} from "dero-pay/agent";
+```
+
+See [Autonomous Agent Payer](/dero-pay/agent) for the full flow and safety properties.
 
 ## Escrow (`dero-pay/escrow`)
 

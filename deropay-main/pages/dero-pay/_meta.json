@@ -9,5 +9,6 @@
   "react": "React Components",
   "nextjs": "Next.js Integration",
   "x402": "x402 Payment Guard",
+  "agent": "Autonomous Agent Payer",
   "api-reference": "API Reference"
 }

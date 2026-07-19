@@ -1,5 +1,6 @@
 {
   "overview": "Overview",
   "smart-contract": "Smart Contract",
-  "sdk": "TypeScript SDK"
+  "sdk": "TypeScript SDK",
+  "keeper": "PREMINT Keeper"
 }

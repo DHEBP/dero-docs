@@ -20,7 +20,8 @@ import { Callout } from 'nextra/components';
 - **Webhook Dispatcher** — HMAC-signed HTTP POST notifications on payment state changes
 - **Pluggable Storage** — In-memory (dev) and SQLite (production) backends, or bring your own
 - **x402 Payment Guard** — Protect API routes with HTTP `402 Payment Required`; clients pay DERO and retry with a signed receipt
-- **Escrow System** — On-chain smart contract with full escrow lifecycle (deposit, release, refund, dispute, arbitration)
+- **Autonomous Agent Payer** — `dero-pay/agent` settles x402 challenges under a deny-by-default spend policy, so AI agents can pay for APIs and MCP tools without a facilitator
+- **Escrow System** — On-chain smart contract with full escrow lifecycle (deposit, release, refund, dispute, arbitration), with a PREMINT keeper that keeps checkout latency off the hot path
 - **React Components** — Drop-in `<PayWithDero>`, `<InvoiceView>`, `<PaymentStatus>` components
 - **Next.js Integration** — Ready-made API route handlers and middleware
 - **XSWD Client** — Browser-side wallet connection for "pay from wallet" UX
@@ -78,7 +79,12 @@ dero-pay/
 ├── client/      # Browser XSWD client + payment session
 ├── react/       # React components (Provider, PayWithDero, InvoiceView)
 ├── next/        # Next.js API handlers + middleware
-└── escrow/      # On-chain escrow contract wrapper + lifecycle manager
+├── x402/        # Framework-agnostic HTTP 402 primitives + guard
+├── agent/       # Autonomous agent-side payer (spend policy, paying-fetch, MCP)
+├── escrow/      # On-chain escrow contract wrapper + lifecycle manager
+├── router/      # Payment router contract wrapper + manager
+├── gateway/     # Standalone gateway server building blocks
+└── bridge/      # Shared bridge utilities
 ```
 
 ## Package Exports
@@ -91,11 +97,20 @@ dero-pay/
 | `dero-pay/client` | Browser-side XSWD payment client |
 | `dero-pay/react` | React components and provider |
 | `dero-pay/next` | Next.js API route handlers and middleware |
+| `dero-pay/x402` | Framework-agnostic x402 primitives (`withX402`, `build402Response`) + `dero-pay/x402/{types,server,client,next}` |
+| `dero-pay/agent` | Autonomous agent-side payer — spend policy, paying-fetch, MCP paid-tool guards |
 | `dero-pay/escrow` | Escrow contract wrapper and lifecycle manager |
+| `dero-pay/router` | Payment router contract wrapper and manager |
+| `dero-pay/gateway` | Standalone gateway server building blocks |
+
+<Callout type="info">
+  Every subpath is published **dual-format** — an ESM build for `import` and a CommonJS build for `require` — so CommonJS backends (e.g. a Medusa plugin) can consume the SDK directly.
+</Callout>
 
 ## Next Steps
 
 - [Quick Start](/dero-pay/quick-start) — Accept your first payment
 - [Invoice Engine](/dero-pay/invoice-engine) — Deep dive into the core
 - [x402 Payment Guard](/dero-pay/x402) — Protect API routes with HTTP 402
+- [Autonomous Agent Payer](/dero-pay/agent) — Let agents pay x402 challenges automatically
 - [Escrow System](/escrow/overview) — On-chain escrow for trustless transactions
