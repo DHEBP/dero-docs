@@ -2666,7 +2666,7 @@ Escrow deploys a fresh contract per transaction, and minting a contract takes ab
 > The escrow contract supports **platform fees** (in basis points), so marketplaces can take a cut of each transaction automatically at the contract level.
 
 > [!NOTE]
-> **Refund safety is mainnet-proven.** A rejected or underpaid deposit refunds the buyer and leaves the contract pristine — funds are never stranded. This was verified end-to-end on DERO mainnet (block 7,348,673): the escrow box remained fund-safe and reusable after a rejected deposit.
+> **Refund safety is verified on mainnet.** In an end-to-end test on DERO mainnet (block 7,348,673), a rejected/underpaid deposit refunded the buyer and left the escrow box fund-safe and reusable. That test exercises the reject/underpay path specifically — strong evidence for it, not a blanket guarantee for every failure mode.
 
 > [!WARNING]
 > Escrow deploys a **fresh contract for each transaction**. If you need fast, single-transaction payments without buyer protection, see the [Payment Router](/payment-router/overview.md) instead. For a full comparison, see [Escrow vs. Router](/payment-router/escrow-vs-router.md).
@@ -3287,6 +3287,9 @@ DeroPay includes a self-hosted merchant dashboard — a Next.js admin UI for man
 - **Payment history** — Searchable list of all transactions
 - **Wallet status** — Balance, connection health, sync status
 - **Real-time updates** — Live invoice status changes
+
+> [!WARNING]
+> **Live core vs. preview modules.** Invoices, payment history, wallet status, escrow, and webhooks are wired to the real DeroPay engine. The dashboard also ships a broader commerce surface — products, orders, inventory, promotions, price lists — as **UI previews backed by sample data**, plus extension-point stubs (for example, payouts) for you to implement. Treat those sections as scaffolding, not live features, until you wire them to your own backend.
 
 ## Setup
 

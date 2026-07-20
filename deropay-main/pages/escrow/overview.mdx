@@ -65,7 +65,7 @@ Escrow deploys a fresh contract per transaction, and minting a contract takes ab
 </Callout>
 
 <Callout type="info">
-  **Refund safety is mainnet-proven.** A rejected or underpaid deposit refunds the buyer and leaves the contract pristine — funds are never stranded. This was verified end-to-end on DERO mainnet (block 7,348,673): the escrow box remained fund-safe and reusable after a rejected deposit.
+  **Refund safety is verified on mainnet.** In an end-to-end test on DERO mainnet (block 7,348,673), a rejected/underpaid deposit refunded the buyer and left the escrow box fund-safe and reusable. That test exercises the reject/underpay path specifically — strong evidence for it, not a blanket guarantee for every failure mode.
 </Callout>
 
 <Callout type="warning">

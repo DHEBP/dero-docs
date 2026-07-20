@@ -16,6 +16,10 @@ DeroPay includes a self-hosted merchant dashboard — a Next.js admin UI for man
 - **Wallet status** — Balance, connection health, sync status
 - **Real-time updates** — Live invoice status changes
 
+<Callout type="warning">
+  **Live core vs. preview modules.** Invoices, payment history, wallet status, escrow, and webhooks are wired to the real DeroPay engine. The dashboard also ships a broader commerce surface — products, orders, inventory, promotions, price lists — as **UI previews backed by sample data**, plus extension-point stubs (for example, payouts) for you to implement. Treat those sections as scaffolding, not live features, until you wire them to your own backend.
+</Callout>
+
 ## Setup
 
 <Steps>
