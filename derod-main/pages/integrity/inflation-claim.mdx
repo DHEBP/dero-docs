@@ -449,10 +449,16 @@ That closes the *mechanism* question. The *outcome* question is what the chain p
 
 The report's conclusion is that ~2.2M DERO was **minted from nothing** on October 17, 2022 (topoheight **1,081,893**). To support that, it would need to show abnormal coin creation at consensus — a multi-million DERO step in the block itself, or a supply audit against something other than the emission schedule. It publishes neither: only a payload proof string and an interpretation of the **corresponding transaction** ([Part 1](#part-1-the-claim-and-its-foundation)).
 
-Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go:81-82`: `PREMINE + CalcBlockReward(topoheight) × topoheight`, then divided by `100,000` to convert atomic units to whole DERO) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
+Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. Canonical **`DERO.GetInfo` reports a linear approximation of it** (`cmd/derod/rpc/rpc_dero_getinfo.go:81-82`: `PREMINE + CalcBlockReward(topoheight) × topoheight`, then divided by `100,000` to convert atomic units to whole DERO) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
+
+<Callout type="info" emoji="🎯">
+**Why the linear formula is exact here.** `PREMINE + CalcBlockReward(topoheight) × topoheight` prices *every* block at the current reward. That is **exact only before the first halving** (block **7,000,000**) — where every block truly paid the same 0.615 DERO. Topo **1,081,893** is pre-halving, so the linear number is the true scheduled supply to the atom, and this rebuttal holds exactly. **After** the first halving it **undercounts** (it charges the ~7M epoch-0 blocks the lower post-halving reward).
+
+For **today's** supply, `getinfo.total_supply` is a convenience estimate that **varies by node software** — canonical nodes return the linear number; the [DHEBP fork](https://github.com/DHEBP/derohe) returns `CalcSupply()` (in `blockchain/supply.go`), which sums each reward epoch **and adds the fork's fixed launch claim credit** (271,739,600 atomic = 2,717.396 DERO, a one-time 0.002 DERO credit to each account registered before block 144,000, [detailed here](/integrity/verify-the-supply)), so it reports higher than both the linear number and the pure epoch sum. Neither is ground truth; the authoritative number is recomputable offline from the deterministic schedule and is identical for everyone. To verify the current supply, see [Verify the Supply](/integrity/verify-the-supply).
+</Callout>
 
 <Callout type="info" emoji="📊">
-**Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so cumulative supply at any height is exactly **premine + scheduled block rewards**. `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
+**Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so **no transaction can ever add to the supply** — cumulative supply is fixed by the launch constants plus **scheduled block rewards** alone (premine, plus a fork's fixed launch claim credit if present — a one-time constant closed at block 144,000, [detailed here](/integrity/verify-the-supply), never a mint). `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
 
 To show a 2.2M mint, the report would need a deviation against an independent supply measure, or an accounting discrepancy in the block record. It shows neither. Per-block emission at this era was **0.615 DERO**, and the cited block records exactly that.
 
@@ -502,7 +508,7 @@ curl -s http://127.0.0.1:10102/json_rpc \
   | jq '{topoheight, total_supply, height}'
 ```
 
-Steps 1–2 are the independent checks. Step 3 confirms `GetInfo.total_supply` implements the emission schedule (`PREMINE + CalcBlockReward × height`) — **not** a UTXO census. Matching the Python tab means the RPC uses the formula; it does not detect a surreptitious mint.
+Steps 1–2 are the independent checks. Step 3 shows `GetInfo.total_supply` is a schedule estimate, **not** a UTXO census — it does not detect a surreptitious mint. On a canonical node the readout is the linear formula (`PREMINE + CalcBlockReward × height`), exact at this pre-halving block; on a [fork](https://github.com/DHEBP/derohe) it is `CalcSupply()` — the epoch-summed schedule plus the fork's fixed launch claim credit — so the exact number varies by node software (see [Verify the Supply](/integrity/verify-the-supply)).
 
 Same RPC methods are available via the [DERO MCP server](/tools/mcp-server) (`dero_get_info`, `dero_get_block_header_by_topo_height`).
 
@@ -539,13 +545,19 @@ print(f"  ↑ query independently via GetBlockHeaderByTopoHeight — should matc
 step = scheduled_supply_dero(EXPLOIT + 1) - scheduled_supply_dero(EXPLOIT - 1)
 print(f"\nSchedule change across block ±1: {step:.3f} DERO")
 
-# --- Optional: confirm GetInfo implements the same schedule (not a mint audit) ---
+# --- Optional: compare GetInfo to the linear schedule (not a mint audit) ---
+# Exact ONLY before the first halving (block 7,000,000) and on a canonical node.
+# Post-halving the linear readout undercounts; a fork node (CalcSupply) reads higher.
+# For today's supply see /integrity/verify-the-supply.
 def getinfo_matches_schedule(topoheight: int, getinfo_supply: int) -> None:
     scheduled = scheduled_supply_dero(topoheight)
     print(f"At topo {topoheight:,}:")
-    print(f"  Schedule expects: {scheduled:,.3f} DERO")
-    print(f"  GetInfo reports:  {getinfo_supply:,} DERO (whole DERO, same formula)")
-    print(f"  Match confirms RPC uses the schedule — not an independent supply audit.")
+    print(f"  Linear schedule: {scheduled:,.3f} DERO")
+    print(f"  GetInfo reports: {getinfo_supply:,} DERO (whole DERO)")
+    if topoheight < REWARD_REDUCTION_INTERVAL:
+        print(f"  Pre-halving: linear is exact — a match confirms the RPC uses the schedule.")
+    else:
+        print(f"  Post-halving: linear UNDERCOUNTS; readout varies by node software (canonical linear vs fork CalcSupply).")
 
 # Example: getinfo_matches_schedule(topoheight=<from GetInfo>, getinfo_supply=<from GetInfo>)
 ```

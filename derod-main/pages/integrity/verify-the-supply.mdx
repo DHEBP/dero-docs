@@ -1,0 +1,94 @@
+---
+title: "Verify the Supply: Recompute DERO's Total from the Schedule | DERO Blockchain"
+description: "DERO's total supply is deterministic and node-independent — recompute it offline from the emission schedule in one script, then cross-check it against any node."
+keywords: ["DERO total supply", "DERO emission schedule", "CalcBlockReward", "CalcSupply", "block reward halving", "DERO max supply", "premine", "DERO.GetInfo total_supply", "verify supply"]
+date: "2026-07-25"
+lastUpdated: "2026-07-25"
+authors: ["DHEBP"]
+slug: "verify-the-supply"
+canonicalUrl: "https://derod.org/integrity/verify-the-supply"
+tags: ["integrity", "supply", "emission", "cryptography", "protocol", "technical"]
+---
+
+import { Card, Cards } from 'nextra/components'
+import SupplyMonitor from '@components/SupplyMonitor/SupplyMonitor'
+
+# Verify the Supply
+
+<SupplyMonitor />
+
+DERO's total supply is a deterministic function of block height. You don't take it on faith — you recompute it and get the same number as everyone else.
+
+## How it's calculated
+
+DERO's supply is just two things added together:
+
+- **Premine** — 12,281,254 DERO, created once at launch (the balances carried over from the original DERO chain).
+- **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and **halves every 7,000,000 blocks** (0.615 → 0.3075 → 0.15375 …), shrinking to **zero** near block 112,000,000.
+
+At any height, total supply is **the premine plus every block reward paid so far** — nothing else can add to it: no admin key, no discretionary minting, and no transaction can create coins (every transfer is proof-bound, so inputs must equal outputs). Because the reward depends only on block height, you can get the exact number three ways:
+
+- **Recompute it** from the formula — [below](#compute-it).
+- **Ask any node** — [below](#cross-check-against-a-node).
+- **Read the source** — [below](#audit-the-source).
+
+## Compute it
+
+The whole audit is one script. No node, no trust — paste it anywhere:
+
+```python
+BASE = 123000            # reward base (derived; grep BaseReward)
+RRI  = 7_000_000         # reward halves every RRI blocks
+PREMINE = 1_228_125_400_000
+TIP = 7_380_505          # current block height
+
+cbr = lambda h: BASE >> ((h + RRI) // RRI)
+s, r, e = PREMINE, TIP, 0
+while r > 0:
+    n = min(r, RRI); s += cbr(e) * n; r -= n; e += RRI
+
+print(f"{s // 100000}.{s % 100000:05d} DERO")   # -> 16703259.28750 DERO
+```
+
+100,000 atomic units = 1 DERO. That number is authoritative and identical for everyone — no node in the loop.
+
+## Cross-check against a node
+
+```bash
+curl -s http://YOUR_NODE:10102/json_rpc \
+  -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | jq .result.total_supply
+```
+
+A node's `total_supply` comes back in whole DERO and differs from the schedule by a fixed, known amount depending on the software:
+
+| Source | vs. the script | Why |
+|---|---|---|
+| **Schedule** (above) | — | authoritative; no node involved |
+| **Fork node** `DHEBP/derohe` | **+ 2,717 DERO** | a one-time launch credit — 0.002 DERO to each account registered before block 144,000 |
+| **Canonical node** (upstream) | **− 2,152,500 DERO** | a rough linear estimate that undercounts post-halving |
+
+Same chain, fixed offsets — nothing minted. (A node's `total_supply` is the schedule *recomputed from block height*, not a tally of real balances — so it confirms which formula the node runs, not an independent audit. The one figure with no node in the loop is the script above.)
+
+## Maximum supply
+
+**20,890,694 DERO.** The reward halves to exactly zero near block 112,000,000 and emission stops for good. (A fork node reports 20,893,411 — the cap plus that same fixed launch credit.)
+
+## Audit the source
+
+Everything above is three functions in the daemon — read them yourself:
+
+```bash
+git clone https://github.com/deroproject/derohe.git && cd derohe
+grep -n "BaseReward"           blockchain/transaction_execute.go   # the reward schedule
+grep -n "func CalcBlockReward" blockchain/transaction_execute.go   # the halving
+grep -n "PREMINE"              config/config.go                    # the premine
+```
+
+<Cards>
+  <Card title="Can DERO be inflated?" href="/integrity/inflation-claim">
+    The 2022 claim, and why no transaction can mint.
+  </Card>
+  <Card title="Protocol Integrity" href="/integrity">
+    The proofs that make the supply impossible to fake.
+  </Card>
+</Cards>

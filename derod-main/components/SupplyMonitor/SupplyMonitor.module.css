@@ -1,0 +1,247 @@
+/* SupplyMonitor — theme-aware port of the LOCKED V3 Hybrid · Option 1 mockup.
+ *
+ * Default rules = LIGHT theme. Dark overrides live under :global(html.dark) &
+ * and match the mockup's palette (#111317 / #181b21 / #14171c / #2a2f38).
+ *
+ * ACCENT colors are FIXED across both themes:
+ *   cyan  = hsl(193 62% 54%)   amber = hsl(38 80% 62%)
+ *
+ * Numbers use a monospace stack with tabular-nums for stable-width ticking.
+ */
+
+.wrap {
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+.mono,
+.num,
+.val,
+.r {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+.card {
+  background: hsl(0 0% 100%);
+  border: 1px solid hsl(220 13% 88%);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:global(html.dark) .card {
+  background: #181b21;
+  border-color: #2a2f38;
+}
+
+/* ── Top: kick / hero number / caption ─────────────────────────────────────── */
+.top {
+  padding: 30px 30px 26px;
+}
+
+.kick {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(220 9% 46%);
+}
+
+:global(html.dark) .kick {
+  color: #8a97a5;
+}
+
+.num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: clamp(30px, 6vw, 48px);
+  line-height: 1.02;
+  color: hsl(222 22% 16%);
+  letter-spacing: -0.015em;
+  margin: 12px 0 4px;
+  white-space: nowrap;
+  position: relative;
+}
+
+:global(html.dark) .num {
+  color: #f1f5f9;
+}
+
+/* fixed accent — cyan — same in both themes */
+.dec {
+  color: hsl(193 62% 54%);
+  font-size: 0.62em;
+}
+
+.unit {
+  font-size: 0.28em;
+  color: hsl(220 9% 46%);
+  letter-spacing: 0.12em;
+  margin-left: 14px;
+}
+
+:global(html.dark) .unit {
+  color: #8a97a5;
+}
+
+.cap {
+  font-size: 13.5px;
+  color: hsl(220 9% 40%);
+  line-height: 1.5;
+  max-width: 640px;
+  text-wrap: pretty;
+}
+
+:global(html.dark) .cap {
+  color: #8a97a5;
+}
+
+/* ── Footer segments ───────────────────────────────────────────────────────── */
+.foot {
+  display: flex;
+  border-top: 1px solid hsl(220 13% 91%);
+  background: hsl(220 20% 98%);
+}
+
+:global(html.dark) .foot {
+  border-top-color: #22262e;
+  background: #14171c;
+}
+
+.seg {
+  flex: 1;
+  padding: 16px 22px;
+  border-right: 1px solid hsl(220 13% 91%);
+}
+
+:global(html.dark) .seg {
+  border-right-color: #22262e;
+}
+
+.seg:last-child {
+  border-right: 0;
+}
+
+.l {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(220 9% 55%);
+  margin-bottom: 6px;
+}
+
+:global(html.dark) .l {
+  color: #5f6b78;
+}
+
+.val {
+  font-size: 17px;
+  color: hsl(222 15% 25%);
+}
+
+:global(html.dark) .val {
+  color: #d3dae2;
+}
+
+/* fixed accents — cyan / amber — same in both themes */
+.accent {
+  color: hsl(193 62% 54%);
+}
+
+.amber {
+  color: hsl(38 80% 62%);
+}
+
+/* ── Bar row ───────────────────────────────────────────────────────────────── */
+.barrow {
+  padding: 14px 22px 18px;
+  background: hsl(220 20% 98%);
+}
+
+:global(html.dark) .barrow {
+  background: #14171c;
+}
+
+.barhead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: hsl(220 9% 46%);
+  margin-bottom: 8px;
+  gap: 16px;
+}
+
+:global(html.dark) .barhead {
+  color: #8a97a5;
+}
+
+.r {
+  color: hsl(193 62% 54%);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bar {
+  height: 6px;
+  background: hsl(220 20% 94%);
+  border: 1px solid hsl(220 13% 86%);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+:global(html.dark) .bar {
+  background: #111317;
+  border-color: #2a2f38;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  /* fixed accent — cyan — same in both themes */
+  background: hsl(193 62% 54%);
+  border-radius: 4px;
+}
+
+/* ── CTA ───────────────────────────────────────────────────────────────────── */
+.cta {
+  padding: 16px 30px;
+  border-top: 1px solid hsl(220 13% 91%);
+}
+
+:global(html.dark) .cta {
+  border-top-color: #22262e;
+}
+
+.verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  /* fixed accent — cyan — same in both themes */
+  color: hsl(193 62% 54%);
+  text-decoration: none;
+  transition: gap 0.15s ease;
+}
+
+.verify:hover {
+  gap: 11px;
+}
+
+/* ── Screen-reader-only static label ──────────────────────────────────────── */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
