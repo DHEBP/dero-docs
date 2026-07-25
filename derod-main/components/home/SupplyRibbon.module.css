@@ -1,0 +1,197 @@
+/* SupplyRibbon — theme-aware styles for the home-page compact supply ribbon.
+ *
+ * Default rules = LIGHT theme. Dark overrides live under :global(html.dark) &
+ * and target near-black (the design intent). ACCENT colors are FIXED across
+ * both themes so they read on white and near-black:
+ *   cyan  = #52c8db   magenta = #b959b6   amber = hsl(38 82% 62%)
+ *
+ * Container-responsive: the .cq wrapper is container-type:inline-size, so the
+ * ribbon reflows off ITS width (not the viewport) exactly like the mock.
+ */
+
+.cq {
+  container-type: inline-size;
+  width: 100%;
+  margin: 0;
+}
+
+/* ── Ribbon shell ──────────────────────────────────────────────────────────── */
+.ribbon {
+  background: hsl(0 0% 100%);
+  border: 1px solid hsl(220 13% 88%);
+  border-radius: 11px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+:global(html.dark) .ribbon {
+  background: #171b21;
+  border-color: #262c35;
+}
+
+/* ── Main number block ─────────────────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+}
+
+.rl {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(220 9% 55%);
+  margin-bottom: 4px;
+}
+
+:global(html.dark) .rl {
+  color: #5c6875;
+}
+
+.rnum {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  color: hsl(222 22% 16%);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+}
+
+:global(html.dark) .rnum {
+  color: #f2f6fa;
+}
+
+/* fixed accent — cyan — same in both themes */
+.dec {
+  color: #52c8db;
+  font-size: 0.6em;
+}
+
+.unit {
+  font-size: 0.4em;
+  color: hsl(220 9% 46%);
+  letter-spacing: 0.1em;
+  margin-left: 8px;
+}
+
+:global(html.dark) .unit {
+  color: #8593a1;
+}
+
+/* ── Stats cluster ─────────────────────────────────────────────────────────── */
+.stats {
+  display: flex;
+  gap: 26px;
+  margin-left: auto;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.sl {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(220 9% 55%);
+  margin-bottom: 3px;
+}
+
+:global(html.dark) .sl {
+  color: #5c6875;
+}
+
+.sv {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: hsl(222 15% 25%);
+  white-space: nowrap;
+}
+
+:global(html.dark) .sv {
+  color: #c8d2dc;
+}
+
+/* fixed accents — cyan / amber — same in both themes */
+.acc {
+  color: #52c8db;
+}
+
+.amber {
+  color: hsl(38 82% 62%);
+}
+
+/* ── Caption ───────────────────────────────────────────────────────────────── */
+.cCap {
+  font-size: 12.5px;
+  color: hsl(220 9% 40%);
+  margin: 12px 2px 0;
+  line-height: 1.5;
+}
+
+:global(html.dark) .cCap {
+  color: #8593a1;
+}
+
+/* fixed accent — cyan — same in both themes */
+.link {
+  color: #52c8db;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ── Screen-reader-only static label ───────────────────────────────────────── */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Container-responsive (mirrors the mock's @container breakpoints) ───────── */
+@container (max-width: 560px) {
+  .ribbon {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+  .rnum {
+    font-size: 26px;
+  }
+  .stats {
+    margin-left: 0;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 14px;
+    border-top: 1px solid hsl(220 13% 91%);
+  }
+  :global(html.dark) .stats {
+    border-top-color: #1e232b;
+  }
+}
+
+@container (max-width: 360px) {
+  .stats {
+    flex-wrap: wrap;
+  }
+  .stat {
+    flex: 1 0 40%;
+  }
+}
