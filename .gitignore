@@ -64,4 +64,5 @@ deropay-main/build/
 # AI agent tooling (lean-ctx context layer — auto-generated, not project content)
 /AGENTS.md
 /LEAN-CTX.md
+/.claude/
 
