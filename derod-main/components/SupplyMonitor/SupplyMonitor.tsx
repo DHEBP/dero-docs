@@ -132,7 +132,7 @@ export default function SupplyMonitor() {
 
         <div className={styles.barrow} aria-hidden="true">
           <div className={styles.barhead}>
-            <span>Minted so far</span>
+            <span>Supply so far</span>
             <span className={styles.r}>{s.pctLabel}</span>
           </div>
           <div className={styles.bar}>
@@ -143,7 +143,7 @@ export default function SupplyMonitor() {
         <div className={styles.cta}>
           <a
             className={styles.verify}
-            href="#compute-it-yourself"
+            href="#compute-it"
           >
             Verify this yourself →
           </a>

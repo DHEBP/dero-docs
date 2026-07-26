@@ -3,7 +3,7 @@ title: "Verify the Supply: Recompute DERO's Total from the Schedule | DERO Block
 description: "DERO's total supply is deterministic and node-independent — recompute it offline from the emission schedule in one script, then cross-check it against any node."
 keywords: ["DERO total supply", "DERO emission schedule", "CalcBlockReward", "CalcSupply", "block reward halving", "DERO max supply", "premine", "DERO.GetInfo total_supply", "verify supply"]
 date: "2026-07-25"
-lastUpdated: "2026-07-25"
+lastUpdated: "2026-07-26"
 authors: ["DHEBP"]
 slug: "verify-the-supply"
 canonicalUrl: "https://derod.org/integrity/verify-the-supply"
@@ -23,12 +23,12 @@ DERO's total supply is a deterministic function of block height. You don't take 
 
 ## How it's calculated
 
-DERO's supply is just two things added together:
+DERO's supply comes from two places:
 
-- **Premine** — 12,281,254 DERO, created once at launch (the balances carried over from the original DERO chain).
+- **Genesis** — the **12,281,254 DERO** premine carried over from the original DERO chain, plus a one-time **2,717-DERO launch credit** (0.002 DERO to each account registered before block 144,000, so it could claim its old-chain balance).
 - **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and is right-shifted every **7,000,000 blocks** (0.615 → 0.3075 → 0.15375 → …, floored to a whole atomic unit each step), shrinking to **zero** near block 112,000,000.
 
-At any height, total supply is **the premine plus every block reward paid so far**. No admin key, no discretionary minting, and no transaction can create coins (range proofs bind every amount to a non-negative range and balance proofs bind inputs to outputs — [why a "mint" can't pass validation](/integrity/negative-transfer-protection)). Because the reward depends only on block height, you can get the exact number three ways:
+At any height, total supply is **that genesis allocation plus every block reward paid so far** — and nothing else. Creating coins and moving them are separate systems: new coins come only from genesis and the block reward — no admin key, no discretionary minting. A transaction can only *move* coins that already exist; balance proofs force its inputs to equal its outputs and range proofs forbid negative amounts, so no transfer can add a single unit to the supply. Minting coins with a transaction isn't a loophole the protocol closes — it's a mechanism the protocol never had ([why a "mint" can't pass validation](/integrity/negative-transfer-protection)). Because the reward depends only on block height, you can get the exact number three ways:
 
 - **Recompute it** from the formula — [below](#compute-it).
 - **Ask any node** — [below](#cross-check-against-a-node).
@@ -39,20 +39,21 @@ At any height, total supply is **the premine plus every block reward paid so far
 The current total is one script — no node, no trust, paste it anywhere. (Set `TIP` to any height to get that height's supply; `112,000,000` prints the [maximum](#maximum-supply).)
 
 ```python
-BASE = 123000            # reward base (derived; grep BaseReward)
+BASE = 123000            # pre-shift base (derived; grep BaseReward); genesis pays BASE>>1 = 0.615
 RRI  = 7_000_000         # reward halves every RRI blocks
 PREMINE = 1_228_125_400_000
+CREDIT  = 271_739_600    # one-time launch credit: 0.002 DERO x 1,358,698 accounts < block 144,000
 TIP = 7_380_505          # a sample block height
 
 cbr = lambda h: BASE >> ((h + RRI) // RRI)
-s, r, e = PREMINE, TIP, 0
+s, r, e = PREMINE + CREDIT, TIP, 0
 while r > 0:
     n = min(r, RRI); s += cbr(e) * n; r -= n; e += RRI
 
-print(f"{s // 100000}.{s % 100000:05d} DERO")   # TIP 7,380,505 -> 16703259.28750 DERO
+print(f"{s // 100000}.{s % 100000:05d} DERO")   # TIP 7,380,505 -> 16705976.68350 DERO
 ```
 
-100,000 atomic units = 1 DERO. That is the scheduled emission — identical for everyone, no node in the loop.
+100,000 atomic units = 1 DERO. That is DERO's total supply — the same `CalcSupply` a node runs, recomputed offline and identical for everyone, no node in the loop.
 
 ## Cross-check against a node
 
@@ -61,21 +62,23 @@ curl -s http://YOUR_NODE:10102/json_rpc \
   -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | jq .result.total_supply
 ```
 
-You'll get a number close to the script above. A node's `total_supply` is a convenience field, and it can differ by a small, fixed amount depending on the node's software — the authoritative number is always the one you recompute offline.
+Set the script's `TIP` to the node's `topoheight`, and a current node returns the **same total** (nodes drop the decimals) — the script above *is* the `CalcSupply` a node runs. Only older linear builds differ (`deroproject/derohe`, DEROFDN `main`): their `total_supply` prices every block at the current reward, so it undercounts after each halving — a quirk of that display formula, not the chain.
 
 ## Maximum supply
 
-**20,890,694 DERO.** The reward halves to exactly zero near block 112,000,000 and emission stops for good.
+**20,893,411 DERO** — and it stops there for good. That full ceiling is 20,890,694 of scheduled emission (the block reward halves to exactly zero near block 112,000,000) plus the one-time 2,717-DERO launch credit. No mechanism issues coins after.
 
 ## Audit the source
 
-Everything above is three functions in the daemon — read them yourself:
+Everything above is a few functions in the daemon — read them yourself:
 
 ```bash
-git clone https://github.com/deroproject/derohe.git && cd derohe
-grep -n "BaseReward"           blockchain/transaction_execute.go   # the reward schedule
+git clone -b community-dev https://github.com/DEROFDN/derohe.git && cd derohe
+grep -n "BaseReward"           blockchain/transaction_execute.go   # the reward base
 grep -n "func CalcBlockReward" blockchain/transaction_execute.go   # the halving
 grep -n "PREMINE"              config/config.go                    # the premine
+grep -n "func CalcSupply"      blockchain/supply.go                # premine + credit + rewards
+grep -n "271739600"            blockchain/supply.go                # the one-time launch credit
 ```
 
 <Cards>
