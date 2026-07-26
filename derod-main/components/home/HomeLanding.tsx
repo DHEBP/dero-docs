@@ -148,13 +148,14 @@ export default function HomeLanding() {
       <section className={styles.section}>
         <h2 className={styles.secTitle}>Don&apos;t trust, verify</h2>
         <div className={styles.grid2}>
-          <a className={styles.flatCard} href="/integrity/verify-the-supply">
-            <h4 className={styles.fcH4}>Verifiable supply</h4>
+          <a className={styles.flatCard} href="/privacy">
+            <h4 className={styles.fcH4}>Private by math, not policy</h4>
             <p className={styles.fcP}>
-              Total supply is a deterministic function of block height. Recompute
-              it offline from the emission schedule and compare against any node.
+              Balances and amounts are hidden with homomorphic encryption and ring
+              signatures — enforced by cryptographic proofs anyone can check, not a
+              privacy promise you have to trust.
             </p>
-            <div className={styles.go}>Verify the supply →</div>
+            <div className={styles.go}>Privacy overview →</div>
           </a>
           <a className={styles.flatCard} href="/integrity">
             <h4 className={styles.fcH4}>Six bound proofs per transaction</h4>
