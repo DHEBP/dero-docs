@@ -323,27 +323,33 @@ const config: DocsThemeConfig = {
       },
         footer: {
     text: (
-      <div className="flex w-full flex-col items-center sm:items-start">
-        <div className="mb-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm sm:justify-start">
-          <a href="/basics/running-a-node" className="opacity-70 transition-opacity hover:opacity-100">Run a node</a>
-          <a href="/basics/wallets" className="opacity-70 transition-opacity hover:opacity-100">Wallets &amp; downloads</a>
-          <a href="https://github.com/deroproject/derohe" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">GitHub</a>
-          <a href="https://github.com/civilware" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Civilware</a>
-          <a href="https://discord.com/invite/H95TJDp" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Discord</a>
-          <a href="https://matrix.to/#/#general:matrix.dero.live" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Matrix</a>
-          <a href="https://forum.dero.io/" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Forum</a>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', textAlign: 'center' }}>
+        <div
+          className="dero-footer-links"
+          style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem 1.25rem', marginBottom: '1rem', fontSize: '0.875rem' }}
+        >
+          <a href="/basics/running-a-node" style={{ opacity: 0.7 }}>Run a node</a>
+          <a href="/basics/wallets" style={{ opacity: 0.7 }}>Wallets &amp; downloads</a>
+          <a href="https://github.com/deroproject/derohe" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>GitHub</a>
+          <a href="https://github.com/civilware" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Civilware</a>
+          <a href="https://discord.com/invite/H95TJDp" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Discord</a>
+          <a href="https://matrix.to/#/#general:matrix.dero.live" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Matrix</a>
+          <a href="https://forum.dero.io/" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Forum</a>
         </div>
-        <p>Privacy Together</p>
-        <p className="mt-2 text-xs">
+        <p style={{ margin: 0 }}>Privacy Together</p>
+        <p style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
           © {new Date().getFullYear()} DHEBP
-          <span className="opacity-40"> · </span>
-          <a
-            href="/captain"
-            className="opacity-60 transition-opacity hover:opacity-100"
-          >
-            Captain Archive
-          </a>
+          <span style={{ opacity: 0.4 }}> · </span>
+          <a href="/captain" style={{ opacity: 0.6 }}>Captain Archive</a>
         </p>
+        <style jsx>{`
+          .dero-footer-links a {
+            transition: opacity 0.2s ease;
+          }
+          .dero-footer-links a:hover {
+            opacity: 1 !important;
+          }
+        `}</style>
       </div>
     )
   }
