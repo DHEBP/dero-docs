@@ -33,6 +33,13 @@
   text-decoration: none;
 }
 
+/* Keyboard focus ring (fixed accent — cyan; visible on both themes) */
+.home a:focus-visible {
+  outline: 2px solid #52c8db;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* ── Section scaffolding ───────────────────────────────────────────────────── */
 .section {
   padding: 44px 0;
@@ -45,6 +52,8 @@
   text-transform: uppercase;
   color: hsl(215 14% 45%);
   margin: 0 0 20px;
+  padding: 0;
+  border: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -230,7 +239,7 @@
   border: 1px solid hsl(220 13% 88%);
   border-radius: 11px;
   padding: 24px 24px 22px;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s;
 }
 
 :global(html.dark) .routerCard {
@@ -240,7 +249,6 @@
 
 .routerCard:hover {
   border-color: #b959b6;
-  transform: translateY(-2px);
 }
 
 /* fixed accent — cyan */
@@ -547,48 +555,6 @@
 }
 
 .sibling a:hover {
-  color: #52c8db;
-}
-
-/* ── FOOTER STRIP ──────────────────────────────────────────────────────────── */
-.footstrip {
-  border-top: 1px solid hsl(220 13% 88%);
-  background: hsl(220 20% 98%);
-  margin: 0 -28px;
-  padding: 24px 28px 36px;
-}
-
-:global(html.dark) .footstrip {
-  border-top-color: #1e232b;
-  background: #0b0e12;
-}
-
-.footL {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: hsl(215 10% 55%);
-  margin-bottom: 12px;
-}
-
-:global(html.dark) .footL {
-  color: #5c6875;
-}
-
-.footRow {
-  font-size: 13.5px;
-  color: hsl(215 14% 45%);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 18px;
-}
-
-:global(html.dark) .footRow {
-  color: #8593a1;
-}
-
-.footRow a:hover {
   color: #52c8db;
 }
 

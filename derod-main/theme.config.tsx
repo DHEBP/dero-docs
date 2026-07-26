@@ -324,6 +324,15 @@ const config: DocsThemeConfig = {
         footer: {
     text: (
       <div className="flex w-full flex-col items-center sm:items-start">
+        <div className="mb-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm sm:justify-start">
+          <a href="/basics/running-a-node" className="opacity-70 transition-opacity hover:opacity-100">Run a node</a>
+          <a href="/basics/wallets" className="opacity-70 transition-opacity hover:opacity-100">Wallets &amp; downloads</a>
+          <a href="https://github.com/deroproject/derohe" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">GitHub</a>
+          <a href="https://github.com/civilware" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Civilware</a>
+          <a href="https://discord.com/invite/H95TJDp" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Discord</a>
+          <a href="https://matrix.to/#/#general:matrix.dero.live" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Matrix</a>
+          <a href="https://forum.dero.io/" target="_blank" rel="noreferrer" className="opacity-70 transition-opacity hover:opacity-100">Forum</a>
+        </div>
         <p>Privacy Together</p>
         <p className="mt-2 text-xs">
           © {new Date().getFullYear()} DHEBP

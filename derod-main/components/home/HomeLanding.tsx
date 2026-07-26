@@ -18,8 +18,7 @@ export default function HomeLanding() {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <header className={styles.hero}>
         <h1 className={styles.h1}>
-          DERO — a <span className={styles.accent}>private</span> Layer-1
-          blockchain.
+          DERO <span className={styles.accent}>Quick Start</span> Guide
         </h1>
         <p className={styles.lead}>
           <b>Documented for humans, shipped as an API for agents.</b> Encrypted
@@ -27,11 +26,11 @@ export default function HomeLanding() {
           a supply anyone can recompute for themselves.
         </p>
         <div className={styles.ctaRow}>
-          <a className={styles.btnPrimary} href="/dvm/dero-virtual-machine">
-            Start Building →
+          <a className={styles.btnPrimary} href="/basics/about">
+            Get Started →
           </a>
-          <a className={styles.btnGhost} href="/integrity/verify-the-supply">
-            Verify the supply →
+          <a className={styles.btnGhost} href="/tools/mcp-server">
+            For AI agents →
           </a>
         </div>
         <div className={styles.statstrip}>
@@ -51,7 +50,7 @@ export default function HomeLanding() {
 
       {/* ── START HERE ROUTER ────────────────────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.secTitle}>Start here</div>
+        <h2 className={styles.secTitle}>Start here</h2>
         <div className={styles.grid3}>
           <div className={styles.routerCard}>
             <div className={styles.tag}>For developers</div>
@@ -99,7 +98,7 @@ export default function HomeLanding() {
 
       {/* ── CAPABILITY STRIP ─────────────────────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.secTitle}>What DERO gives you</div>
+        <h2 className={styles.secTitle}>What DERO gives you</h2>
         <div className={styles.caps}>
           <a className={styles.capCard} href="/privacy/homomorphic-encryption">
             <div className={styles.capName}>Homomorphic encryption</div>
@@ -142,20 +141,12 @@ export default function HomeLanding() {
             </div>
             <div className={styles.go}>XSWD protocol →</div>
           </a>
-          <a className={styles.capCard} href="/tools/mcp-server">
-            <div className={styles.capName}>MCP</div>
-            <div className={styles.capFact}>
-              A Model Context Protocol server that exposes chain queries and docs
-              as tools an AI agent can call directly.
-            </div>
-            <div className={styles.go}>MCP server →</div>
-          </a>
         </div>
       </section>
 
       {/* ── DON'T TRUST, VERIFY ──────────────────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.secTitle}>Don&apos;t trust, verify</div>
+        <h2 className={styles.secTitle}>Don&apos;t trust, verify</h2>
         <div className={styles.grid2}>
           <a className={styles.flatCard} href="/integrity/verify-the-supply">
             <h4 className={styles.fcH4}>Verifiable supply</h4>
@@ -179,7 +170,7 @@ export default function HomeLanding() {
 
       {/* ── BUILT FOR AI AGENTS ──────────────────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.secTitle}>Built for AI agents</div>
+        <h2 className={styles.secTitle}>Built for AI agents</h2>
         <div className={styles.grid2}>
           <div className={styles.term}>
             <div className={styles.termH}>Hosted MCP server</div>
@@ -204,7 +195,7 @@ export default function HomeLanding() {
 
       {/* ── QUICKSTART ───────────────────────────────────────────────────── */}
       <section className={styles.section}>
-        <div className={styles.secTitle}>Quickstart</div>
+        <h2 className={styles.secTitle}>Quickstart</h2>
         <div className={styles.qs}>
           <div className={styles.qsH}>Run the simulator and query the daemon</div>
           <pre className={styles.qsPre}>
@@ -237,24 +228,6 @@ export default function HomeLanding() {
           (accept &amp; sign in with DERO).
         </p>
       </section>
-
-      {/* ── FOOTER STRIP ─────────────────────────────────────────────────── */}
-      <div className={styles.footstrip}>
-        <div className={styles.footL}>Resources &amp; Community</div>
-        <div className={styles.footRow}>
-          <a href="/basics/wallets">Wallets &amp; downloads</a>
-          <span>·</span>
-          <a href="https://github.com/deroproject/derohe">GitHub</a>
-          <span>·</span>
-          <a href="https://derofoundation.org">derofoundation.org</a>
-          <span>·</span>
-          <a href="https://discord.com/invite/H95TJDp">Discord</a>
-          <span>·</span>
-          <a href="https://matrix.to/#/#general:matrix.dero.live">Matrix</a>
-          <span>·</span>
-          <a href="https://forum.dero.io/">Forum</a>
-        </div>
-      </div>
     </div>
   );
 }

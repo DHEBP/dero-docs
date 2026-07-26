@@ -3,7 +3,8 @@
     "display": "hidden",
     "title": "DHEBP",
     "theme": {
-      "breadcrumb": false
+      "breadcrumb": false,
+      "layout": "full"
     }
   },
 
