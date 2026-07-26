@@ -17,16 +17,18 @@ import SupplyMonitor from '@components/SupplyMonitor/SupplyMonitor'
 
 <SupplyMonitor />
 
-DERO's total supply is a deterministic function of block height. You don't take it on faith — you recompute it and get the same number as everyone else.
+The ticker above is projected in your browser from the schedule (height extrapolated at 18s/block — it drifts slightly and is not a node feed); the recompute below is the same schedule pinned to a fixed sample height, so it reads lower by whatever the chain has advanced since. Feed either the same height and they agree exactly.
+
+DERO's total supply is a deterministic function of block height. You don't take it on faith — you recompute it from the schedule and get the same number every time, on any machine, with no node in the loop.
 
 ## How it's calculated
 
 DERO's supply is just two things added together:
 
 - **Premine** — 12,281,254 DERO, created once at launch (the balances carried over from the original DERO chain).
-- **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and **halves every 7,000,000 blocks** (0.615 → 0.3075 → 0.15375 …), shrinking to **zero** near block 112,000,000.
+- **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and is right-shifted every **7,000,000 blocks** (0.615 → 0.3075 → 0.15375 → …, floored to a whole atomic unit each step), shrinking to **zero** near block 112,000,000.
 
-At any height, total supply is **the premine plus every block reward paid so far** — nothing else can add to it: no admin key, no discretionary minting, and no transaction can create coins (every transfer is proof-bound, so inputs must equal outputs). Because the reward depends only on block height, you can get the exact number three ways:
+At any height, total supply is **the premine plus every block reward paid so far**. No admin key, no discretionary minting, and no transaction can create coins (range proofs bind every amount to a non-negative range and balance proofs bind inputs to outputs — [why a "mint" can't pass validation](/integrity/inflation-claim)). Because the reward depends only on block height, you can get the exact number three ways:
 
 - **Recompute it** from the formula — [below](#compute-it).
 - **Ask any node** — [below](#cross-check-against-a-node).
@@ -34,23 +36,23 @@ At any height, total supply is **the premine plus every block reward paid so far
 
 ## Compute it
 
-The whole audit is one script. No node, no trust — paste it anywhere:
+The current total is one script — no node, no trust, paste it anywhere. (Set `TIP` to any height to get that height's supply; `112,000,000` prints the [maximum](#maximum-supply).)
 
 ```python
 BASE = 123000            # reward base (derived; grep BaseReward)
 RRI  = 7_000_000         # reward halves every RRI blocks
 PREMINE = 1_228_125_400_000
-TIP = 7_380_505          # current block height
+TIP = 7_380_505          # a sample block height
 
 cbr = lambda h: BASE >> ((h + RRI) // RRI)
 s, r, e = PREMINE, TIP, 0
 while r > 0:
     n = min(r, RRI); s += cbr(e) * n; r -= n; e += RRI
 
-print(f"{s // 100000}.{s % 100000:05d} DERO")   # -> 16703259.28750 DERO
+print(f"{s // 100000}.{s % 100000:05d} DERO")   # TIP 7,380,505 -> 16703259.28750 DERO
 ```
 
-100,000 atomic units = 1 DERO. That number is authoritative and identical for everyone — no node in the loop.
+100,000 atomic units = 1 DERO. That is the scheduled emission — identical for everyone, no node in the loop.
 
 ## Cross-check against a node
 
@@ -59,19 +61,11 @@ curl -s http://YOUR_NODE:10102/json_rpc \
   -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | jq .result.total_supply
 ```
 
-A node's `total_supply` comes back in whole DERO and differs from the schedule by a fixed, known amount depending on the software:
-
-| Source | vs. the script | Why |
-|---|---|---|
-| **Schedule** (above) | — | authoritative; no node involved |
-| **Fork node** `DHEBP/derohe` | **+ 2,717 DERO** | a one-time launch credit — 0.002 DERO to each account registered before block 144,000 |
-| **Canonical node** (upstream) | **− 2,152,500 DERO** | a rough linear estimate that undercounts post-halving |
-
-Same chain, fixed offsets — nothing minted. (A node's `total_supply` is the schedule *recomputed from block height*, not a tally of real balances — so it confirms which formula the node runs, not an independent audit. The one figure with no node in the loop is the script above.)
+You'll get a number close to the script above. A node's `total_supply` is a convenience field, and it can differ by a small, fixed amount depending on the node's software — the authoritative number is always the one you recompute offline. [Why a node's number can differ →](/integrity/inflation-claim)
 
 ## Maximum supply
 
-**20,890,694 DERO.** The reward halves to exactly zero near block 112,000,000 and emission stops for good. (A fork node reports 20,893,411 — the cap plus that same fixed launch credit.)
+**20,890,694 DERO.** The reward halves to exactly zero near block 112,000,000 and emission stops for good.
 
 ## Audit the source
 
