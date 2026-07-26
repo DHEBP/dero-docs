@@ -28,7 +28,7 @@ DERO's supply is just two things added together:
 - **Premine** — 12,281,254 DERO, created once at launch (the balances carried over from the original DERO chain).
 - **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and is right-shifted every **7,000,000 blocks** (0.615 → 0.3075 → 0.15375 → …, floored to a whole atomic unit each step), shrinking to **zero** near block 112,000,000.
 
-At any height, total supply is **the premine plus every block reward paid so far**. No admin key, no discretionary minting, and no transaction can create coins (range proofs bind every amount to a non-negative range and balance proofs bind inputs to outputs — [why a "mint" can't pass validation](/integrity/inflation-claim)). Because the reward depends only on block height, you can get the exact number three ways:
+At any height, total supply is **the premine plus every block reward paid so far**. No admin key, no discretionary minting, and no transaction can create coins (range proofs bind every amount to a non-negative range and balance proofs bind inputs to outputs — [why a "mint" can't pass validation](/integrity/negative-transfer-protection)). Because the reward depends only on block height, you can get the exact number three ways:
 
 - **Recompute it** from the formula — [below](#compute-it).
 - **Ask any node** — [below](#cross-check-against-a-node).
@@ -61,7 +61,7 @@ curl -s http://YOUR_NODE:10102/json_rpc \
   -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | jq .result.total_supply
 ```
 
-You'll get a number close to the script above. A node's `total_supply` is a convenience field, and it can differ by a small, fixed amount depending on the node's software — the authoritative number is always the one you recompute offline. [Why a node's number can differ →](/integrity/inflation-claim)
+You'll get a number close to the script above. A node's `total_supply` is a convenience field, and it can differ by a small, fixed amount depending on the node's software — the authoritative number is always the one you recompute offline.
 
 ## Maximum supply
 
