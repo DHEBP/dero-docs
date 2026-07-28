@@ -26,10 +26,10 @@ The DERO MCP server implements the [Model Context Protocol](https://modelcontext
 
 | Surface | Count | Notes |
 |---|---:|---|
-| **Tools** | **32** | 18 daemon RPC wrappers + 3 docs-index tools + 11 composites |
+| **Tools** | **33** | 18 daemon RPC wrappers + 3 docs-index tools + 12 composites |
 | ↳ Daemon primitives | 18 | One per common daemon read method, plus local bech32 proof/address decode |
 | ↳ Docs primitives | 3 | Search, fetch-by-slug, enumerate across `derod` / `tela` / `hologram` / `deropay` |
-| ↳ Composite tools | 11 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations — including a full TELA suite (inspect, read file content, discover apps by dURL) |
+| ↳ Composite tools | 12 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations — including supply verification (`verify_supply`) and a full TELA suite (inspect, read file content, discover apps by dURL) |
 | **Resources** | 4 | `server-info`, `safety-boundary`, `example-flows`, `composites` |
 | **Prompts** | 5 | Composite-first guided flows |
 | **Structured error codes** | 11 | Every error carries a `hint` and a `retryable` flag for agent self-correction |
@@ -176,6 +176,7 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 
 | Composite | Replaces | When to call |
 |---|---|---|
+| `verify_supply` | Offline CalcSupply + optional `GetInfo.total_supply` cross-check | "What is total supply / does the node match the schedule" — recomputes premine + launch credit + epoch rewards; cites [Verify the Supply](/integrity/verify-the-supply). Schedule-only (not a UTXO census) |
 | `diagnose_chain_health` | `Ping + GetInfo + GetHeight + GetTxPool` | Any "is the chain healthy / are we synced" question |
 | `explain_smart_contract` | `GetSC` + manual DVM-BASIC parsing + docs lookup | "What does this contract do" — returns function surface + token/registry/minimal/generic classification + 1-4 curated DVM docs |
 | `recommend_docs_path` | 4× parallel `dero_docs_search` + manual ranking | Natural-language intent → ranked docs across all 4 DERO products; `product_hint` is a 1.5× score bias, not a filter |
@@ -240,7 +241,7 @@ Beyond tools, the server exposes 4 **resources** and 5 **prompts** so MCP-aware 
 | `dero://mcp/server-info` | Server metadata, tool list, resource list, prompt names, daemon endpoint |
 | `dero://mcp/safety-boundary` | Read-only posture and excluded method list (transfer, scinvoke, etc.) |
 | `dero://mcp/example-flows` | Composite-first agent flow recipes for common DERO investigations |
-| `dero://mcp/composites` | Structured catalog of all 11 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
+| `dero://mcp/composites` | Structured catalog of all 12 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
 
 ### Prompts
 
@@ -274,7 +275,7 @@ Every error code carries a `hint` string with actionable next steps so the agent
 
 ## Read-Only by Design
 
-Every one of the 32 tools carries the MCP read-only annotation block:
+Every one of the 33 tools carries the MCP read-only annotation block:
 
 ```json
 {
