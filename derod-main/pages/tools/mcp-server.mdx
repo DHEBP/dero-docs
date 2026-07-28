@@ -189,6 +189,10 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 | `dero_durl_to_scid` | a separate Gnomon indexer | "What's the SCID for `vault.tela`" — resolves a TELA dURL to its on-chain SCID(s) by discovering apps in-process (no external indexer). Non-unique dURLs return the newest as primary and disclose other claimants |
 | `dero_tela_list_apps` | a separate Gnomon indexer | "What TELA apps exist" — lists/searches discovered TELA apps (dURL, name, SCID, file count) with transparent scan-coverage metadata |
 
+<Callout type="info">
+**`verify_supply` and GetInfo.** The tool always recomputes total supply from the emission schedule (CalcSupply). `GetInfo.total_supply` is whatever formula that daemon build implements. Some public nodes still expose an older linear schedule readout that diverges after halvings; a `match: false` there means the **RPC field differs from CalcSupply**, not that coins appeared or disappeared. For a same-build cross-check, point the server at a current node or pass `height` and treat the offline number as authoritative. Details: [Verify the Supply](/integrity/verify-the-supply).
+</Callout>
+
 Each composite is fully documented in [`docs/composites.md`](https://github.com/DHEBP/dero-mcp-server/blob/main/docs/composites.md) (design contract, accepted/rejected designs, failure modes), and every composite ships with a green flow test in CI that runs against a live public daemon.
 
 <Callout type="info">
