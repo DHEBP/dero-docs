@@ -236,8 +236,6 @@ sha512sum dero_linux_amd64.tar.gz
 
   Please every-time verify checksum of DERO binaries/source after downloading from github.
 
-Full instructions for installing Captain's GPG key and running the verification end-to-end are in the [DERO forum thread](https://forum.dero.io/t/verify-dero-code-and-binaries-release/2230).
-
 ---
 
 ## Reading the derod prompt
@@ -3196,7 +3194,6 @@ End Function
 - [Launching your token/asset on DERO blockchain](https://github.com/deroproject/documentation/blob/master/DVMDOCS/examples/token/token_sc_guide.md)
 - [Launching your exchange for interchanging tokens/assets](https://github.com/deroproject/documentation/tree/master/DVMDOCS/examples/assetexchange)
 - [DERO Smart Contract Examples](https://github.com/deroproject/documentation/tree/master/DVMDOCS/examples)
-- [More Examples](https://forum.dero.io/t/darch-decentralized-architecture-competition-series/1318)
 
 ### DERO Default Ports
 
@@ -15852,7 +15849,7 @@ console.log('TXID:', result.txid);
 ### dSlate - Visual Smart Contract Builder
 
 > [!NOTE]
-> **[dSlate](https://forum.dero.io/t/dapp-building-and-learning-tool-dslate/2204)** is a GUI tool for building and testing DERO smart contracts without command-line knowledge.
+> **dSlate** is a GUI tool for building and testing DERO smart contracts without command-line knowledge.
 
 **Features:**
 - 📝 Code editor with syntax highlighting
@@ -15988,7 +15985,7 @@ End Function
 
 ### Official Documentation
 
-- 📘 **[DERO Documentation](https://docs.derofoundation.org)** - Complete developer docs
+- 📘 **[DERO Documentation](https://derod.org)** - Complete developer docs
 - 🎓 **[DVM-BASIC Guide](/dvm/dvm-basic.md)** - Smart contract language reference
 - 🔌 **[RPC API Reference](/rpc-api/wallet-rpc-api.md)** - Wallet and daemon APIs
 - 🔐 **[XSWD Protocol](/tools/xswd.md)** - Wallet integration guide
@@ -15998,7 +15995,6 @@ End Function
 - 💬 **[DERO Discord](https://discord.gg/H95TJDp)** - Live developer chat
 - 📖 **[DERO Wiki](https://wiki.derofoundation.org)** - Community knowledge base
 - 🐛 **[GitHub](https://github.com/deroproject/derohe)** - Source code & issues
-- 🗣️ **[DERO Forum](https://forum.dero.io)** - Long-form discussions
 
 ### Example Projects
 

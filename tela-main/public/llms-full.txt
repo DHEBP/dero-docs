@@ -2680,7 +2680,7 @@ tags: ["TELA-MOD-1", "advanced", "smart-contracts", "modules", "extensions"]
 
 ## What Is TELA-MOD-1?
 
-`TELA-MOD-1` provides a set of predefined [DVM](https://docs.derofoundation.org/developer/dvm.html) modules that can be embedded into `TELA-INDEX-1` smart contracts to extend their functionality. These modules help keep the base smart contract small and efficient while allowing developers to add features as needed.
+`TELA-MOD-1` provides a set of predefined [DVM](https://derod.org/dvm/dero-virtual-machine) modules that can be embedded into `TELA-INDEX-1` smart contracts to extend their functionality. These modules help keep the base smart contract small and efficient while allowing developers to add features as needed.
 
 ### Key Features
 
@@ -4923,7 +4923,7 @@ const networkInfo = await getCachedData('network-info', () =>
 
 ---
 
-*This API guide covers all major DERO and TELA functionality. For the latest updates and additional methods, refer to the [official DERO documentation](https://docs.derofoundation.org/developer/RPC.html) and community resources.*
+*This API guide covers all major DERO and TELA functionality. For the latest updates and additional methods, refer to the [official DERO documentation](https://derod.org/rpc-api/daemon-rpc-api) and community resources.*
 
 ---
 
@@ -8344,7 +8344,7 @@ Available: 2.0 DERO
    ```
 
 2. **Get More DERO**
-   - **Testnet**: Use faucet at https://testnet.dero.io/faucet
+   - **Testnet**: Request test DERO in the [community Discord](https://discord.gg/H95TJDp)
    - **Mainnet**: Purchase DERO from exchange
 
 3. **Reduce Transaction Cost**
@@ -8907,7 +8907,6 @@ When reporting issues, include:
 
 **Support Channels:**
 - **Discord**: [#support](https://discord.gg/H95TJDp)
-- **Forum**: [forum.dero.io](https://forum.dero.io)
 - **GitHub**: [Issue Tracker](https://github.com/civilware/tela/issues)
 
   **Pro Tip**: Before reporting an issue, run the diagnostic script and include the results. It helps maintainers debug issues faster!
@@ -24074,7 +24073,6 @@ async function safeXSWDCall(method, params) {
 Upgrade issues? Get support:
 
 - **Discord**: [Join community](https://discord.gg/H95TJDp)
-- **Forum**: [Post questions](https://forum.dero.io)
 - **GitHub**: [Report bugs](https://github.com/civilware/tela/issues)
 
 > [!NOTE]
@@ -24089,7 +24087,7 @@ After mastering version management:
 - **TELA Deployment**: Read [Best Practices](/best-practices.md) for production deployment guide
 - **Advanced Features**: Explore [DocShards](/advanced-features/docshards.md) for handling large applications
 - **Security**: Review [Security Model](/tela/tela-security-model.md) to understand immutability guarantees
-- **Community**: Share your experience in [Discord](https://discord.gg/H95TJDp) or [Forum](https://forum.dero.io)
+- **Community**: Share your experience in [Discord](https://discord.gg/H95TJDp)
 
 **Remember:** Every update creates permanent blockchain history. Test thoroughly on testnet before mainnet deployment!
 
