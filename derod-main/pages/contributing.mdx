@@ -1,0 +1,89 @@
+---
+title: "Contributing to DERO | Repositories & How to Contribute"
+description: "Where the DERO code lives, which repository and branch to contribute to, and where to get the binaries you actually run. A plain map of the deroproject and DEROFDN repositories."
+keywords: ["contribute to DERO", "DERO GitHub", "DERO source code", "DEROFDN", "deroproject derohe", "community-dev", "DERO repository", "DERO development"]
+date: "2026-07-31"
+lastUpdated: "2026-07-31"
+authors: ["DHEBP"]
+slug: "contributing"
+canonicalUrl: "https://derod.org/contributing"
+tags: ["contributing", "github", "development", "repositories"]
+---
+
+import { Callout } from 'nextra/components'
+import { Card, Cards } from 'nextra/components'
+
+# Contributing to DERO
+
+The DERO **core** lives in two GitHub repositories, and the split trips people up. Some applications also build against their own thin forks layered on top — those are covered at the [end of this page](#downstream-forks). This page is the plain map: where core development happens, where to contribute, and where the binaries you run come from.
+
+<Callout type="info">
+  **Short version:** Active development lives at [**DEROFDN/derohe**](https://github.com/DEROFDN/derohe) on the `community-dev` branch — that's where to read the current code and open pull requests. The binaries most people run today are still the [deroproject/derohe releases](https://github.com/deroproject/derohe/releases), because DEROFDN has not cut its own release yet.
+</Callout>
+
+## The two repositories
+
+| | Where to look | Status |
+|---|---|---|
+| [**DEROFDN/derohe**](https://github.com/DEROFDN/derohe) | The active, community-maintained home. Fixes and improvements land here first. | **Where development and contribution happen.** |
+| [deroproject/derohe](https://github.com/deroproject/derohe) | The original upstream repository. Its `main` branch has been unchanged since early 2026. | Still hosts the **released binaries** (`Release142` at time of writing). `main` is not open to community merges. |
+
+The community is consolidating on **DEROFDN/derohe**. That is the repository this documentation, the ecosystem tooling, and the developers point to. `deroproject/derohe` remains the historical source and — for now — the home of the tagged releases; its `community-mainnet` branch, and the `Release142` binaries built from it, are kept in sync from DEROFDN's `community-mainnet`, so today's releases already track the DEROFDN line.
+
+## Why two repositories?
+
+Administration of `deroproject/derohe` — including who can be granted maintainer access — rests with its original owner. To let the active community govern its own maintainers and merge process rather than depend on access it cannot grant itself, development moved to **DEROFDN/derohe**. The two are kept in sync, so this is a move of the working home, not a fork of the chain: DEROFDN/derohe builds the same consensus-compatible DERO.
+
+## Branch model
+
+Both repositories carry the same community branch layout. On DEROFDN/derohe, the one that matters day to day is **`community-dev`**.
+
+| Branch | Purpose |
+|---|---|
+| **`community-dev`** | Active development and testing. New fixes and improvements land here first. **Contribute here.** |
+| `community-mainnet` | The mainnet-consensus line — changes that fit the existing protocol, headed toward a release. |
+| `community-testnet` | A sandbox for larger, hardfork-scale experiments. |
+| `main` | The base line. It currently trails `community-dev`, which carries the newer fixes. |
+
+<Callout type="warning">
+  Because `community-dev` carries fixes that have not yet reached `main` or a tagged release, reading `main` alone can be misleading. When you want to see the current state of a fix, look at `community-dev`.
+</Callout>
+
+## How to contribute
+
+<Cards>
+  <Card title="1. Fork DEROFDN/derohe" href="https://github.com/DEROFDN/derohe" />
+  <Card title="2. Branch from community-dev" href="https://github.com/DEROFDN/derohe/tree/community-dev" />
+  <Card title="3. Open a pull request against community-dev" href="https://github.com/DEROFDN/derohe/pulls" />
+</Cards>
+
+- **Base your branch on `community-dev`**, not `main` — `main` is behind.
+- Keep changes **targeted**. The maintainers favour small, clean, reviewable fixes over sweeping rewrites.
+- Open the pull request **against `community-dev`** so it lands where the current work is.
+- For documentation changes (this site), see the [dero-docs contributing guide](https://github.com/DHEBP/dero-docs/blob/main/CONTRIBUTING.md) instead — the docs live in a separate repository.
+
+## Which binaries should I run?
+
+The **latest released binaries** are published at:
+
+```
+https://github.com/deroproject/derohe/releases
+```
+
+At the time of writing that is **`Release142`**. Release publishing is expected to move to **DEROFDN/derohe** so that the binaries people run come from the same repository as active development; until that first DEROFDN release is cut, the deroproject releases above remain the ones to use.
+
+<Callout type="info">
+  Watch [DEROFDN/derohe releases](https://github.com/DEROFDN/derohe/releases) — once a release lands there, that becomes the recommended download and this page will point to it.
+</Callout>
+
+## Downstream forks
+
+Some applications build against a **curated thin fork** rather than DEROFDN/derohe directly. For example, [HOLOGRAM](https://hologram.derod.org) builds against [`DHEBP/derohe`](https://github.com/DHEBP/derohe).
+
+These forks carry **walletapi / UX / privacy patches only** and are **consensus-identical** with DEROFDN — the same network, the same `derod` behaviour, no chain split. Their changes are **open as pull requests to `DEROFDN/derohe`**, so the fork delta shrinks as upstream merges them.
+
+A downstream fork is a packaging choice for one application — **not** a separate chain, and **not** a separate place to contribute. If you want those patches in DERO, they are already headed to `community-dev`. To contribute to DERO itself, use `DEROFDN/derohe` as described above.
+
+## Documentation
+
+This site, **[derod.org](https://derod.org)**, is the community-maintained documentation for DERO, published by DHEBP. It is not a Foundation channel — it is community docs the ecosystem has chosen to point at. Corrections and additions are welcome through the [dero-docs repository](https://github.com/DHEBP/dero-docs).

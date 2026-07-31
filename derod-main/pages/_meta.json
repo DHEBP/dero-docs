@@ -23,15 +23,15 @@
   },
   "tools": "Tools",
   "engram": "Engram",
-  "-- Documentation": {
+  "-- Developers": {
     "type": "separator",
-    "title": "Dero Docs"
+    "title": "Developers"
   },
   "dvm": "Dero Virtual Machine",
   "rpc-api": "RPC API",
   "smartContracts": "Smart Contracts",
-  
-  
+  "contributing": "Contributing",
+
   "Dero (Official)": {
     "title": "Official Website",
     "type": "page",
