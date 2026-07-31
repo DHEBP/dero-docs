@@ -41,7 +41,7 @@ graph LR
     R --> R0[Receiver slot 0<br/>could be receiver]
     R --> R1[Receiver slots 1-7<br/>could be receiver]
     
-    R --> P[Observer cannot tell<br/>which sender slot is real,<br/>which receiver slot is real,<br/>or even which parity is sender vs receiver]
+    R --> P[Observer cannot tell<br/>which sender slot is real,<br/>which receiver slot is real]
     P --> PR[✅ Privacy Achieved]
 ```
 
@@ -105,7 +105,7 @@ graph LR
 C[0] = ±amount × G + r × pubkey[0]    // sender slot: -amount; receiver slot: +amount; decoys: 0
 C[1] = ±amount × G + r × pubkey[1]    // same r (transaction-wide blinding scalar)
 ...
-C[k] = ±amount × G + r × pubkey[k]    // observer cannot tell which slot is sender/receiver/decoy
+C[k] = ±amount × G + r × pubkey[k]    // amount and its sign are concealed at each slot
 ```
 
 Each ring slot's commitment uses that slot's own **public key** as the second generator — this is what makes the same encryption serve both as anonymity-set membership and as a per-receiver decryption hint.

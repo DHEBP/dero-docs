@@ -192,7 +192,7 @@ The comment in the source says it plainly: sender and receiver must not share pa
 
 ### Cryptographic Enforcement
 
-The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members. An observer cannot determine which parity the sender occupies.
+The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members.
 
 **Source** (`cryptography/crypto/proof_generate.go:700-723` — code below is verbatim; the `// docs:` lines are docs annotations, not in source):
 
@@ -225,7 +225,6 @@ Ring positions:  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
                  └── Sender candidates ──┘   └── Recipient candidates ──┘
                      (8 even slots)               (8 odd slots)
-                                    (or vice versa — observer cannot tell which)
 ```
 
 - **8 even indices** (0, 2, 4, 6, 8, 10, 12, 14) — one parity role
@@ -234,9 +233,9 @@ Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
 
 ### Why Ring Size 2 Offers No Anonymity Set
 
-With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. The parity assignment itself (which parity is the sender's role) is **cryptographically hidden** — the verifier's parity check at `cryptography/crypto/proof_verify.go:130-141` rejects malformed parity but does not reveal the assignment to observers. So an observer sees the two ring members and knows one sent and one received, but cannot tell from on-chain data alone which is which.
+With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other.
 
-The reason ring size 2 is listed as "no sender privacy" is not that the parity leaks — it's that there is **no anonymity set within the sender's parity role**: there is exactly one candidate sender (the lone member of that parity), so the sender's identity collapses to the singleton on that side. Any additional out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) then resolves the pair trivially. Ring size 2 should therefore be treated as no meaningful anonymity, even though the parity itself remains hidden.
+Ring size 2 provides no meaningful anonymity — an observer sees two members, one sender and one recipient, and any out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) resolves the pair. Do not rely on it for privacy.
 
 Captain has stated explicitly that this collapse is **intentional** — ring size 2 is the opt-in mode for transactions where the sender wants to be mathematically provable (audit trails, exchange deposits, KYC reconciliation):
 

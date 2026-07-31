@@ -1706,7 +1706,7 @@ Many cryptocurrency wallets, including Dero's, employ seed phrases—a sequence 
 
 ### CLI (Command Line Interface) Wallet
 
-The CLI wallet, the fundamental and official wallet, resides [here](https://github.com/deroproject/derohe) within the official Dero suite of software. Offering all necessary functions, starting with this wallet is recommended.
+The CLI wallet, the fundamental and official wallet, ships with the DERO daemon source at [DEROFDN/derohe](https://github.com/DEROFDN/derohe) (see [Contributing](/contributing.md)). Offering all necessary functions, starting with this wallet is recommended.
 
 #### Usage:
 
@@ -6194,7 +6194,7 @@ for {
 
 ## Further Reading
 
-- [DERO GitHub](https://github.com/deroproject/derohe) - Full source code
+- [DERO GitHub (DEROFDN/derohe)](https://github.com/DEROFDN/derohe) - Full source code ([where the code lives](/contributing.md))
 - [Encrypted Network](/features/encrypted-network.md) - TLS implementation in Go
 - [DVM](/features/dvm.md) - Smart contract VM in Go
 
@@ -6372,6 +6372,7 @@ Once verified, the transaction enters the mempool, gets mined into a block, and 
 
 | What Happens | Learn More |
 |-------------|------------|
+| Total supply is public and schedule-verifiable — recompute it offline and audit it yourself | [Verify the Supply](/integrity/verify-the-supply.md) |
 | Every node verifies independently and reaches the same conclusion. 18-second blocks, probabilistic finality | [Network Consensus](/integrity/network-consensus-validation.md) |
 | All ring members' encrypted balances change — including decoys. Only the owner knows who sent | [Ring Members](/integrity/ring-member-behavior.md) |
 | Transaction proofs (consensus, secure) vs. payload proofs (display, fakeable by design) | [Proof Types](/integrity/payload-vs-transaction-proofs.md) |
@@ -7194,9 +7195,13 @@ That closes the *mechanism* question. The *outcome* question is what the chain p
 
 The report's conclusion is that ~2.2M DERO was **minted from nothing** on October 17, 2022 (topoheight **1,081,893**). To support that, it would need to show abnormal coin creation at consensus — a multi-million DERO step in the block itself, or a supply audit against something other than the emission schedule. It publishes neither: only a payload proof string and an interpretation of the **corresponding transaction** ([Part 1](#part-1-the-claim-and-its-foundation)).
 
-Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. **`DERO.GetInfo` reports the same approximation** (`cmd/derod/rpc/rpc_dero_getinfo.go:81-82`: `PREMINE + CalcBlockReward(topoheight) × topoheight`, then divided by `100,000` to convert atomic units to whole DERO) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
+Scheduled emission is **deterministic** from block height: premine plus block rewards that halve on a fixed schedule (`CalcBlockReward` in `blockchain/transaction_execute.go`). That formula estimates *expected* cumulative supply at any height. Canonical **`DERO.GetInfo` reports a linear approximation of it** (`cmd/derod/rpc/rpc_dero_getinfo.go:81-82`: `PREMINE + CalcBlockReward(topoheight) × topoheight`, then divided by `100,000` to convert atomic units to whole DERO) — scheduled emission in whole DERO, **not** a UTXO census or balance sum across the ledger.
 
-**Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so cumulative supply at any height is exactly **premine + scheduled block rewards**. `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
+**Why the linear formula is exact here.** `PREMINE + CalcBlockReward(topoheight) × topoheight` prices *every* block at the current reward. That is **exact only before the first halving** (block **7,000,000**) — where every block truly paid the same 0.615 DERO. Topo **1,081,893** is pre-halving, so the linear number is the true scheduled supply to the atom, and this rebuttal holds exactly. **After** the first halving it **undercounts** (it charges the ~7M epoch-0 blocks the lower post-halving reward).
+
+For **today's** supply, `getinfo.total_supply` is a convenience estimate that **varies by node software** — canonical nodes return the linear number; the [DHEBP fork](https://github.com/DHEBP/derohe) returns `CalcSupply()` (in `blockchain/supply.go`), which sums each reward epoch **and adds the fork's fixed launch claim credit** (271,739,600 atomic = 2,717.396 DERO, a one-time 0.002 DERO credit to each account registered before block 144,000), so it reports higher than both the linear number and the pure epoch sum. Neither is ground truth; the authoritative number is recomputable offline from the deterministic schedule and is identical for everyone. To verify the current supply, see [Verify the Supply](/integrity/verify-the-supply.md).
+
+**Burden of proof.** Supply conservation isn't audited — it's built in. Every accepted transaction is bound by range proofs (amounts must be non-negative) and balance proofs (inputs must equal outputs), so **no transaction can ever add to the supply** — cumulative supply is fixed by the launch constants plus **scheduled block rewards** alone (premine, plus a fork's fixed launch claim credit if present — a one-time constant closed at block 144,000, never a mint). `GetInfo.total_supply` reports that schedule, not a UTXO census — and it doesn't need to.
 
 To show a 2.2M mint, the report would need a deviation against an independent supply measure, or an accounting discrepancy in the block record. It shows neither. Per-block emission at this era was **0.615 DERO**, and the cited block records exactly that.
 
@@ -7244,7 +7249,7 @@ curl -s http://127.0.0.1:10102/json_rpc \
   | jq '{topoheight, total_supply, height}'
 ```
 
-Steps 1–2 are the independent checks. Step 3 confirms `GetInfo.total_supply` implements the emission schedule (`PREMINE + CalcBlockReward × height`) — **not** a UTXO census. Matching the Python tab means the RPC uses the formula; it does not detect a surreptitious mint.
+Steps 1–2 are the independent checks. Step 3 shows `GetInfo.total_supply` is a schedule estimate, **not** a UTXO census — it does not detect a surreptitious mint. On a canonical node the readout is the linear formula (`PREMINE + CalcBlockReward × height`), exact at this pre-halving block; on a [fork](https://github.com/DHEBP/derohe) it is `CalcSupply()` — the epoch-summed schedule plus the fork's fixed launch claim credit — so the exact number varies by node software (see [Verify the Supply](/integrity/verify-the-supply.md)).
 
 Same RPC methods are available via the [DERO MCP server](/tools/mcp-server.md) (`dero_get_info`, `dero_get_block_header_by_topo_height`).
 
@@ -7280,13 +7285,19 @@ print(f"  ↑ query independently via GetBlockHeaderByTopoHeight — should matc
 step = scheduled_supply_dero(EXPLOIT + 1) - scheduled_supply_dero(EXPLOIT - 1)
 print(f"\nSchedule change across block ±1: {step:.3f} DERO")
 
-# --- Optional: confirm GetInfo implements the same schedule (not a mint audit) ---
+# --- Optional: compare GetInfo to the linear schedule (not a mint audit) ---
+# Exact ONLY before the first halving (block 7,000,000) and on a canonical node.
+# Post-halving the linear readout undercounts; a fork node (CalcSupply) reads higher.
+# For today's supply see /integrity/verify-the-supply.
 def getinfo_matches_schedule(topoheight: int, getinfo_supply: int) -> None:
     scheduled = scheduled_supply_dero(topoheight)
     print(f"At topo {topoheight:,}:")
-    print(f"  Schedule expects: {scheduled:,.3f} DERO")
-    print(f"  GetInfo reports:  {getinfo_supply:,} DERO (whole DERO, same formula)")
-    print(f"  Match confirms RPC uses the schedule — not an independent supply audit.")
+    print(f"  Linear schedule: {scheduled:,.3f} DERO")
+    print(f"  GetInfo reports: {getinfo_supply:,} DERO (whole DERO)")
+    if topoheight < REWARD_REDUCTION_INTERVAL:
+        print(f"  Pre-halving: linear is exact — a match confirms the RPC uses the schedule.")
+    else:
+        print(f"  Post-halving: linear UNDERCOUNTS; readout varies by node software (canonical linear vs fork CalcSupply).")
 
 # Example: getinfo_matches_schedule(topoheight=<from GetInfo>, getinfo_supply=<from GetInfo>)
 ```
@@ -10082,6 +10093,88 @@ The trade-off: pairing-friendly curves have lower effective security at the same
 
 ---
 
+<!-- source: https://derod.org/integrity/verify-the-supply.md -->
+
+---
+title: "Verify the Supply: Recompute DERO's Total from the Schedule | DERO Blockchain"
+description: "DERO's total supply is deterministic and node-independent — recompute it offline from the emission schedule in one script, then cross-check it against any node."
+keywords: ["DERO total supply", "DERO emission schedule", "CalcBlockReward", "CalcSupply", "block reward halving", "DERO max supply", "premine", "DERO.GetInfo total_supply", "verify supply"]
+date: "2026-07-25"
+lastUpdated: "2026-07-26"
+authors: ["DHEBP"]
+slug: "verify-the-supply"
+canonicalUrl: "https://derod.org/integrity/verify-the-supply"
+tags: ["integrity", "supply", "emission", "cryptography", "protocol", "technical"]
+---
+
+# Verify the Supply
+
+The ticker above is projected in your browser from the schedule (height extrapolated at 18s/block — it drifts slightly and is not a node feed); the recompute below is the same schedule pinned to a fixed sample height, so it reads lower by whatever the chain has advanced since. Feed either the same height and they agree exactly.
+
+DERO's total supply is a deterministic function of block height. You don't take it on faith — you recompute it from the schedule and get the same number every time, on any machine, with no node in the loop.
+
+## How it's calculated
+
+DERO's supply comes from two places:
+
+- **Genesis** — the **12,281,254 DERO** premine carried over from the original DERO chain, plus a one-time **2,717-DERO launch credit** (0.002 DERO to each account registered before block 144,000, so it could claim its old-chain balance).
+- **Block rewards** — each block mints coins on a fixed schedule. The reward started at **0.615 DERO** and is right-shifted every **7,000,000 blocks** (0.615 → 0.3075 → 0.15375 → …, floored to a whole atomic unit each step), shrinking to **zero** near block 112,000,000.
+
+At any height, total supply is **that genesis allocation plus every block reward paid so far** — and nothing else. Creating coins and moving them are separate systems: new coins come only from genesis and the block reward — no admin key, no discretionary minting. A transaction can only *move* coins that already exist; balance proofs force its inputs to equal its outputs and range proofs forbid negative amounts, so no transfer can add a single unit to the supply. Minting coins with a transaction isn't a loophole the protocol closes — it's a mechanism the protocol never had ([why a "mint" can't pass validation](/integrity/negative-transfer-protection.md)). Because the reward depends only on block height, you can get the exact number three ways:
+
+- **Recompute it** from the formula — [below](#compute-it).
+- **Ask any node** — [below](#cross-check-against-a-node).
+- **Read the source** — [below](#audit-the-source).
+
+## Compute it
+
+The current total is one script — no node, no trust, paste it anywhere. (Set `TIP` to any height to get that height's supply; `112,000,000` prints the [maximum](#maximum-supply).)
+
+```python
+BASE = 123000            # pre-shift base (derived; grep BaseReward); genesis pays BASE>>1 = 0.615
+RRI  = 7_000_000         # reward halves every RRI blocks
+PREMINE = 1_228_125_400_000
+CREDIT  = 271_739_600    # one-time launch credit: 0.002 DERO x 1,358,698 accounts < block 144,000
+TIP = 7_380_505          # a sample block height
+
+cbr = lambda h: BASE >> ((h + RRI) // RRI)
+s, r, e = PREMINE + CREDIT, TIP, 0
+while r > 0:
+    n = min(r, RRI); s += cbr(e) * n; r -= n; e += RRI
+
+print(f"{s // 100000}.{s % 100000:05d} DERO")   # TIP 7,380,505 -> 16705976.68350 DERO
+```
+
+100,000 atomic units = 1 DERO. That is DERO's total supply — the same `CalcSupply` a node runs, recomputed offline and identical for everyone, no node in the loop.
+
+## Cross-check against a node
+
+```bash
+curl -s http://YOUR_NODE:10102/json_rpc \
+  -d '{"jsonrpc":"2.0","id":"1","method":"DERO.GetInfo"}' | jq .result.total_supply
+```
+
+Set the script's `TIP` to the node's `topoheight`, and a current node returns the **same total** (nodes drop the decimals) — the script above *is* the `CalcSupply` a node runs. Only older linear builds differ (`deroproject/derohe`, DEROFDN `main`): their `total_supply` prices every block at the current reward, so it undercounts after each halving — a quirk of that display formula, not the chain.
+
+## Maximum supply
+
+**20,893,411 DERO** — and it stops there for good. That full ceiling is 20,890,694 of scheduled emission (the block reward halves to exactly zero near block 112,000,000) plus the one-time 2,717-DERO launch credit. No mechanism issues coins after.
+
+## Audit the source
+
+Everything above is a few functions in the daemon — read them yourself:
+
+```bash
+git clone -b community-dev https://github.com/DEROFDN/derohe.git && cd derohe
+grep -n "BaseReward"           blockchain/transaction_execute.go   # the reward base
+grep -n "func CalcBlockReward" blockchain/transaction_execute.go   # the halving
+grep -n "PREMINE"              config/config.go                    # the premine
+grep -n "func CalcSupply"      blockchain/supply.go                # premine + credit + rewards
+grep -n "271739600"            blockchain/supply.go                # the one-time launch credit
+```
+
+---
+
 <!-- source: https://derod.org/privacy.md -->
 
 ---
@@ -10500,7 +10593,7 @@ graph TB
     P --> U["Transaction Unlinkability"]
     P --> SC["Smart Contract Privacy"]
     
-    S --> S1["Anonymity-set proof: 1 sender hidden among 8 (ring size 16, 8+8 parity split — the parity assignment itself is cryptographically hidden from observers, see proof_verify.go:130-141)"]
+    S --> S1["Anonymity-set proof: 1 sender hidden among 8 (ring size 16, 8+8 parity split)"]
     A --> A1["Encrypted Balances: Homomorphic operations"]
     U --> U1["Different Rings: Encrypted amounts"]
     SC --> SC1["Wallet token balances encrypted; contract state public"]
@@ -11418,7 +11511,7 @@ graph LR
     R --> R0[Receiver slot 0<br/>could be receiver]
     R --> R1[Receiver slots 1-7<br/>could be receiver]
     
-    R --> P[Observer cannot tell<br/>which sender slot is real,<br/>which receiver slot is real,<br/>or even which parity is sender vs receiver]
+    R --> P[Observer cannot tell<br/>which sender slot is real,<br/>which receiver slot is real]
     P --> PR[✅ Privacy Achieved]
 ```
 
@@ -11482,7 +11575,7 @@ graph LR
 C[0] = ±amount × G + r × pubkey[0]    // sender slot: -amount; receiver slot: +amount; decoys: 0
 C[1] = ±amount × G + r × pubkey[1]    // same r (transaction-wide blinding scalar)
 ...
-C[k] = ±amount × G + r × pubkey[k]    // observer cannot tell which slot is sender/receiver/decoy
+C[k] = ±amount × G + r × pubkey[k]    // amount and its sign are concealed at each slot
 ```
 
 Each ring slot's commitment uses that slot's own **public key** as the second generator — this is what makes the same encryption serve both as anonymity-set membership and as a per-receiver decryption hint.
@@ -12228,7 +12321,7 @@ The comment in the source says it plainly: sender and receiver must not share pa
 
 ### Cryptographic Enforcement
 
-The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members. An observer cannot determine which parity the sender occupies.
+The proof generation encodes this split into two separate polynomial sets — `P` for even-indexed ring members, `Q` for odd-indexed ring members.
 
 **Source** (`cryptography/crypto/proof_generate.go:700-723` — code below is verbatim; the `// docs:` lines are docs annotations, not in source):
 
@@ -12261,7 +12354,6 @@ Ring positions:  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
 Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
                  └── Sender candidates ──┘   └── Recipient candidates ──┘
                      (8 even slots)               (8 odd slots)
-                                    (or vice versa — observer cannot tell which)
 ```
 
 - **8 even indices** (0, 2, 4, 6, 8, 10, 12, 14) — one parity role
@@ -12270,9 +12362,9 @@ Parity:          E   O   E   O   E   O   E   O   E   O   E   O   E   O   E   O
 
 ### Why Ring Size 2 Offers No Anonymity Set
 
-With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other. The parity assignment itself (which parity is the sender's role) is **cryptographically hidden** — the verifier's parity check at `cryptography/crypto/proof_verify.go:130-141` rejects malformed parity but does not reveal the assignment to observers. So an observer sees the two ring members and knows one sent and one received, but cannot tell from on-chain data alone which is which.
+With ring size 2: one even slot (index 0), one odd slot (index 1). The sender occupies one slot, the recipient the other.
 
-The reason ring size 2 is listed as "no sender privacy" is not that the parity leaks — it's that there is **no anonymity set within the sender's parity role**: there is exactly one candidate sender (the lone member of that parity), so the sender's identity collapses to the singleton on that side. Any additional out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) then resolves the pair trivially. Ring size 2 should therefore be treated as no meaningful anonymity, even though the parity itself remains hidden.
+Ring size 2 provides no meaningful anonymity — an observer sees two members, one sender and one recipient, and any out-of-band signal (timing, IP, repeated patterns across transactions, known counter-party relationships) resolves the pair. Do not rely on it for privacy.
 
 Captain has stated explicitly that this collapse is **intentional** — ring size 2 is the opt-in mode for transactions where the sender wants to be mathematically provable (audit trails, exchange deposits, KYC reconciliation):
 
@@ -15994,7 +16086,7 @@ End Function
 
 - 💬 **[DERO Discord](https://discord.gg/H95TJDp)** - Live developer chat
 - 📖 **[DERO Wiki](https://wiki.derofoundation.org)** - Community knowledge base
-- 🐛 **[GitHub](https://github.com/deroproject/derohe)** - Source code & issues
+- 🐛 **[GitHub (DEROFDN/derohe)](https://github.com/DEROFDN/derohe)** - Source code & issues
 
 ### Example Projects
 
@@ -16123,10 +16215,10 @@ The DERO MCP server implements the [Model Context Protocol](https://modelcontext
 
 | Surface | Count | Notes |
 |---|---:|---|
-| **Tools** | **32** | 18 daemon RPC wrappers + 3 docs-index tools + 11 composites |
+| **Tools** | **33** | 18 daemon RPC wrappers + 3 docs-index tools + 12 composites |
 | ↳ Daemon primitives | 18 | One per common daemon read method, plus local bech32 proof/address decode |
 | ↳ Docs primitives | 3 | Search, fetch-by-slug, enumerate across `derod` / `tela` / `hologram` / `deropay` |
-| ↳ Composite tools | 11 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations — including a full TELA suite (inspect, read file content, discover apps by dURL) |
+| ↳ Composite tools | 12 | Multi-step intent-shaped flows that fan out into primitives + docs and return a narrative with curated citations — including supply verification (`verify_supply`) and a full TELA suite (inspect, read file content, discover apps by dURL) |
 | **Resources** | 4 | `server-info`, `safety-boundary`, `example-flows`, `composites` |
 | **Prompts** | 5 | Composite-first guided flows |
 | **Structured error codes** | 11 | Every error carries a `hint` and a `retryable` flag for agent self-correction |
@@ -16273,6 +16365,7 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 
 | Composite | Replaces | When to call |
 |---|---|---|
+| `verify_supply` | Offline CalcSupply + optional `GetInfo.total_supply` cross-check | "What is total supply / does the node match the schedule" — recomputes premine + launch credit + epoch rewards; cites [Verify the Supply](/integrity/verify-the-supply.md). Schedule-only (not a UTXO census) |
 | `diagnose_chain_health` | `Ping + GetInfo + GetHeight + GetTxPool` | Any "is the chain healthy / are we synced" question |
 | `explain_smart_contract` | `GetSC` + manual DVM-BASIC parsing + docs lookup | "What does this contract do" — returns function surface + token/registry/minimal/generic classification + 1-4 curated DVM docs |
 | `recommend_docs_path` | 4× parallel `dero_docs_search` + manual ranking | Natural-language intent → ranked docs across all 4 DERO products; `product_hint` is a 1.5× score bias, not a filter |
@@ -16284,6 +16377,9 @@ Each composite replaces a multi-step primitive chain with a single call, returns
 | `tela_get_doc_content` | `GetSC` + comment-block extraction (+ gzip decode) | "Show me this TELA file's content" — extracts the actual on-chain HTML/CSS/JS from a TELA-DOC-1, transparently gunzipping `.gz` files to plaintext |
 | `dero_durl_to_scid` | a separate Gnomon indexer | "What's the SCID for `vault.tela`" — resolves a TELA dURL to its on-chain SCID(s) by discovering apps in-process (no external indexer). Non-unique dURLs return the newest as primary and disclose other claimants |
 | `dero_tela_list_apps` | a separate Gnomon indexer | "What TELA apps exist" — lists/searches discovered TELA apps (dURL, name, SCID, file count) with transparent scan-coverage metadata |
+
+> [!NOTE]
+> **`verify_supply` and GetInfo.** The tool always recomputes total supply from the emission schedule (CalcSupply). `GetInfo.total_supply` is whatever formula that daemon build implements. Some public nodes still expose an older linear schedule readout that diverges after halvings; a `match: false` there means the **RPC field differs from CalcSupply**, not that coins appeared or disappeared. For a same-build cross-check, point the server at a current node or pass `height` and treat the offline number as authoritative. Details: [Verify the Supply](/integrity/verify-the-supply.md).
 
 Each composite is fully documented in [`docs/composites.md`](https://github.com/DHEBP/dero-mcp-server/blob/main/docs/composites.md) (design contract, accepted/rejected designs, failure modes), and every composite ships with a green flow test in CI that runs against a live public daemon.
 
@@ -16336,7 +16432,7 @@ Beyond tools, the server exposes 4 **resources** and 5 **prompts** so MCP-aware 
 | `dero://mcp/server-info` | Server metadata, tool list, resource list, prompt names, daemon endpoint |
 | `dero://mcp/safety-boundary` | Read-only posture and excluded method list (transfer, scinvoke, etc.) |
 | `dero://mcp/example-flows` | Composite-first agent flow recipes for common DERO investigations |
-| `dero://mcp/composites` | Structured catalog of all 11 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
+| `dero://mcp/composites` | Structured catalog of all 12 composites — what each replaces, when to call it, what it returns, and which `_meta.error` codes it can emit |
 
 ### Prompts
 
@@ -16370,7 +16466,7 @@ Every error code carries a `hint` string with actionable next steps so the agent
 
 ## Read-Only by Design
 
-Every one of the 32 tools carries the MCP read-only annotation block:
+Every one of the 33 tools carries the MCP read-only annotation block:
 
 ```json
 {
