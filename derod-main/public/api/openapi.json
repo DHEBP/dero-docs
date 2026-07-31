@@ -6,8 +6,7 @@
     "description": "Curated OpenAPI subset for AI agent discovery (not a complete RPC catalog). Full method reference: https://derod.org/rpc-api/daemon-rpc-api and https://derod.org/rpc-api/wallet-rpc-api\n\nJSON-RPC API for interacting with DERO blockchain nodes and wallets. DERO is a privacy-focused blockchain with homomorphic encryption that enables private smart contracts and encrypted transactions.\n\n## Network Endpoints\n- **Daemon Mainnet**: http://localhost:10102/json_rpc (run your own node)\n- **Daemon Testnet**: http://localhost:40402/json_rpc\n- **Wallet Mainnet**: http://localhost:10103/json_rpc\n- **Wallet Testnet**: http://localhost:40403/json_rpc\n\n## Authentication\nWallet RPC requires the `--rpc-server` flag and optionally `--rpc-login=user:pass` for basic auth.",
     "contact": {
       "name": "DERO Community",
-      "url": "https://derod.org",
-      "email": "info@dero.io"
+      "url": "https://derod.org"
     },
     "license": {
       "name": "MIT",

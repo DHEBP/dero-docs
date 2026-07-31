@@ -111,7 +111,7 @@ MIT License - See [LICENSE](./LICENSE) file for details.
 
 ## Community & Support
 
-- **TELA Platform**: [tela.derofoundation.org](https://tela.derofoundation.org)
+- **TELA Platform**: [tela.derod.org](https://tela.derod.org)
 - **Discord**: [discord.gg/H95TJDp](https://discord.gg/H95TJDp)
 - **GitHub**: [github.com/deroproject/derohe](https://github.com/deroproject/derohe)
 - **DERO Explorer**: [explorer.derofoundation.org](https://explorer.derofoundation.org)
@@ -119,7 +119,7 @@ MIT License - See [LICENSE](./LICENSE) file for details.
 ## Related Documentation
 
 - **DERO Docs**: [derod.org](https://derod.org) - Main DERO blockchain documentation
-- **DERO Website**: [derofoundation.org](https://derofoundation.org) - Official DERO project site
+- **DERO Website**: [derofoundation.co](https://derofoundation.co) - Official DERO project site
 
 ## Disclaimer
 

@@ -15,7 +15,7 @@
         "url": "https://derod.org/rpc-api/daemon-rpc-api",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Blockchain API",
         "areaServed": "Worldwide"
@@ -31,7 +31,7 @@
         "url": "https://derod.org/rpc-api/wallet-rpc-api",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Wallet API",
         "areaServed": "Worldwide"
@@ -47,7 +47,7 @@
         "url": "https://derod.org/dvm/dvm-basic",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Developer Documentation"
       }
@@ -62,7 +62,7 @@
         "url": "https://derod.org/tools/tela",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Decentralized Hosting"
       }
@@ -77,7 +77,7 @@
         "url": "https://derod.org/basics/running-a-node",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Node Infrastructure"
       }
@@ -92,7 +92,7 @@
         "url": "https://derod.org/basics/mining",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Mining"
       }
@@ -107,7 +107,7 @@
         "url": "https://derod.org/smartContracts/name",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Name Resolution"
       }
@@ -122,7 +122,7 @@
         "url": "https://derod.org/smartContracts/token",
         "provider": {
           "@type": "Organization",
-          "name": "DERO Foundation"
+          "name": "DHEBP"
         },
         "serviceType": "Token Platform"
       }

@@ -128,21 +128,17 @@ const config: DocsThemeConfig = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       '@id': 'https://derod.org/#organization',
-      name: 'DERO Foundation',
-      alternateName: 'DERO',
-      url: 'https://derofoundation.org',
+      name: 'DHEBP',
+      url: 'https://derod.org',
       logo: {
         '@type': 'ImageObject',
         url: 'https://derod.org/assets/apple-touch-icon.png',
         width: 180,
         height: 180
       },
-      description: 'DERO is a privacy-focused blockchain with homomorphic encryption enabling private smart contracts and encrypted transactions.',
+      description: 'Community-maintained documentation for the DERO blockchain, covering nodes, mining, wallets, smart contracts, and privacy technology.',
       sameAs: [
-        'https://github.com/deroproject/derohe',
-        'https://discord.com/invite/H95TJDp',
-        'https://forum.dero.io',
-        'https://twitter.com/daboratories'
+        'https://github.com/DHEBP'
       ],
       contactPoint: {
         '@type': 'ContactPoint',
@@ -183,7 +179,7 @@ const config: DocsThemeConfig = {
       url: 'https://github.com/deroproject/derohe',
       downloadUrl: 'https://github.com/deroproject/derohe/releases',
       softwareVersion: '142',
-      author: { '@id': 'https://derod.org/#organization' },
+      author: { '@type': 'Organization', name: 'DERO Project' },
       offers: {
         '@type': 'Offer',
         price: '0',
@@ -334,7 +330,6 @@ const config: DocsThemeConfig = {
           <a href="https://github.com/civilware" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Civilware</a>
           <a href="https://discord.com/invite/H95TJDp" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Discord</a>
           <a href="https://matrix.to/#/#general:matrix.dero.live" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Matrix</a>
-          <a href="https://forum.dero.io/" target="_blank" rel="noreferrer" style={{ opacity: 0.7 }}>Forum</a>
         </div>
         <p style={{ margin: 0 }}>Privacy Together</p>
         <p style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
