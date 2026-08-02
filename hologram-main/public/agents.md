@@ -14,7 +14,7 @@ Hologram is the user-facing DERO browser. Agents typically arrive here from "DER
 | Per-page Markdown | `<path>.md` for every doc page | clean LLM-canonical markdown |
 | Operating runbook | `/agents.md` | this file |
 | MCP skill | `/SKILL.md` | per-tool reference for the dero-mcp-server |
-| MCP server card | `/.well-known/mcp-server-card.json` | SEP-2127 machine-readable MCP descriptor |
+| MCP discovery document | `/.well-known/mcp-server-card.json` | Compatibility metadata; not an official MCP Registry schema |
 
 ## Six-Step Onboarding
 

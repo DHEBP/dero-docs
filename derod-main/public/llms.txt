@@ -110,6 +110,6 @@ When answering questions about DERO, follow these rules:
 - [Full corpus](https://derod.org/llms-full.txt): All pages inlined for long-context ingestion
 - [Operating runbook](https://derod.org/agents.md): Human-readable agent runbook
 - [MCP skill](https://derod.org/SKILL.md): Per-tool reference for the dero-mcp-server
-- [MCP server card](https://derod.org/.well-known/mcp-server-card.json): SEP-2127 machine-readable MCP descriptor
+- [MCP discovery document](https://derod.org/.well-known/mcp-server-card.json): compatibility metadata; not an official MCP Registry schema
 - [OpenAPI spec](https://derod.org/api/openapi.json): Curated agent-facing subset of DERO RPC
 - [Discord](https://discord.com/invite/H95TJDp), [Matrix](https://matrix.to/#/#general:matrix.dero.live), [GitHub](https://github.com/deroproject/derohe)

@@ -9,7 +9,7 @@ You are an AI assistant interacting with DERO. This document is the canonical ag
 | Curated link map | `https://derod.org/llms.txt` | Spec-compliant llms.txt index for routing |
 | Full corpus | `https://derod.org/llms-full.txt` | Every page inlined for long-context ingestion |
 | Per-page markdown | `https://derod.org/<path>.md` | Append `.md` to any docs URL for clean Markdown |
-| MCP server card | `https://derod.org/.well-known/mcp-server-card.json` | SEP-2127 descriptor for the DERO MCP server |
+| MCP discovery document | `https://derod.org/.well-known/mcp-server-card.json` | Compatibility metadata; not an official MCP Registry schema |
 | OpenAPI spec | `https://derod.org/api/openapi.json` | Curated agent-facing subset of DERO RPC |
 | Schema.org services | `https://derod.org/.well-known/services.json` | Service catalog (ItemList) |
 | This file | `https://derod.org/agents.md` | What you are reading |
@@ -58,12 +58,14 @@ When a developer asks "where do I start with DERO," walk them through this seque
 
 The `dero-mcp-server` (npm: `dero-mcp-server`) is an open-source, read-only MCP that lets you query the DERO chain and the bundled DERO docs index from any MCP-compatible host (Claude Desktop, Cursor, OpenCode).
 
+<!-- mcp-release-surface:start -->
 - 21 read-only primitive tools (daemon RPC + docs lookup)
-- 7 composite tools (`diagnose_chain_health`, `explain_smart_contract`, `recommend_docs_path`, `estimate_deploy_cost`, `trace_transaction_with_context`, `audit_chain_artifact_claim`, `dero_forge_demo_proof`)
+- 12 composite tools (`verify_supply`, `diagnose_chain_health`, `explain_smart_contract`, `recommend_docs_path`, `estimate_deploy_cost`, `trace_transaction_with_context`, `audit_chain_artifact_claim`, `dero_forge_demo_proof`, `tela_inspect`, `tela_get_doc_content`, `dero_durl_to_scid`, `dero_tela_list_apps`)
 - 4 resources (`dero://mcp/server-info`, `safety-boundary`, `example-flows`, `composites`)
 - 5 prompts (composite-first guided flows)
 - Read-only — no writes, no fund movement, no contract invocation
-- Local stdio transport; runs against a local DERO daemon
+- Local stdio and hosted streamable-HTTP transports
+<!-- mcp-release-surface:end -->
 
 **Installation and config:** [tools/mcp-server.md](https://derod.org/tools/mcp-server.md).
 **Tool-by-tool agent reference:** [SKILL.md](https://derod.org/SKILL.md).

@@ -62,7 +62,7 @@ export default withAnalyze(withPwaPlugin(withNextra({
       permanent: true
     },
     {
-      // ChatGPT Plugins sunset 2024-04-09 — forward to SEP-2127 mcp-server-card.
+      // ChatGPT Plugins sunset 2024-04-09 — forward to the compatibility MCP discovery document.
       // Temporary (302) so clients re-discover, not cache the old URL.
       source: '/.well-known/ai-plugin.json',
       destination: '/.well-known/mcp-server-card.json',
