@@ -10,5 +10,6 @@
   "payload-vs-transaction-proofs": "Proof Types Explained",
   "network-consensus-validation": "Network Consensus",
   "inflation-claim": "Inflation Claim",
-  "verify-the-supply": "Verify the Supply"
+  "verify-the-supply": "Verify the Supply",
+  "reproducible-builds": "Reproducible Builds"
 }
