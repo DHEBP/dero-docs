@@ -1,6 +1,6 @@
 ---
 title: "DERO MCP Server | AI Assistant Integration for the DERO Blockchain"
-description: "Run a read-only, agent-ready DERO MCP server — stdio for local hosts, streamable-HTTP for remote agents. 21 daemon primitives + 11 composite tools (incl. TELA app inspection and dURL discovery) that fuse live chain reads with the bundled DERO docs index, plus structured errors and curated citations — no middlemen, no API keys, no surveillance."
+description: "Run a read-only, agent-ready DERO MCP server — stdio for local hosts, streamable-HTTP for remote agents. 21 daemon primitives + 12 composite tools (incl. TELA app inspection and dURL discovery) that fuse live chain reads with the bundled DERO docs index, plus structured errors and curated citations — no middlemen, no API keys, no surveillance."
 keywords: ["MCP", "Model Context Protocol", "DERO", "AI assistant", "Claude Desktop", "Cursor", "OpenCode", "ChatGPT Custom Connectors", "agent", "composite tools", "read-only", "DVM", "smart contracts", "agent-ready", "streamable-HTTP", "stargate", "privacy-blockchain", "monero-alternative", "private-ethereum", "homomorphic-encryption", "ring-signatures", "bulletproofs"]
 date: "2025-10-19"
 lastUpdated: "2026-05-29"
@@ -24,6 +24,7 @@ The DERO MCP server implements the [Model Context Protocol](https://modelcontext
 
 ## At a Glance
 
+{/* mcp-release-surface:start */}
 | Surface | Count | Notes |
 |---|---:|---|
 | **Tools** | **33** | 18 daemon RPC wrappers + 3 docs-index tools + 12 composites |
@@ -35,6 +36,7 @@ The DERO MCP server implements the [Model Context Protocol](https://modelcontext
 | **Structured error codes** | 11 | Every error carries a `hint` and a `retryable` flag for agent self-correction |
 | **Transports** | 2 | Local **stdio** (default) + **streamable-HTTP** (self-hosted) — both drive the same `buildServer()` factory, so the tool surface, response shapes, and error contract are identical |
 | **Bundled in the npm package** | 3 docs | `README.md`, `SKILL.md` (per-tool agent runbook), `POSITIONING.md` (audience boundary + comparison vs. ACP / Stripe / Crossmint / Skyfire) |
+{/* mcp-release-surface:end */}
 
 Latest version, install commands, and per-release notes: see [npm](https://www.npmjs.com/package/dero-mcp-server) and the [GitHub releases](https://github.com/DHEBP/dero-mcp-server/releases).
 
@@ -42,7 +44,7 @@ Tool identifiers, schemas, and behavior are semantically stable — once a tool 
 
 ## Why This Matters
 
-AI assistants are powerful research and dev tools, but most blockchain integrations route through centralized APIs that log your queries. This server runs on **your machine**, talks to **your daemon** (or a public one you choose), and communicates with your AI over **local stdio**. No accounts, no analytics, no tracking — just code you can audit. The bundled DERO documentation index (147 pages across `derod`, `tela`, `hologram`, and `deropay`) is shipped inside the package, so the AI can quote primary sources offline without a single network round-trip beyond the daemon you pointed it at.
+AI assistants are powerful research and dev tools, but most blockchain integrations route through centralized APIs that log your queries. This server runs on **your machine**, talks to **your daemon** (or a public one you choose), and communicates with your AI over **local stdio**. No accounts, no analytics, no tracking — just code you can audit. The bundled DERO documentation index (151 pages across `derod`, `tela`, `hologram`, and `deropay`) is shipped inside the package, so the AI can quote primary sources offline without a single network round-trip beyond the daemon you pointed it at.
 
 ## Install
 
@@ -317,7 +319,7 @@ If you need write capabilities in the future, they will be gated behind explicit
 
 - [Source code on GitHub](https://github.com/DHEBP/dero-mcp-server) — composite design contract in `docs/composites.md`, read-only posture in `docs/decision-boundary.md`, agent-ready evidence in `docs/mcp-agent-ready-evidence.md`
 - **Bundled with the npm package:** `SKILL.md` is the per-tool agent operating manual (composite-first rule, port reference, structured error contract, workflow recipes, safety rules); `POSITIONING.md` covers who this server is for vs. who it isn't, with a comparison vs. ACP / Stripe / Crossmint / Skyfire
-- Agent-discovery surfaces at [`/.well-known/agent-card.json`](/.well-known/agent-card.json) (A2A v0.2-draft descriptor for the broader agent ecosystem) and [`/.well-known/mcp-server-card.json`](/.well-known/mcp-server-card.json) (MCP-specific descriptor)
+- Agent-discovery surfaces at [`/.well-known/agent-card.json`](/.well-known/agent-card.json) (A2A v0.2-draft descriptor for the broader agent ecosystem) and [`/.well-known/mcp-server-card.json`](/.well-known/mcp-server-card.json) (a compatibility document, not an official MCP Registry schema)
 - [Package on npm](https://www.npmjs.com/package/dero-mcp-server)
 - [Listed in the official MCP registry](https://registry.modelcontextprotocol.io/) as `io.github.DHEBP/dero-mcp-server`
 - CI runs full smoke probes, composite flow tests, primitive flow tests, description / citation drift guards, and HTTP transport smoke tests on every push

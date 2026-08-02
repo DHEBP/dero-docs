@@ -1,7 +1,7 @@
 name: Sync MCP docs bundle
 
-# Level 3: after dero-docs merges to main, notify dero-mcp-server to open a refresh PR.
-# Requires repo secret: MCP_DOCS_SYNC_TOKEN (see dero-mcp-server docs/DOCS-BUNDLE-SYNC.md)
+# After dero-docs merges to main, notify dero-mcp-server to open a refresh PR.
+# A narrowly installed GitHub App replaces the old long-lived personal token.
 
 on:
   push:
@@ -11,22 +11,25 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger dero-mcp-server docs bundle refresh
-        uses: peter-evans/repository-dispatch@v3
+      - name: Mint dero-mcp-server token
+        id: app-token
+        uses: actions/create-github-app-token@v2
         with:
-          token: ${{ secrets.MCP_DOCS_SYNC_TOKEN }}
-          repository: DHEBP/dero-mcp-server
-          event-type: dero-docs-updated
-          client-payload: |
-            {
-              "ref": "${{ github.sha }}"
-            }
+          app-id: ${{ vars.MCP_SYNC_APP_ID }}
+          private-key: ${{ secrets.MCP_SYNC_APP_PRIVATE_KEY }}
+          owner: DHEBP
+          repositories: dero-mcp-server
 
-      # If the dispatch step errors (e.g. MCP_DOCS_SYNC_TOKEN missing/invalid),
-      # GitHub emails on the failed run; this makes the email actionable.
-      # NOTE: this does NOT catch a token that is expired-but-accepted-then-
-      # rejected silently — for that, watch for missing refresh PRs on
-      # dero-mcp-server. See dero-mcp-server docs/DOCS-BUNDLE-SYNC.md.
+      - name: Trigger dero-mcp-server docs bundle refresh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          DOCS_SHA: ${{ github.sha }}
+        run: |
+          jq -n \
+            --arg ref "$DOCS_SHA" \
+            '{event_type:"dero-docs-updated",client_payload:{ref:$ref}}' \
+          | gh api --method POST repos/DHEBP/dero-mcp-server/dispatches --input -
+
       - name: Report sync failure
         if: failure()
         run: |
@@ -37,6 +40,6 @@ jobs:
             echo "**Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             echo ""
             echo "dero-mcp-server was NOT notified — no refresh PR will open for this push."
-            echo "Most likely: \`MCP_DOCS_SYNC_TOKEN\` is missing or invalid."
+            echo "Most likely: the MCP sync GitHub App is not installed, or its App ID/private key is missing."
             echo "Recover: re-run, or manually trigger 'Refresh docs bundle' on dero-mcp-server."
           } >> "$GITHUB_STEP_SUMMARY"

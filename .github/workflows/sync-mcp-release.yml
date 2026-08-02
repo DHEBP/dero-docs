@@ -1,0 +1,118 @@
+name: Sync verified MCP release
+
+on:
+  repository_dispatch:
+    types: [mcp-release-published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Verified dero-mcp-server release tag
+        required: true
+        type: string
+      source_sha:
+        description: Full commit SHA for that tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint sync token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.MCP_SYNC_APP_ID }}
+          private-key: ${{ secrets.MCP_SYNC_APP_PRIVATE_KEY }}
+          owner: DHEBP
+          repositories: |
+            dero-docs
+            dero-mcp-server
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Validate dispatch
+        env:
+          RELEASE_TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+          SOURCE_SHA: ${{ github.event.client_payload.source_sha || inputs.source_sha }}
+          ASSET_NAME: ${{ github.event.client_payload.asset_name || 'mcp-surface.json' }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Invalid release tag"; exit 1; }
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid source SHA"; exit 1; }
+          [[ "$ASSET_NAME" == "mcp-surface.json" ]] || { echo "::error::Unexpected asset name"; exit 1; }
+
+      - name: Download signed release inputs
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/mcp-release"
+          gh release download "$RELEASE_TAG" \
+            --repo DHEBP/dero-mcp-server \
+            --pattern mcp-surface.json \
+            --dir "$RUNNER_TEMP/mcp-release"
+          gh api \
+            -H "Accept: application/vnd.github.raw+json" \
+            "repos/DHEBP/dero-mcp-server/contents/SKILL.md?ref=$RELEASE_TAG" \
+            > "$RUNNER_TEMP/mcp-release/SKILL.md"
+
+      - name: Verify release provenance
+        env:
+          RELEASE_TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+          SOURCE_SHA: ${{ github.event.client_payload.source_sha || inputs.source_sha }}
+        run: |
+          jq -e \
+            --arg tag "$RELEASE_TAG" \
+            --arg sha "$SOURCE_SHA" \
+            '.schemaVersion == 1 and .source.repository == "DHEBP/dero-mcp-server" and .source.tag == $tag and .source.commit == $sha' \
+            "$RUNNER_TEMP/mcp-release/mcp-surface.json" >/dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+
+      - name: Update public MCP surfaces
+        run: npm run sync:mcp-release -- "$RUNNER_TEMP/mcp-release/mcp-surface.json" "$RUNNER_TEMP/mcp-release/SKILL.md"
+
+      - name: Validate generated docs
+        run: |
+          npm run check:mcp-sync
+          npm run check:llms-links
+          npm run validate:boundaries
+          npm run check:api-parity
+          npm run build:all
+
+      - name: Open reviewable sync PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: automation/mcp-surfaces-${{ github.event.client_payload.tag || inputs.tag }}
+          delete-branch: true
+          add-paths: |
+            derod-main/public/.well-known/mcp-server-card.json
+            tela-main/public/.well-known/mcp-server-card.json
+            hologram-main/public/.well-known/mcp-server-card.json
+            deropay-main/public/.well-known/mcp-server-card.json
+            derod-main/public/SKILL.md
+            tela-main/public/SKILL.md
+            hologram-main/public/SKILL.md
+            deropay-main/public/SKILL.md
+            derod-main/pages/tools/mcp-server.mdx
+            derod-main/public/agents.md
+          commit-message: "docs: sync MCP ${{ github.event.client_payload.tag || inputs.tag }} public surfaces"
+          title: "docs: sync MCP ${{ github.event.client_payload.tag || inputs.tag }} discovery surfaces"
+          body: |
+            Generated from the verified `DHEBP/dero-mcp-server` release `${{ github.event.client_payload.tag || inputs.tag }}` at `${{ github.event.client_payload.source_sha || inputs.source_sha }}`.
+
+            This copies the tagged `SKILL.md` and updates all four server cards, the derod MCP page, and `agents.md` from the release's runtime-derived `mcp-surface.json`.
+
+            Validation: MCP sync guard, link health, boundary check, API parity, and all four site builds.
+          author: GitHub <noreply@github.com>
+          committer: GitHub <noreply@github.com>

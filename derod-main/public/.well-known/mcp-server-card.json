@@ -1,5 +1,4 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
   "name": "io.github.DHEBP/dero-mcp-server",
   "title": "DERO MCP Server",
   "description": "Read-only MCP server for the DERO privacy blockchain. 21 daemon-read primitives + 7 composite tools (intent-shaped flows). Bundled DERO docs index, structured _meta.error codes, curated docs citations on every response.",
