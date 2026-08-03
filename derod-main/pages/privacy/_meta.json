@@ -5,6 +5,7 @@
   "account-based-privacy": "Account Privacy",
   "bulletproofs": "Bulletproofs",
   "ring-signatures": "Ring Signatures",
+  "stealth-addresses": "Stealth Addresses",
   "payload-proofs": "Payload Proofs",
   "transaction-privacy": "Transaction Privacy"
 }

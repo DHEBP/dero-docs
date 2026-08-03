@@ -1,0 +1,294 @@
+---
+title: "Does DERO Have Stealth Addresses? DERO Retired Them in 2022 | DERO Blockchain"
+description: "DERO shipped stealth addresses and ring signatures for four years, then deliberately replaced the entire obfuscation stack with homomorphic encryption in 2022. Here is why, and what it uses now."
+keywords: ["DERO stealth addresses", "DERO vs Monero stealth addresses", "one-time addresses", "obfuscation stack", "DERO CryptoNote history", "DERO-HE migration", "homomorphic encryption privacy", "view key weakness", "decoy anonymity", "DERO address model"]
+date: "2026-08-03"
+lastUpdated: "2026-08-03"
+authors: ["DHEBP"]
+slug: "stealth-addresses"
+canonicalUrl: "https://derod.org/privacy/stealth-addresses"
+tags: ["privacy", "addresses", "architecture", "history", "technical"]
+---
+
+import { Callout } from 'nextra/components'
+import Quote from '../../components/Quote'
+
+# Does DERO Have Stealth Addresses?
+
+**No — and that is the result of a decision, not a gap.** DERO launched in December 2017 as a
+CryptoNote chain, with one-time stealth addresses, ring signatures, mixins and view keys. It ran
+that model for four years, concluded homomorphic encryption was the better foundation, spent three
+years building it, and retired the entire apparatus in the February 2022 migration.
+
+DERO is one of the very few privacy chains that has run both models in production. It abandoned the
+one Monero-family chains still use.
+
+<Callout type="warning" emoji="⚠️">
+**Terminology note:** DERO documentation and community posts have sometimes borrowed the phrase
+"stealth address" to describe DERO's current account privacy. That usage is a holdover from the
+CryptoNote era and is incorrect for DERO-HE. This page is the canonical correction.
+</Callout>
+
+## The decision, with dates
+
+DERO's own [news log](https://github.com/deroproject/deronews) records the migration as it happened:
+
+| Date | Milestone |
+|---|---|
+| 06-DEC-2017 | DERO launched as a CryptoNote chain, from the Monero codebase ([source](https://github.com/deroproject/dero)) |
+| 04-JUL-2018 | DERO Atlantis — CryptoNote rewritten in Go |
+| 01-APR-2019 | Stargate smart-contract testnet — **CryptoNote's limits found** |
+| 06-MAR-2020 | **Decision: build a new protocol on homomorphic encryption** |
+| 08-JUL-2020 | DHEBP — Homomorphic Encryption protocol released |
+| 20-DEC-2020 | HE testnet |
+| **26-FEB-2022** | **HE mainnet — CryptoNote retired** |
+
+The two middle rows are the whole argument, and the log states them in DERO's own words:
+
+> **01-APR-2019** — Realization of CryptoNote Protocol security and limitations in Smart Contracts.
+> Started search for better protocol.
+>
+> **06-MAR-2020** — Finally decided to write new protocol based on Homomorphic Encryption.
+
+The same page states the intent plainly: *"In coming times DERO with full respect will migrate from
+CryptoNote Protocol to new DHEBP Protocol based on Homomorphic Encryption"* — and closes with the
+reasoning: *"DERO believes in security, stability and reliability. So it's better to write your own
+rather than compromising on any above mentioned aspects."*
+
+That first row is checkable too. The original C++ tree,
+[`deroproject/dero`](https://github.com/deroproject/dero), still contains the CryptoNote privacy
+primitives, exactly where you would expect:
+
+```c
+// src/crypto/crypto.h
+static void generate_key_image(const public_key &, const secret_key &, key_image &);
+static void generate_ring_signature(const hash &, const key_image &, ...);
+```
+
+Key images and ring signatures, in DERO's own launch source. This is the concrete sense in which
+DERO *had* the CryptoNote model rather than merely knowing about it.
+
+Three years elapsed between recognising the limits and shipping the replacement. DERO's position on
+stealth addresses is not a marketing stance about a feature it never built. It is a verdict reached
+after shipping them, and then acted on.
+
+## Why the obfuscation model was replaced
+
+Stealth addresses do not stand alone. They are one component of an approach where transaction data
+is written to the chain and privacy comes from an observer being unable to tell which piece belongs
+to whom. Captain stated the alternative in a single paragraph, months before the migration:
+
+<Quote channel="#technical-questions" date="2021-10-20" source="https://discord.com/channels/419781880632836096/419798461039509504/900312094157705217">
+Yes absolutely. HE encryption replacing all obfuscation stack completely. No more obfuscations on DERO network now. No one will be able to see/confirm your data on DERO blockchain without your seed/wallet. All operations will be on encrypted data only. So no requirement/gimmick to ask for your data to be in decrypted state ever. Not even once your data will ever be in decrypted state.
+</Quote>
+
+Privacy as a property of the cryptography, rather than a layer of concealment applied to a
+transparent ledger — the ciphertext itself is the boundary. Four structural properties drove that
+call.
+
+### Smart contracts were the trigger
+
+The news log names it directly: the limits were found while building smart contracts on the Stargate
+testnet in April 2019. A contract needs a stable identity to attach state to and a balance it can
+update. Keys that exist for exactly one output cannot provide that.
+
+Be precise about what the account model bought here. It made native-chain smart contracts possible
+at all, and it lets contract-issued tokens become encrypted balances in user wallets. It did **not**
+make contract execution or contract state private — DVM code and state variables are public and
+readable by anyone. See
+[Private Smart Contracts](/privacy/private-smart-contracts) for exactly what is and is not
+encrypted.
+
+### Obfuscation degrades; encryption does not
+
+Decoy-based privacy rests on an observer being unable to distinguish the real participant from the
+decoys. The chain is permanent, but the analysis is not fixed: decoy-selection heuristics, timing
+correlations and statistical biases improve over the years. A transaction made today is analysed
+under everything learned in the following decade. Decoy systems get hardened repeatedly precisely
+because new biases keep being found — and the transactions made under the older rules stay
+on-chain, exposed to the newer analysis.
+
+Encryption does not work that way. A ciphertext is protected by the cipher, not by the size of a
+crowd or the quality of a decoy sampler.
+
+That is the sense in which the timing mattered. Every year on an obfuscation substrate is a year of
+permanent history subject to future analysis. Deciding in 2019 and shipping in 2022 bounded how much
+of DERO's history sits on that substrate at all.
+
+### The history that enables analysis can be deleted
+
+The sharpest consequence of dropping the CryptoNote model is that DERO does not need to keep the
+data an analyst would work from:
+
+<Quote channel="#dero-discussion" date="2022-08-29" source="https://discord.com/channels/419781880632836096/419781880632836098/1013849719073681468">
+Another privacy enhancing part of DERO is it's account model. You can drop the entire transactions logs anytime from DERO database like(--fastsync) & DERO will still work unlike Monero which requires scanning/tracking/recording of key-images from first transaction. After dropping you will never abile to do any statistical analysis as there will be no such data.
+</Quote>
+
+CryptoNote-family chains must retain key images from the first transaction forever — that record is
+what prevents double-spends. DERO's account model prevents double-spends without it, so the history
+is disposable. A node running `--fastsync` holds no corpus for anyone to analyse.
+
+This also removes the scanning burden. Because a stealth address is a one-time key nobody can look
+up, a CryptoNote recipient must trial-decrypt outputs to find their own. A DERO wallet queries its
+account directly — 66 bytes, and no chain sweep.
+
+### Disclosure is all-or-nothing
+
+In the CryptoNote model, proving a payment means handing over a view key — and a view key reveals
+*every* incoming transaction, past and future, permanently. There is no way to prove one payment
+without exposing all of them.
+
+DERO has no such key to hand over:
+
+<Quote channel="#dero-discussion" date="2022-12-08" source="https://discord.com/channels/419781880632836096/419781880632836098/1050433141875155064">
+There is no concept of any master private/secret key on DERO. DERO creates a elgamal balance ciphertext associated to any wallet-account. The private key is NOT broken or distributed among other nodes in any way or form. When user opens wallet, no communication with DERO network except 66 bytes are required.
+</Quote>
+
+Disclosure is per-transaction instead: you reveal a single transfer to a single counterparty and
+nothing else. See [Payload Proofs](/privacy/payload-proofs).
+
+## What the encryption covers
+
+Worth stating precisely, because the term is widely abused. DERO does **not** use fully homomorphic
+encryption. Balances are ElGamal ciphertexts, and debiting or crediting an account needs only
+addition and subtraction — which partially homomorphic encryption does efficiently. Captain has been
+explicit that this is a performance choice:
+
+<Quote channel="@DeroProject on X" date="2022-06-25" source="https://x.com/DeroProject/status/1540646271748276225">
+That's the point ATM FHEs are too slow for decentralized blockchain. DERO doesn't uses multiplication/division as account management can be done by add/sub only but calculations are entirely HE as operations are performed on encrypted data only.
+</Quote>
+
+The same reasoning covers the address. Asked directly how hard it would be to homomorphically
+encrypt addresses, his answer was that it is achievable — *"not a big deal"* — but that DHEBP was
+deliberately scoped for the *"computational powers of weak machines"* on the network. A scoped
+subset chosen for the hardware of the day, not a ceiling on the design.
+
+So the claim is narrow and checkable: balances stay encrypted and the network computes on them
+without decrypting. It is not a claim of general-purpose computation over ciphertext.
+
+## What DERO uses instead
+
+A DERO address is a single compressed 33-byte public key, optionally carrying arguments for
+integrated addresses:
+
+```go
+type Address struct {
+	Network   uint64
+	Mainnet   bool
+	Proof     bool
+	PublicKey *crypto.Point // 33 byte compressed point
+	Arguments Arguments     // all data related to integrated address
+}
+```
+
+<span/>
+
+*Source: `rpc/address.go:34-41`*
+
+There is no view key / spend key pair deriving per-output keys. The `PublicKey` field **is** the
+account, and it is what enters a transaction's ring — for sender and recipient alike:
+
+```go
+ring = append(ring, w.account.Keys.Public.G1())   // sender's own account key
+...
+ring = append(ring, addr.PublicKey.G1())          // recipient's account key
+```
+
+<span/>
+
+*Source: `walletapi/wallet_transfer.go:348, 384`*
+
+The identifier is public. What is protected is the data attached to it:
+
+**Balances are ciphertexts, permanently.** Account balances are stored homomorphically encrypted and
+are never decrypted by the network — not during validation, not during block assembly, not ever.
+Nodes update balances by operating on the ciphertexts directly. See
+[Homomorphic Encryption](/privacy/homomorphic-encryption).
+
+**Amounts are proven without being revealed.** Bulletproofs establish that a transfer is well-formed
+and non-negative without exposing any value. See [Bulletproofs](/privacy/bulletproofs).
+
+**Participation is ambiguous.** Each transaction carries a ring of registered accounts — half
+potential senders, half potential recipients. An account appearing in a ring may be a participant or
+may be someone else's decoy. See [Ring Signatures](/privacy/ring-signatures).
+
+<Callout type="info" emoji="🔐">
+**The distinction that matters:** in an obfuscation model the values are on the chain and privacy
+depends on you not knowing which is which. In DERO-HE the values are ciphertexts. There is no
+plaintext to attribute.
+</Callout>
+
+## Properties of the account model
+
+**Your address is a long-lived public identifier.** It is stable across every transaction by design.
+What it does not reveal is balances, amounts, or whether any given ring appearance was real activity.
+
+**Ring size is per-transaction and configurable.** It sets the size of the set your activity is
+indistinguishable within — choose it deliberately.
+
+**Ring size 2 is provable by design.** With one sender slot and one recipient slot the counterparty
+is derivable. This is intentional: it is the opt-in mode for audit trails, exchange deposits and KYC
+reconciliation, where the sender *wants* the transfer to be mathematically provable. It is not a
+privacy setting.
+
+**Ring slots are split by parity.** Sender and recipient occupy indices of opposite parity, so a ring
+of size N gives roughly a 1-in-(N/2) naive guess rather than 1-in-N. Documented in full at
+[Ring Signatures → The Parity Constraint](/privacy/ring-signatures#the-parity-constraint-how-the-ring-is-split).
+
+**Accounts are registered on-chain.** An account must exist on-chain before it can receive. Existence
+is public; activity and amounts are not.
+
+## Integrated addresses are not stealth addresses
+
+A common confusion. A DERO integrated address is a normal address plus embedded arguments — a
+destination port, an amount, an encrypted payload:
+
+```go
+func (a *Address) IsIntegratedAddress() bool {
+	return len(a.Arguments) >= 1
+}
+```
+
+<span/>
+
+*Source: `rpc/address.go:112-114`*
+
+The underlying public key is unchanged. Integrated addresses solve **payment routing and
+reconciliation** — letting a merchant tell two payments apart — not unlinkability.
+
+## Verify it yourself
+
+```sh
+git clone https://github.com/deroproject/derohe.git && cd derohe
+
+# the address is one persistent public key
+sed -n '34,41p' rpc/address.go
+
+# that same key is what goes into the ring
+grep -n 'ring = append' walletapi/wallet_transfer.go
+
+# integrated addresses only add arguments
+sed -n '112,114p' rpc/address.go
+```
+
+If you find a per-output key derivation anywhere in that tree, this page is wrong — and we would
+want to know.
+
+## A note on CryptoNote
+
+None of the above is a claim that CryptoNote is broken or that chains using it are unserious. DERO
+built on it for four years, rewrote it in Go, and shipped bulletproofs on it. The migration was a
+judgement that a different set of trade-offs suited DERO's goals better — not a verdict on anyone
+else's engineering. The project's own position, stated two months after the migration:
+
+<Quote channel="@DeroProject on X" date="2022-04-25" source="https://x.com/DeroProject/status/1518462039752155136">
+There is no such conflict &amp; we have full respect for CryptoNote Protocol &amp; other communities. Request to all members pls don't disrespect anyone &amp; don't engage with any conflict. There are much bigger challenges ahead &amp; we all need to unite together $XMR $XHV $ARRR $FIRO $DERO
+</Quote>
+
+## Related
+
+- [Homomorphic Encryption](/privacy/homomorphic-encryption) — how encrypted balances work
+- [Account-Based Privacy](/privacy/account-based-privacy) — why accounts plus encryption is unusual
+- [Private Smart Contracts](/privacy/private-smart-contracts) — what is encrypted, and what is not
+- [Ring Signatures](/privacy/ring-signatures) — anonymity sets, parity, and ring size
+- [Captain's Archive](/captain) — the CryptoNote era and the DERO-HE migration
