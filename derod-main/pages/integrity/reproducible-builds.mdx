@@ -1,0 +1,235 @@
+---
+title: "Reproducible Builds: Rebuild DERO's Released Binaries from Source | DERO Blockchain"
+description: "DERO's released binaries rebuild byte-for-byte from the public source tree. Here are the hashes, the exact toolchain, and the commands to verify it yourself."
+keywords: ["DERO reproducible builds", "verify DERO binary", "Release113", "byte-for-byte", "go build trimpath", "buildid", "CGO_ENABLED", "source to binary", "deterministic build", "DERO binary verification"]
+date: "2026-08-01"
+lastUpdated: "2026-08-01"
+authors: ["DHEBP"]
+slug: "reproducible-builds"
+canonicalUrl: "https://derod.org/integrity/reproducible-builds"
+tags: ["integrity", "builds", "verification", "supply-chain", "protocol", "technical"]
+---
+
+import { Callout } from 'nextra/components'
+import { Card, Cards } from 'nextra/components'
+
+# Reproducible Builds
+
+Every DERO download is a compiled program. The source code behind it is public and anyone can read
+it — but nothing about the download itself proves the two match. You are trusting whoever built it.
+
+DERO's builds are **reproducible**, which closes that gap. Compile the published source yourself and
+you get a file identical, byte for byte, to the one the project released. This page does that for
+the October 2022 release — the one that gets argued about — and gives you the commands to repeat it.
+
+**What that settles:** there is no hidden behaviour in the download that is not in the public source.
+**What it does not settle:** whether that source is correct — judging what the code *does* is a
+separate job.
+
+## Result
+
+Release113 — `3.5.2-113.DEROHE.STARGATE+01102022`, published 1 October 2022 — rebuilds
+byte-identical on six of its seven platform targets. Only `freebsd/amd64` differs, because it was
+built natively with cgo ([why](#how-the-build-achieves-determinism)). The darwin download is a
+universal binary holding two builds; both rebuild exactly, and reassembled they reproduce the
+published file whole (`5c9f9620b6519f30bd1bc5288ab24cf9dea3baeafc6d32bf83d58564ebe6efb8`).
+
+The same method across the surrounding releases:
+
+| Release | Published | Result |
+|---|---|---|
+| Release110 | 2022-09-28 | No — built without `-trimpath` |
+| **Release113** | **2022-10-01** | **Byte-identical** |
+| Release114 | 2022-10-27 | Byte-identical |
+| Release116 | 2023-02-19 | Byte-identical |
+| Release117 | 2023-03-19 | Byte-identical |
+| Release140 | 2023-06-17 | Byte-identical |
+| Release142 | 2025-08-13 | No — native cgo build |
+
+Both exceptions come down to build settings, not to any difference in code. Release110 predates
+`-trimpath` and has the original builder's file paths baked in; rebuilding without `-trimpath`
+closes the gap to about 10 KB. Release142 was compiled natively with cgo — every recorded Go setting
+matches and 212 bytes differ. Neither is claimed as reproduced.
+
+### When determinism landed
+
+`build_package.sh` gained `-trimpath` and `-ldflags=-buildid=` — the two changes that make output
+deterministic — in **Release113**, and is byte-identical between Release113 and Release114.
+Release110 has neither, which is why it is the one that does not reproduce.
+
+The `Release114` note reads *"Reproducible builds implemented."* What it actually added is the Go
+[VCS stamp](#reproducing-releases-that-carry-a-vcs-stamp) — provenance metadata, not the
+determinism, which was already shipping.
+
+## Reproduce it yourself
+
+Runs on an ordinary Linux machine. No node, no chain data, no trust in this page.
+
+**1. Source, pinned to the signed tag**
+
+```sh
+curl -sL -o Release113.tar.gz \
+  https://github.com/deroproject/derohe/archive/refs/tags/Release113.tar.gz
+sha256sum Release113.tar.gz
+# c9467cfb795f6cf982f295d41bec120af5e074dd925e180171f0fcffc9f326c4
+tar xzf Release113.tar.gz && cd derohe-Release113
+```
+
+**2. Toolchain** — not a guess. `go version -m` reads it, and every setting below, out of the
+released binary:
+
+```
+derod-linux-amd64: go1.19.1
+    build  -trimpath=true
+    build  CGO_ENABLED=0
+    build  GOARCH=amd64
+    build  GOOS=linux
+    build  GOAMD64=v1
+```
+
+```sh
+curl -sLO https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
+sha256sum go1.19.1.linux-amd64.tar.gz
+# acc512fbab4f716a8f97a8b3fbaa9ddd39606a28be6c2515ef7c6c6311acffde
+tar xzf go1.19.1.linux-amd64.tar.gz && export PATH=$PWD/go/bin:$PATH
+```
+
+**3. Build and compare**
+
+Write the binary **outside** the source tree — step 4 hashes the tree, and anything left behind in
+it will change the answer.
+
+```sh
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOAMD64=v1 \
+  go build -trimpath -ldflags=-buildid= -o /tmp/derod ./cmd/derod
+sha256sum /tmp/derod
+# 1fc5a7a4bcf1130fb1b7b0100b4beec8c53610e48984f279d286e10e366be70c
+```
+
+That is the `derod-linux-amd64` shipped in `dero_linux_amd64.tar.gz`
+(`f2d22868c4d4a49f7a1792731bf73f9bc3b69ee426f5d04fab1fea1c57efe969`).
+
+No network is needed — the same hash comes out with `GOPROXY=off` and empty caches.
+
+**4. Confirm the source is the signed source.** A downloaded tarball proves nothing on its own —
+bind it to the project's signed history:
+
+```sh
+git init -q . && git add -A && git write-tree
+# b604a482f87825e1b11cef621e6eb5f017cda82f
+```
+
+Run this on a pristine extraction — Release113 ships no `.gitignore`, so `git add -A` absorbs any
+build output left in the tree. (`git init` also makes it a repository, so a *later* rebuild picks up
+a [VCS stamp](#reproducing-releases-that-carry-a-vcs-stamp) and stops matching.)
+
+That tree hash is the exact tree named inside GPG-signed commit
+`89a1e1e8bf4cf09d204710e053e7e202a640fc6b`, an ancestor of the live `main` branch.
+
+**5. Optional: check the source against a third party.** Go's module mirror keeps an independent
+copy of the tree, hash-recorded in a public append-only transparency log — neither operated by DERO
+nor by GitHub:
+
+```sh
+V=v0.0.0-20221001111649-89a1e1e8bf4c
+curl -s "https://proxy.golang.org/github.com/deroproject/derohe/@v/$V.info"
+# {"Version":"...","Time":"2022-10-01T11:16:49Z","Origin":{"VCS":"git",
+#  "URL":"https://github.com/deroproject/derohe",
+#  "Hash":"89a1e1e8bf4cf09d204710e053e7e202a640fc6b"}}
+
+curl -s "https://sum.golang.org/lookup/github.com/deroproject/derohe@$V"
+# 13369518
+# github.com/deroproject/derohe v0.0.0-20221001111649-89a1e1e8bf4c
+#   h1:NryIz1KtPNOnHPD+tNCT6ZD4W6ieYCciQkmJsiT99xM=
+```
+
+The version string encodes the same commit and timestamp, and all 344 files in that mirrored copy
+are byte-identical to the GitHub tarball. This covers DERO's own code only — `vendor/` is excluded
+from Go module zips (see [Limits](#limits)).
+
+### Reproducing releases that carry a VCS stamp
+
+From Release114 onward the binaries embed Go's VCS metadata (`vcs.revision`, `vcs.time`,
+`vcs.modified`). A tarball build cannot carry that stamp and will never match. Build from a git
+checkout at the recorded revision instead:
+
+```sh
+git clone https://github.com/deroproject/derohe.git && cd derohe
+git checkout 358fab62bdf443a02358c67b322f0685ec072303
+
+# vcs.modified=true means the release was built from a tree with
+# uncommitted changes; the stamp records the flag, not the diff
+echo "" >> DIRTY
+
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOAMD64=v1 \
+  go build -trimpath -ldflags=-buildid= -o /tmp/derod ./cmd/derod
+# 847ea80b83a1df887d245085db60a9b0626aacb6cd4f0f192eb2e982643c5529
+```
+
+**That `vcs.modified=true` deserves a direct answer**, since it says the binary was built from a tree
+carrying changes that were never published. Dirtying only an untracked placeholder — enough to flip
+the flag, touching no compiled code — still gives a byte-identical binary, so those changes never
+reached any compiled Go package. Release116, Release117 and Release140 match the same way;
+Release113 carries no stamp, which is why the tarball method works for it.
+
+## How the build achieves determinism
+
+The usual reasons a binary is called irreproducible do not apply here. Go embeds no build timestamp;
+`-trimpath` strips source paths and `-ldflags=-buildid=` strips the build ID; cross-compilation
+keeps the build host out of the output; and `vendor/` is committed in-tree so dependencies cannot
+drift.
+
+**The one exception is cgo**, which lets a Go program link against C libraries from the build
+machine. Go enables it when building for the machine you are on and disables it otherwise, and in
+Release113 exactly one target has it on: `freebsd/amd64`. That is why six targets reproduce anywhere
+and that one does not. **A mismatch produced this way is not evidence of tampering** — it is a
+different build configuration.
+
+## What this establishes
+
+**It establishes nothing about the behaviour of that source.** Start here, because it is the part
+most easily lost. Reproducibility links an artifact to its inputs and says nothing about whether
+those inputs are correct — a reproducible build of flawed code is still flawed code, reproducibly.
+It does not say the source is sound, that the network is safe, or that any dispute about DERO is
+settled. What the code *does* is answered by reading and testing it — see
+[Network Consensus](/integrity/network-consensus-validation) and
+[Verify the Supply](/integrity/verify-the-supply).
+
+**What it does establish: the binary is the source.** For every platform except FreeBSD, the program
+DERO published in October 2022 is a faithful compile of the published, GPG-signed source tree. There
+is no room in it for code absent from the repository — so the published source is the whole of what
+there is to review, and any claim about DERO's behaviour has to be made against code anyone can read
+rather than a binary nobody can inspect.
+
+## Limits
+
+**Two builds cannot be reproduced elsewhere** — `freebsd/amd64` on Release113 and all of Release142,
+both native cgo builds. Every recorded Go setting matches; the difference is confined to C-linked
+code.
+
+**Vendored dependencies are unpinned.** Of the 4,907 files in the tree, 252 are DERO's own Go code
+and 4,563 are third-party libraries under `vendor/`. That code is compiled in, but nothing ties it
+to its upstream origin — no `go.sum`, no `vendor/modules.txt`, no versions in `go.mod`. The tree was
+copied directly from the upstream repositories rather than generated by `go mod vendor`, which is
+why those records do not exist: it keeps the dependencies' test files, which that command strips,
+and lacks the `modules.txt` it always writes. That bounds what "the binary is the source" covers:
+the third-party portion can be verified by reading it, not by comparing it to a published
+dependency.
+
+**Provenance of the published binaries rests on GitHub.** The manifests are PGP-signed, but that key
+also signs the project's commits — so the manifest and the
+[commit binding](#reproduce-it-yourself) share one trust root rather than corroborating each other.
+Two server-side facts bound it: the asset `created_at` (`2022-10-01T11:25Z`) is set by GitHub, not
+the uploader, and asset IDs are a monotonic counter — Release113's (`79628755`–`79628795`) sit
+between Release110's and Release114's, where a later re-upload could not. The *source* has
+independent cover via [step 5](#reproduce-it-yourself); no third-party mirror of the 2022 *binaries*
+is known to exist.
+
+Finally, the `Release113` git tag is lightweight and mutable — cite the commit `89a1e1e8`, not the
+tag.
+
+<Cards>
+  <Card title="Verify the Supply" href="/integrity/verify-the-supply" />
+  <Card title="Network Consensus" href="/integrity/network-consensus-validation" />
+  <Card title="Proof Types Explained" href="/integrity/payload-vs-transaction-proofs" />
+</Cards>
