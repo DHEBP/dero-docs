@@ -3701,6 +3701,9 @@ The DVM enforces hard limits to ensure deterministic execution and prevent abuse
 > [!WARNING]
 > **The 2,000-line and 11,000-eval limits are per function call, not per contract.** A contract can have many functions, but each individual invocation must complete within these bounds. Design complex logic across multiple calls rather than one monolithic function.
 
+> [!WARNING]
+> **Storage gas is the limit you will hit first, and it fails silently.** The 20,000 ceiling is rarely the problem — running out of the budget *below* it is. That budget comes from the transaction fee, and the wallet's default fee under-funds any write past a few hundred bytes: the transaction mines, the fee is charged, and nothing is stored. See [Storage Gas](/dvm/storage-gas.md).
+
 ---
 
 ## Related Pages
@@ -4329,6 +4332,294 @@ Now that you understand the fundamentals, explore the language and examples:
 **Infrastructure:**
 - [Running a Node](/basics/running-a-node.md) — Set up a testnet for development
 - [Wallet RPC API](/rpc-api/wallet-rpc-api.md) — Programmatic deployment and invocation
+
+---
+
+<!-- source: https://derod.org/dvm/storage-gas.md -->
+
+---
+title: "Storage Gas: Why Large Contract Writes Silently Vanish | DERO Blockchain"
+description: "The fee attached to a DERO contract call is its storage budget. Writes past a few hundred bytes mine, charge, and store nothing unless the fee is set explicitly. How to measure the cost and how to pay it."
+keywords: ["DERO storage gas", "gasstorage", "smart contract write", "scinvoke", "DVM gas", "MAX_STORAGE_GAS_ATOMIC_UNITS", "DERO fees", "Insufficient Storage Gas", "GetGasEstimate", "DVM STORE"]
+date: "2026-08-08"
+lastUpdated: "2026-08-08"
+authors: ["DHEBP"]
+slug: "storage-gas"
+canonicalUrl: "https://derod.org/dvm/storage-gas"
+tags: ["dvm", "smart-contracts", "gas", "fees", "development"]
+---
+
+# Storage Gas
+
+A DERO contract call is metered on how much it stores, and **the fee attached to the transaction is that budget**. Nothing else funds it. If the fee is too small, the write is dropped — but the transaction still mines and you still pay.
+
+> [!WARNING]
+> **`scinvoke` cannot fund storage gas.** Use `transfer` with an explicit `fees` for any contract write past a few hundred bytes. With the wallet's default fee, a `STORE` of roughly 250 bytes or more is discarded while every RPC response reports success.
+
+---
+
+## The failure you will actually hit
+
+There are two ways a write fails, and only one of them is about the documented 20,000 ceiling.
+
+| | Over the ceiling | **Under-funded** |
+|---|---|---|
+| Cause | Write costs more than 20,000 gas | Fee is smaller than the write costs |
+| Frequency | Rare | **The common case** |
+| Fix | Store less | Attach a bigger fee |
+
+Both end the same way. `ConsumeStorageGas` panics with `Insufficient Storage Gas`, the panic is recovered into an error, and the block connector returns **before** committing anything:
+
+```go
+// blockchain/transaction_execute.go
+if err != nil { // error occured, give everything to SC, since we may not have
+                // information to send them back
+    ...
+    return
+}
+dvm.ProcessExternal(ss, cache, balance_tree, signer, scid, w_sc_data_tree, w_sc_tree)
+```
+
+The transaction is in the block. The fee is spent. Any DERO you sent along is returned. **The write did not happen**, and no RPC response distinguishes that from success.
+
+---
+
+## What a write costs
+
+Storage gas is consumed over **two separate spans**, so a byte you pass in *and* store is charged twice.
+
+| Span | What is charged | Source |
+|---|---|---|
+| Call arguments | The whole marshalled `sc_rpc` blob, once | `dvm/sc.go:260` |
+| Stored value | The marshalled value, once per `STORE` | `dvm/dvm_store.go:133` |
+| **The key** | **Nothing** — marshalled but never charged | `dvm/dvm_store.go:131` |
+
+Reads are cheap by comparison: `LOAD` and `EXISTS` both go through the same accessor and charge `value.Length() / 10` (`dvm/dvm_store.go:88-127`).
+
+Writing that as a formula, with **S** = byte length of the marshalled arguments and **V** = byte length of the values the contract stores:
+
+```
+gas needed  ≈  S + V
+```
+
+The key is free to store but **not** free to send — it rides inside `S`. A longer key therefore leaves *less* room, not more.
+
+---
+
+## Why the default fee is never enough
+
+When you pass no fee, the wallet computes one itself — and only then:
+
+```go
+// walletapi/transaction_build.go:192
+if fees == 0 && asset.SCID.IsZero() && !fees_done {
+    fees = fees + uint64(len(transfers)+2)*uint64(...FEE_PER_KB...)
+    ...
+    fees = fees + (uint64(len(data))*15)/10   // 1.5 per SCDATA byte
+}
+```
+
+So the wallet supplies **1.5 per argument byte** against a chain cost of **1 per argument byte plus 1 per stored byte**. Setting the two against each other:
+
+```
+default fee ≥ cost   ⟺   base + 1.5·S  ≥  S + V   ⟺   V ≤ base + 0.5·S
+```
+
+**The default fee covers you only while the value you store is no larger than half your argument blob.** A setter that stores its argument verbatim can never satisfy that past a couple of hundred bytes, because `V` and `S` grow together.
+
+> [!NOTE]
+> **This is not a rounding error — it is the shape of the formula.** The shortfall is 0.5 per byte and grows linearly, so the bigger the write, the further under water it is.
+
+### The three regimes, and the mainnet numbers they predict
+
+Substituting the relationship between `S` and `V` for three common shapes reproduces the figures independently measured on mainnet in [deroproject/derohe#141](https://github.com/deroproject/derohe/issues/141):
+
+| Shape | Default-fee limit | Measured on mainnet |
+|---|---|---|
+| Store the argument verbatim | `V ≤ 2·base + overhead` — a couple hundred bytes | *"a limit of"* `<400 bytes` |
+| Long key, short value | `V ≤ 2·base + overhead + keylength` | *"approx. keylength+325 bytes"* |
+| Hex-decode before storing | Self-funding — bound only by the ceiling, `V ≤ ~6,600` | *"about 6600 bytes"* |
+
+The third row is the reason the hex trick works, and it is worth understanding rather than cargo-culting: sending a payload as hex doubles `S` while `V` stays the same, so the wallet's 1.5×`S` grows faster than the chain's `S + V`. It buys funding, not capacity — you are paying full price for twice the arguments.
+
+---
+
+## The ceiling is a wall, not a price
+
+Above 20,000 atomic units, paying more buys nothing. The budget is **clamped**, not priced:
+
+```go
+// dvm/sc.go:244
+if gasstorage_incoming > 0 {
+    if gasstorage_incoming > config.MAX_STORAGE_GAS_ATOMIC_UNITS {
+        gasstorage_incoming = config.MAX_STORAGE_GAS_ATOMIC_UNITS
+    }
+    state.GasStoreLimit = int64(gasstorage_incoming)
+    state.GasStoreCheck = true
+}
+```
+
+For a contract storing its argument verbatim, `S + V ≤ 20,000` puts the hard edge just under **10,000 bytes** — measured at **9,949 bytes** with a five-character key (9,949 needs 19,999 gas; 9,950 needs 20,001). A longer key lowers that.
+
+> [!WARNING]
+> **Refuse an oversized write before you build the transaction.** Once broadcast it will mine and charge the fee regardless. Raising the fee past 20,000 does not rescue it.
+
+---
+
+## How to measure
+
+Ask the daemon. `DERO.GetGasEstimate` executes the call against current chain state and returns the exact gas it consumed.
+
+```bash
+curl -s -X POST http://127.0.0.1:10102/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "DERO.GetGasEstimate",
+    "params": {
+      "sc_rpc": [
+        {"name": "SC_ACTION", "datatype": "U", "value": 0},
+        {"name": "SC_ID", "datatype": "H", "value": "<scid>"},
+        {"name": "entrypoint", "datatype": "S", "value": "SetVar"},
+        {"name": "k", "datatype": "S", "value": "mykey"},
+        {"name": "v", "datatype": "S", "value": "<the exact payload you will send>"}
+      ],
+      "ringsize": 2,
+      "signer": "dero1..."
+    }
+  }'
+```
+
+```json
+{ "result": { "gascompute": 208200, "gasstorage": 10091, "status": "OK" } }
+```
+
+`gasstorage` is the number to attach as your fee.
+
+> [!WARNING]
+> **Read the number, never the status.** The estimator runs the contract with `gasstorage_incoming = 0`, and the block above only arms the limiter when that value is above zero — so the estimate **never fails for being too large**. It returns `"status": "OK"` on a payload of 250 KB. The count is still correct, because `ConsumeStorageGas` accumulates unconditionally and the flag only decides whether to panic.
+
+### Three traps in measuring
+
+**1 · Measure the arguments you will actually send.** The key and the entrypoint name are charged inside `S`. Estimating over reconstructed or placeholder arguments under-measures by the drift — one gas per byte of difference. Renaming a key from `big` to `probe5k` moves the cost from 10,087 to 10,091, exactly the four characters added.
+
+**2 · A wrong `signer` produces no measurement at all.** An owner-gated entrypoint returns non-zero for the wrong caller, the daemon reports that as an error, and you get no number back. That is not the same as a cheap write.
+
+**3 · The estimate wants `SC_ACTION` and `SC_ID` inline; `transfer` does not.** `GetGasEstimate` reads both out of `sc_rpc` and errors without them. The wallet's `transfer` takes `scid` as a top-level parameter and **appends** those two arguments itself. Include them in the estimate, omit them from the transfer, and never send both — duplicating them inflates `S` past what you measured.
+
+---
+
+## How to pay
+
+### Why `scinvoke` cannot
+
+`SC_Invoke_Params` has no fee field, and the handler that consumes it never sets one:
+
+```go
+// rpc/wallet_rpc.go:247
+SC_Invoke_Params struct {
+    SC_ID            string    `json:"scid"`
+    SC_RPC           Arguments `json:"sc_rpc"`
+    SC_DERO_Deposit  uint64    `json:"sc_dero_deposit"`
+    SC_TOKEN_Deposit uint64    `json:"sc_token_deposit"`
+    Ringsize         uint64    `json:"ringsize"`
+}
+```
+
+`ScInvoke` translates these into a `Transfer_Params` and forwards it, leaving `Fees` at its zero value — which is precisely the trigger for the wallet's 1.5-per-byte default. There is no parameter you can add to reach it.
+
+### Use `transfer`
+
+`Transfer_Params` carries `Fees`, and passing a `scid` makes it a contract call:
+
+```bash
+curl -s -X POST http://127.0.0.1:10103/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "transfer",
+    "params": {
+      "scid": "<scid>",
+      "sc_rpc": [
+        {"name": "entrypoint", "datatype": "S", "value": "SetVar"},
+        {"name": "k", "datatype": "S", "value": "mykey"},
+        {"name": "v", "datatype": "S", "value": "<the exact payload>"}
+      ],
+      "ringsize": 2,
+      "fees": 10091
+    }
+  }'
+```
+
+> [!WARNING]
+> **A non-zero `fees` replaces the wallet's formula — it does not add to it.** The `if fees == 0` gate means passing a number switches the default off entirely, so a naive value can *under*pay a small call. Always attach `max(measured gasstorage, what the wallet would have charged)`; only ever raise.
+
+### The whole flow
+
+### Build the exact arguments you intend to send
+
+Final key, final entrypoint, final payload. Nothing reconstructed.
+
+### Measure with `DERO.GetGasEstimate`
+
+Same arguments plus `SC_ACTION` and `SC_ID`, with the real signer address. Read `gasstorage`.
+
+### Refuse if `gasstorage` exceeds 20,000
+
+No fee rescues this. Fail before building the transaction — afterwards it mines and charges regardless.
+
+### Broadcast with `transfer`, `fees` topped up to the measured figure
+
+Never lower than the wallet's own default.
+
+### Verify with `DERO.GetSC`
+
+Read the variable back. A `txid` is not confirmation that anything was stored.
+
+---
+
+## Special cases
+
+**Contract installation is fine.** The contract source is written with a direct `Put` on the tree, outside the DVM store, so it is never metered. The `Initialize` entrypoint is charged once for the marshalled `SC_CODE` argument against 1.5× supplied by the wallet, leaving it over-funded. The residual risk is narrow: an `Initialize` that itself writes far more than the source length.
+
+**`gasstorage = 0` means auto-compute, not "no fee."** Passing zero is what *enables* the wallet's formula, and on the estimator it means "measure without a limit." It never means free.
+
+**Keys are unbounded and uncharged on storage.** [Slixe noted this on #141](https://github.com/deroproject/derohe/issues/141) in 2023 and it is still true. A key costs you only on the argument span.
+
+---
+
+## Source reference
+
+Verified against `derohe` at the current consensus rules.
+
+| Behaviour | Location |
+|---|---|
+| The transaction fee becomes the storage budget | `blockchain/transaction_execute.go:342,378` |
+| Budget clamped to the ceiling, then armed | `dvm/sc.go:244-251` |
+| Arguments charged in full | `dvm/sc.go:260` |
+| Stored value charged in full; key exempt | `dvm/dvm_store.go:131-133` |
+| Panic on overrun | `dvm/dvm.go:449-456` |
+| Changes discarded, fee kept | `blockchain/transaction_execute.go:395-408` |
+| Wallet default: 1.5 per SCDATA byte, only when `fees == 0` | `walletapi/transaction_build.go:192-197` |
+| `MAX_STORAGE_GAS_ATOMIC_UNITS = 20000` | `config/config.go:46` |
+| `FEE_PER_KB = 20` | `config/config.go:49` |
+| `SC_Invoke_Params` has no `Fees`; `Transfer_Params` does | `rpc/wallet_rpc.go:231,247` |
+
+## Prior art
+
+This behaviour has been reported before; this page documents the mechanism rather than claiming the finding.
+
+- [deroproject/derohe#141](https://github.com/deroproject/derohe/issues/141) — Alumn0, 2023. Simulator results plus an 18-test **mainnet** run confirming them. The `<400 bytes`, `keylength+325` and `~6600 bytes` figures above are theirs. Read the comments, not just the issue body.
+- [deroproject/derohe#177](https://github.com/deroproject/derohe/issues/177) — lcances, 2024. States the double charge and proposes separating parameter gas from storage gas.
+- [DEROFDN/derohe#65](https://github.com/DEROFDN/derohe/issues/65) — open request to give `scinvoke` a way to fund storage gas.
+
+## See also
+
+- [DVM Reference — Execution Limits](/dvm/dero-virtual-machine.md) — the full table of hard limits
+- [Daemon RPC API — Get Gas Estimate](/rpc-api/daemon-rpc-api.md) — parameter reference
+- [Wallet RPC API — transfer](/rpc-api/wallet-rpc-api.md) — parameter reference
 
 ---
 
@@ -9403,6 +9694,241 @@ For the soundness argument and the proof that out-of-range values cannot produce
 
 ---
 
+<!-- source: https://derod.org/integrity/reproducible-builds.md -->
+
+---
+title: "Reproducible Builds: Rebuild DERO's Released Binaries from Source | DERO Blockchain"
+description: "DERO's released binaries rebuild byte-for-byte from the public source tree. Here are the hashes, the exact toolchain, and the commands to verify it yourself."
+keywords: ["DERO reproducible builds", "verify DERO binary", "Release113", "byte-for-byte", "go build trimpath", "buildid", "CGO_ENABLED", "source to binary", "deterministic build", "DERO binary verification"]
+date: "2026-08-01"
+lastUpdated: "2026-08-01"
+authors: ["DHEBP"]
+slug: "reproducible-builds"
+canonicalUrl: "https://derod.org/integrity/reproducible-builds"
+tags: ["integrity", "builds", "verification", "supply-chain", "protocol", "technical"]
+---
+
+# Reproducible Builds
+
+Every DERO download is a compiled program. The source code behind it is public and anyone can read
+it — but nothing about the download itself proves the two match. You are trusting whoever built it.
+
+DERO's builds are **reproducible**, which closes that gap. Compile the published source yourself and
+you get a file identical, byte for byte, to the one the project released. This page does that for
+the October 2022 release — the one that gets argued about — and gives you the commands to repeat it.
+
+**What that settles:** there is no hidden behaviour in the download that is not in the public source.
+**What it does not settle:** whether that source is correct — judging what the code *does* is a
+separate job.
+
+## Result
+
+Release113 — `3.5.2-113.DEROHE.STARGATE+01102022`, published 1 October 2022 — rebuilds
+byte-identical on six of its seven platform targets. Only `freebsd/amd64` differs, because it was
+built natively with cgo ([why](#how-the-build-achieves-determinism)). The darwin download is a
+universal binary holding two builds; both rebuild exactly, and reassembled they reproduce the
+published file whole (`5c9f9620b6519f30bd1bc5288ab24cf9dea3baeafc6d32bf83d58564ebe6efb8`).
+
+The same method across the surrounding releases:
+
+| Release | Published | Result |
+|---|---|---|
+| Release110 | 2022-09-28 | No — built without `-trimpath` |
+| **Release113** | **2022-10-01** | **Byte-identical** |
+| Release114 | 2022-10-27 | Byte-identical |
+| Release116 | 2023-02-19 | Byte-identical |
+| Release117 | 2023-03-19 | Byte-identical |
+| Release140 | 2023-06-17 | Byte-identical |
+| Release142 | 2025-08-13 | No — native cgo build |
+
+Both exceptions come down to build settings, not to any difference in code. Release110 predates
+`-trimpath` and has the original builder's file paths baked in; rebuilding without `-trimpath`
+closes the gap to about 10 KB. Release142 was compiled natively with cgo — every recorded Go setting
+matches and 212 bytes differ. Neither is claimed as reproduced.
+
+### When determinism landed
+
+`build_package.sh` gained `-trimpath` and `-ldflags=-buildid=` — the two changes that make output
+deterministic — in **Release113**, and is byte-identical between Release113 and Release114.
+Release110 has neither, which is why it is the one that does not reproduce.
+
+The `Release114` note reads *"Reproducible builds implemented."* What it actually added is the Go
+[VCS stamp](#reproducing-releases-that-carry-a-vcs-stamp) — provenance metadata, not the
+determinism, which was already shipping.
+
+## Reproduce it yourself
+
+Runs on an ordinary Linux machine. No node, no chain data, no trust in this page.
+
+**1. Source, pinned to the signed tag**
+
+```sh
+curl -sL -o Release113.tar.gz \
+  https://github.com/deroproject/derohe/archive/refs/tags/Release113.tar.gz
+sha256sum Release113.tar.gz
+# c9467cfb795f6cf982f295d41bec120af5e074dd925e180171f0fcffc9f326c4
+tar xzf Release113.tar.gz && cd derohe-Release113
+```
+
+**2. Toolchain** — not a guess. `go version -m` reads it, and every setting below, out of the
+released binary:
+
+```
+derod-linux-amd64: go1.19.1
+    build  -trimpath=true
+    build  CGO_ENABLED=0
+    build  GOARCH=amd64
+    build  GOOS=linux
+    build  GOAMD64=v1
+```
+
+```sh
+curl -sLO https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
+sha256sum go1.19.1.linux-amd64.tar.gz
+# acc512fbab4f716a8f97a8b3fbaa9ddd39606a28be6c2515ef7c6c6311acffde
+tar xzf go1.19.1.linux-amd64.tar.gz && export PATH=$PWD/go/bin:$PATH
+```
+
+**3. Build and compare**
+
+Write the binary **outside** the source tree — step 4 hashes the tree, and anything left behind in
+it will change the answer.
+
+```sh
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOAMD64=v1 \
+  go build -trimpath -ldflags=-buildid= -o /tmp/derod ./cmd/derod
+sha256sum /tmp/derod
+# 1fc5a7a4bcf1130fb1b7b0100b4beec8c53610e48984f279d286e10e366be70c
+```
+
+That is the `derod-linux-amd64` shipped in `dero_linux_amd64.tar.gz`
+(`f2d22868c4d4a49f7a1792731bf73f9bc3b69ee426f5d04fab1fea1c57efe969`).
+
+No network is needed — the same hash comes out with `GOPROXY=off` and empty caches.
+
+**4. Confirm the source is the signed source.** A downloaded tarball proves nothing on its own —
+bind it to the project's signed history:
+
+```sh
+git init -q . && git add -A && git write-tree
+# b604a482f87825e1b11cef621e6eb5f017cda82f
+```
+
+Run this on a pristine extraction — Release113 ships no `.gitignore`, so `git add -A` absorbs any
+build output left in the tree. (`git init` also makes it a repository, so a *later* rebuild picks up
+a [VCS stamp](#reproducing-releases-that-carry-a-vcs-stamp) and stops matching.)
+
+That tree hash is the exact tree named inside GPG-signed commit
+`89a1e1e8bf4cf09d204710e053e7e202a640fc6b`, an ancestor of the live `main` branch.
+
+**5. Optional: check the source against a third party.** Go's module mirror keeps an independent
+copy of the tree, hash-recorded in a public append-only transparency log — neither operated by DERO
+nor by GitHub:
+
+```sh
+V=v0.0.0-20221001111649-89a1e1e8bf4c
+curl -s "https://proxy.golang.org/github.com/deroproject/derohe/@v/$V.info"
+# {"Version":"...","Time":"2022-10-01T11:16:49Z","Origin":{"VCS":"git",
+#  "URL":"https://github.com/deroproject/derohe",
+#  "Hash":"89a1e1e8bf4cf09d204710e053e7e202a640fc6b"}}
+
+curl -s "https://sum.golang.org/lookup/github.com/deroproject/derohe@$V"
+# 13369518
+# github.com/deroproject/derohe v0.0.0-20221001111649-89a1e1e8bf4c
+#   h1:NryIz1KtPNOnHPD+tNCT6ZD4W6ieYCciQkmJsiT99xM=
+```
+
+The version string encodes the same commit and timestamp, and all 344 files in that mirrored copy
+are byte-identical to the GitHub tarball. This covers DERO's own code only — `vendor/` is excluded
+from Go module zips (see [Limits](#limits)).
+
+### Reproducing releases that carry a VCS stamp
+
+From Release114 onward the binaries embed Go's VCS metadata (`vcs.revision`, `vcs.time`,
+`vcs.modified`). A tarball build cannot carry that stamp and will never match. Build from a git
+checkout at the recorded revision instead:
+
+```sh
+git clone https://github.com/deroproject/derohe.git && cd derohe
+git checkout 358fab62bdf443a02358c67b322f0685ec072303
+
+# vcs.modified=true means the release was built from a tree with
+# uncommitted changes; the stamp records the flag, not the diff
+echo "" >> DIRTY
+
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOAMD64=v1 \
+  go build -trimpath -ldflags=-buildid= -o /tmp/derod ./cmd/derod
+# 847ea80b83a1df887d245085db60a9b0626aacb6cd4f0f192eb2e982643c5529
+```
+
+**That `vcs.modified=true` deserves a direct answer**, since it says the binary was built from a tree
+carrying changes that were never published. Dirtying only an untracked placeholder — enough to flip
+the flag, touching no compiled code — still gives a byte-identical binary, so those changes never
+reached any compiled Go package. Release116, Release117 and Release140 match the same way;
+Release113 carries no stamp, which is why the tarball method works for it.
+
+## How the build achieves determinism
+
+The usual reasons a binary is called irreproducible do not apply here. Go embeds no build timestamp;
+`-trimpath` strips source paths and `-ldflags=-buildid=` strips the build ID; cross-compilation
+keeps the build host out of the output; and `vendor/` is committed in-tree so dependencies cannot
+drift.
+
+**The one exception is cgo**, which lets a Go program link against C libraries from the build
+machine. Go enables it when building for the machine you are on and disables it otherwise, and in
+Release113 exactly one target has it on: `freebsd/amd64`. That is why six targets reproduce anywhere
+and that one does not. **A mismatch produced this way is not evidence of tampering** — it is a
+different build configuration.
+
+## What this establishes
+
+**It establishes nothing about the behaviour of that source.** Start here, because it is the part
+most easily lost. Reproducibility links an artifact to its inputs and says nothing about whether
+those inputs are correct — a reproducible build of flawed code is still flawed code, reproducibly.
+It does not say the source is sound, that the network is safe, or that any dispute about DERO is
+settled. What the code *does* is answered by reading and testing it — see
+[Network Consensus](/integrity/network-consensus-validation.md) and
+[Verify the Supply](/integrity/verify-the-supply.md).
+
+**What it does establish: the binary is the source.** For every platform except FreeBSD, the program
+DERO published in October 2022 is a faithful compile of the published, GPG-signed source tree. There
+is no room in it for code absent from the repository — so the published source is the whole of what
+there is to review, and any claim about DERO's behaviour has to be made against code anyone can read
+rather than a binary nobody can inspect.
+
+## Limits
+
+**Two builds cannot be reproduced elsewhere** — `freebsd/amd64` on Release113 and all of Release142,
+both native cgo builds. Every recorded Go setting matches; the difference is confined to C-linked
+code.
+
+**Vendored dependencies are unpinned.** Of the 4,907 files in the tree, 252 are DERO's own Go code
+and 4,563 are third-party libraries under `vendor/`. That code is compiled in, but nothing ties it
+to its upstream origin — no `go.sum`, no `vendor/modules.txt`, no versions in `go.mod`. The tree was
+copied directly from the upstream repositories rather than generated by `go mod vendor`, which is
+why those records do not exist: it keeps the dependencies' test files, which that command strips,
+and lacks the `modules.txt` it always writes. That bounds what "the binary is the source" covers:
+the third-party portion can be verified by reading it, not by comparing it to a published
+dependency.
+
+**Provenance of the published binaries rests on GitHub.** The manifests are PGP-signed, but that key
+also signs the project's commits — so the manifest and the
+[commit binding](#reproduce-it-yourself) share one trust root rather than corroborating each other.
+Two server-side facts bound it: the asset `created_at` (`2022-10-01T11:25Z`) is set by GitHub, not
+the uploader, and asset IDs are a monotonic counter — Release113's (`79628755`–`79628795`) sit
+between Release110's and Release114's, where a later re-upload could not. The *source* has
+independent cover via [step 5](#reproduce-it-yourself); no third-party mirror of the 2022 *binaries*
+is known to exist.
+
+Finally, the `Release113` git tag is lightweight and mutable — cite the commit `89a1e1e8`, not the
+tag.
+
+- [Verify the Supply](/integrity/verify-the-supply.md)
+- [Network Consensus](/integrity/network-consensus-validation.md)
+- [Proof Types Explained](/integrity/payload-vs-transaction-proofs.md)
+
+---
+
 <!-- source: https://derod.org/integrity/ring-member-behavior.md -->
 
 ---
@@ -10774,7 +11300,8 @@ Note: scope is one transaction at a time. A proof for tx-A reveals nothing about
 - [Transaction Privacy](/privacy/transaction-privacy.md) - Complete privacy model
 
 **Technical:**
-- [DERO Wallets](/basics/wallets.md) - Stealth address generation
+- [DERO Wallets](/basics/wallets.md) - Account and address generation
+- [Stealth Addresses](/privacy/stealth-addresses.md) - Why DERO has none, and what it uses instead
 - [Wallet RPC API](/rpc-api/wallet-rpc-api.md) - Integrated addresses
 
 **Understanding DERO:**
@@ -12615,7 +13142,8 @@ transfer({ ringsize: 128 }) // Maximum
 - [Homomorphic Encryption](/privacy/homomorphic-encryption.md) - Encrypted balances
 - [Bulletproofs](/privacy/bulletproofs.md) - Range proofs
 - [Transaction Privacy](/privacy/transaction-privacy.md) - Complete privacy model
-- [Account-Based Privacy](/privacy/account-based-privacy.md) - Stealth addresses
+- [Account-Based Privacy](/privacy/account-based-privacy.md) - Persistent accounts with encrypted balances
+- [Stealth Addresses](/privacy/stealth-addresses.md) - Why DERO has none, and what it uses instead
 
 **How It Works:**
 - [DERO Tokens](/basics/tokens.md) - Ring signatures in token transfers
@@ -12624,6 +13152,288 @@ transfer({ ringsize: 128 }) // Maximum
 **For Developers:**
 - [Wallet RPC API](/rpc-api/wallet-rpc-api.md) - Set ring size in transfers
 - [DERO Daemon](/basics/daemon.md) - Network anonymity layer
+
+---
+
+<!-- source: https://derod.org/privacy/stealth-addresses.md -->
+
+---
+title: "Does DERO Have Stealth Addresses? DERO Retired Them in 2022 | DERO Blockchain"
+description: "DERO shipped stealth addresses and ring signatures for four years, then deliberately replaced the entire obfuscation stack with homomorphic encryption in 2022. Here is why, and what it uses now."
+keywords: ["DERO stealth addresses", "DERO vs Monero stealth addresses", "one-time addresses", "obfuscation stack", "DERO CryptoNote history", "DERO-HE migration", "homomorphic encryption privacy", "view key weakness", "decoy anonymity", "DERO address model"]
+date: "2026-08-03"
+lastUpdated: "2026-08-03"
+authors: ["DHEBP"]
+slug: "stealth-addresses"
+canonicalUrl: "https://derod.org/privacy/stealth-addresses"
+tags: ["privacy", "addresses", "architecture", "history", "technical"]
+---
+
+# Does DERO Have Stealth Addresses?
+
+**No — and that is the result of a decision, not a gap.** DERO launched in December 2017 as a
+CryptoNote chain, with one-time stealth addresses, ring signatures, mixins and view keys. It ran
+that model for four years, concluded homomorphic encryption was the better foundation, spent three
+years building it, and retired the entire apparatus in the February 2022 migration.
+
+DERO is one of the very few privacy chains that has run both models in production. It abandoned the
+one Monero-family chains still use.
+
+**Terminology note:** DERO documentation and community posts have sometimes borrowed the phrase
+"stealth address" to describe DERO's current account privacy. That usage is a holdover from the
+CryptoNote era and is incorrect for DERO-HE. This page is the canonical correction.
+
+## The decision, with dates
+
+DERO's own [news log](https://github.com/deroproject/deronews) records the migration as it happened:
+
+| Date | Milestone |
+|---|---|
+| 06-DEC-2017 | DERO launched as a CryptoNote chain, from the Monero codebase ([source](https://github.com/deroproject/dero)) |
+| 04-JUL-2018 | DERO Atlantis — CryptoNote rewritten in Go |
+| 01-APR-2019 | Stargate smart-contract testnet — **CryptoNote's limits found** |
+| 06-MAR-2020 | **Decision: build a new protocol on homomorphic encryption** |
+| 08-JUL-2020 | DHEBP — Homomorphic Encryption protocol released |
+| 20-DEC-2020 | HE testnet |
+| **26-FEB-2022** | **HE mainnet — CryptoNote retired** |
+
+The two middle rows are the whole argument, and the log states them in DERO's own words:
+
+> **01-APR-2019** — Realization of CryptoNote Protocol security and limitations in Smart Contracts.
+> Started search for better protocol.
+>
+> **06-MAR-2020** — Finally decided to write new protocol based on Homomorphic Encryption.
+
+The same page states the intent plainly: *"In coming times DERO with full respect will migrate from
+CryptoNote Protocol to new DHEBP Protocol based on Homomorphic Encryption"* — and closes with the
+reasoning: *"DERO believes in security, stability and reliability. So it's better to write your own
+rather than compromising on any above mentioned aspects."*
+
+That first row is checkable too. The original C++ tree,
+[`deroproject/dero`](https://github.com/deroproject/dero), still contains the CryptoNote privacy
+primitives, exactly where you would expect:
+
+```c
+// src/crypto/crypto.h
+static void generate_key_image(const public_key &, const secret_key &, key_image &);
+static void generate_ring_signature(const hash &, const key_image &, ...);
+```
+
+Key images and ring signatures, in DERO's own launch source. This is the concrete sense in which
+DERO *had* the CryptoNote model rather than merely knowing about it.
+
+Three years elapsed between recognising the limits and shipping the replacement. DERO's position on
+stealth addresses is not a marketing stance about a feature it never built. It is a verdict reached
+after shipping them, and then acted on.
+
+## Why the obfuscation model was replaced
+
+Stealth addresses do not stand alone. They are one component of an approach where transaction data
+is written to the chain and privacy comes from an observer being unable to tell which piece belongs
+to whom. Captain stated the alternative in a single paragraph, months before the migration:
+
+Yes absolutely. HE encryption replacing all obfuscation stack completely. No more obfuscations on DERO network now. No one will be able to see/confirm your data on DERO blockchain without your seed/wallet. All operations will be on encrypted data only. So no requirement/gimmick to ask for your data to be in decrypted state ever. Not even once your data will ever be in decrypted state.
+
+Privacy as a property of the cryptography, rather than a layer of concealment applied to a
+transparent ledger — the ciphertext itself is the boundary. Four structural properties drove that
+call.
+
+### Smart contracts were the trigger
+
+The news log names it directly: the limits were found while building smart contracts on the Stargate
+testnet in April 2019. A contract needs a stable identity to attach state to and a balance it can
+update. Keys that exist for exactly one output cannot provide that.
+
+Be precise about what the account model bought here. It made native-chain smart contracts possible
+at all, and it lets contract-issued tokens become encrypted balances in user wallets. It did **not**
+make contract execution or contract state private — DVM code and state variables are public and
+readable by anyone. See
+[Private Smart Contracts](/privacy/private-smart-contracts.md) for exactly what is and is not
+encrypted.
+
+### Obfuscation degrades; encryption does not
+
+Decoy-based privacy rests on an observer being unable to distinguish the real participant from the
+decoys. The chain is permanent, but the analysis is not fixed: decoy-selection heuristics, timing
+correlations and statistical biases improve over the years. A transaction made today is analysed
+under everything learned in the following decade. Decoy systems get hardened repeatedly precisely
+because new biases keep being found — and the transactions made under the older rules stay
+on-chain, exposed to the newer analysis.
+
+Encryption does not work that way. A ciphertext is protected by the cipher, not by the size of a
+crowd or the quality of a decoy sampler.
+
+That is the sense in which the timing mattered. Every year on an obfuscation substrate is a year of
+permanent history subject to future analysis. Deciding in 2019 and shipping in 2022 bounded how much
+of DERO's history sits on that substrate at all.
+
+### The history that enables analysis can be deleted
+
+The sharpest consequence of dropping the CryptoNote model is that DERO does not need to keep the
+data an analyst would work from:
+
+Another privacy enhancing part of DERO is it's account model. You can drop the entire transactions logs anytime from DERO database like(--fastsync) & DERO will still work unlike Monero which requires scanning/tracking/recording of key-images from first transaction. After dropping you will never abile to do any statistical analysis as there will be no such data.
+
+CryptoNote-family chains must retain key images from the first transaction forever — that record is
+what prevents double-spends. DERO's account model prevents double-spends without it, so the history
+is disposable. A node running `--fastsync` holds no corpus for anyone to analyse.
+
+This also removes the scanning burden. Because a stealth address is a one-time key nobody can look
+up, a CryptoNote recipient must trial-decrypt outputs to find their own. A DERO wallet queries its
+account directly — 66 bytes, and no chain sweep.
+
+### Disclosure is all-or-nothing
+
+In the CryptoNote model, proving a payment means handing over a view key — and a view key reveals
+*every* incoming transaction, past and future, permanently. There is no way to prove one payment
+without exposing all of them.
+
+DERO has no such key to hand over:
+
+There is no concept of any master private/secret key on DERO. DERO creates a elgamal balance ciphertext associated to any wallet-account. The private key is NOT broken or distributed among other nodes in any way or form. When user opens wallet, no communication with DERO network except 66 bytes are required.
+
+Disclosure is per-transaction instead: you reveal a single transfer to a single counterparty and
+nothing else. See [Payload Proofs](/privacy/payload-proofs.md).
+
+## What the encryption covers
+
+Worth stating precisely, because the term is widely abused. DERO does **not** use fully homomorphic
+encryption. Balances are ElGamal ciphertexts, and debiting or crediting an account needs only
+addition and subtraction — which partially homomorphic encryption does efficiently. Captain has been
+explicit that this is a performance choice:
+
+That's the point ATM FHEs are too slow for decentralized blockchain. DERO doesn't uses multiplication/division as account management can be done by add/sub only but calculations are entirely HE as operations are performed on encrypted data only.
+
+The same reasoning covers the address. Asked directly how hard it would be to homomorphically
+encrypt addresses, his answer was that it is achievable — *"not a big deal"* — but that DHEBP was
+deliberately scoped for the *"computational powers of weak machines"* on the network. A scoped
+subset chosen for the hardware of the day, not a ceiling on the design.
+
+So the claim is narrow and checkable: balances stay encrypted and the network computes on them
+without decrypting. It is not a claim of general-purpose computation over ciphertext.
+
+## What DERO uses instead
+
+A DERO address is a single compressed 33-byte public key, optionally carrying arguments for
+integrated addresses:
+
+```go
+type Address struct {
+	Network   uint64
+	Mainnet   bool
+	Proof     bool
+	PublicKey *crypto.Point // 33 byte compressed point
+	Arguments Arguments     // all data related to integrated address
+}
+```
+
+<span/>
+
+*Source: `rpc/address.go:34-41`*
+
+There is no view key / spend key pair deriving per-output keys. The `PublicKey` field **is** the
+account, and it is what enters a transaction's ring — for sender and recipient alike:
+
+```go
+ring = append(ring, w.account.Keys.Public.G1())   // sender's own account key
+...
+ring = append(ring, addr.PublicKey.G1())          // recipient's account key
+```
+
+<span/>
+
+*Source: `walletapi/wallet_transfer.go:348, 384`*
+
+The identifier is public. What is protected is the data attached to it:
+
+**Balances are ciphertexts, permanently.** Account balances are stored homomorphically encrypted and
+are never decrypted by the network — not during validation, not during block assembly, not ever.
+Nodes update balances by operating on the ciphertexts directly. See
+[Homomorphic Encryption](/privacy/homomorphic-encryption.md).
+
+**Amounts are proven without being revealed.** Bulletproofs establish that a transfer is well-formed
+and non-negative without exposing any value. See [Bulletproofs](/privacy/bulletproofs.md).
+
+**Participation is ambiguous.** Each transaction carries a ring of registered accounts — half
+potential senders, half potential recipients. An account appearing in a ring may be a participant or
+may be someone else's decoy. See [Ring Signatures](/privacy/ring-signatures.md).
+
+**The distinction that matters:** in an obfuscation model the values are on the chain and privacy
+depends on you not knowing which is which. In DERO-HE the values are ciphertexts. There is no
+plaintext to attribute.
+
+## Properties of the account model
+
+**Your address is a long-lived public identifier.** It is stable across every transaction by design.
+What it does not reveal is balances, amounts, or whether any given ring appearance was real activity.
+
+**Ring size is per-transaction and configurable.** It sets the size of the set your activity is
+indistinguishable within — choose it deliberately.
+
+**Ring size 2 is provable by design.** With one sender slot and one recipient slot the counterparty
+is derivable. This is intentional: it is the opt-in mode for audit trails, exchange deposits and KYC
+reconciliation, where the sender *wants* the transfer to be mathematically provable. It is not a
+privacy setting.
+
+**Ring slots are split by parity.** Sender and recipient occupy indices of opposite parity, so a ring
+of size N gives roughly a 1-in-(N/2) naive guess rather than 1-in-N. Documented in full at
+[Ring Signatures → The Parity Constraint](/privacy/ring-signatures.md#the-parity-constraint-how-the-ring-is-split).
+
+**Accounts are registered on-chain.** An account must exist on-chain before it can receive. Existence
+is public; activity and amounts are not.
+
+## Integrated addresses are not stealth addresses
+
+A common confusion. A DERO integrated address is a normal address plus embedded arguments — a
+destination port, an amount, an encrypted payload:
+
+```go
+func (a *Address) IsIntegratedAddress() bool {
+	return len(a.Arguments) >= 1
+}
+```
+
+<span/>
+
+*Source: `rpc/address.go:112-114`*
+
+The underlying public key is unchanged. Integrated addresses solve **payment routing and
+reconciliation** — letting a merchant tell two payments apart — not unlinkability.
+
+## Verify it yourself
+
+```sh
+git clone https://github.com/deroproject/derohe.git && cd derohe
+
+# the address is one persistent public key
+sed -n '34,41p' rpc/address.go
+
+# that same key is what goes into the ring
+grep -n 'ring = append' walletapi/wallet_transfer.go
+
+# integrated addresses only add arguments
+sed -n '112,114p' rpc/address.go
+```
+
+If you find a per-output key derivation anywhere in that tree, this page is wrong — and we would
+want to know.
+
+## A note on CryptoNote
+
+None of the above is a claim that CryptoNote is broken or that chains using it are unserious. DERO
+built on it for four years, rewrote it in Go, and shipped bulletproofs on it. The migration was a
+judgement that a different set of trade-offs suited DERO's goals better — not a verdict on anyone
+else's engineering. The project's own position, stated two months after the migration:
+
+There is no such conflict &amp; we have full respect for CryptoNote Protocol &amp; other communities. Request to all members pls don't disrespect anyone &amp; don't engage with any conflict. There are much bigger challenges ahead &amp; we all need to unite together $XMR $XHV $ARRR $FIRO $DERO
+
+## Related
+
+- [Homomorphic Encryption](/privacy/homomorphic-encryption.md) — how encrypted balances work
+- [Account-Based Privacy](/privacy/account-based-privacy.md) — why accounts plus encryption is unusual
+- [Private Smart Contracts](/privacy/private-smart-contracts.md) — what is encrypted, and what is not
+- [Ring Signatures](/privacy/ring-signatures.md) — anonymity sets, parity, and ring size
+- [Captain's Archive](/captain.md) — the CryptoNote era and the DERO-HE migration
 
 ---
 
@@ -12813,7 +13623,8 @@ graph LR
 
 **Understanding Transactions:**
 - [DERO Tokens](/basics/tokens.md) - Private token transfers
-- [Account-Based Privacy](/privacy/account-based-privacy.md) - Stealth addresses
+- [Account-Based Privacy](/privacy/account-based-privacy.md) - Persistent accounts with encrypted balances
+- [Stealth Addresses](/privacy/stealth-addresses.md) - Why DERO has none, and what it uses instead
 
 **For Users:**
 - [DERO Wallets](/basics/wallets.md) - Send private transactions
@@ -13906,6 +14717,9 @@ curl -X POST \
 
 Returns the total costs (= storage and compute) to be paid for a call on a function of a Smart Contract.
 
+> [!WARNING]
+> **`gasstorage` is not informational — it is the fee you must attach.** The transaction fee *is* the storage budget for a contract call, and the wallet's default fee under-funds any write past a few hundred bytes: the transaction mines, the fee is charged, and nothing is stored. Also note this method **never fails for an oversized payload** — it runs the contract with the limiter disarmed, so it returns `"status": "OK"` at any size. Read the number, not the status. See [Storage Gas](/dvm/storage-gas.md).
+
 #### Available parameters
 
 | Name   | Type    | Mandatory | Comment       |
@@ -14677,9 +15491,23 @@ curl -X POST \
 
 ## Transfer
 
-Creates a transaction and returns its hash.
+Creates a transaction and returns its hash. This is also the only wallet method that can call a smart contract with an explicit fee.
 
 #### Available parameters
+
+| Name   | Type    | Mandatory | Comment       |
+|--------|---------|-----------|---------------|
+| transfers  | []Transfer    | false     | Payments to make — see the table below  |
+| sc | string  | false     | SC code to install (base64 or plain)  |
+| sc_value | uint64  | false     | DERO to send with an install  |
+| scid | string  | false     | SCID to call — sets the call action automatically  |
+| sc_rpc | Arguments  | false     | SC call arguments (entrypoint and parameters)  |
+| ringsize | uint64  | false     | Level of anonymity  |
+| fees | uint64  | false     | Fee in atomic units. **Zero means auto-compute**, which under-funds large contract writes — see [Storage Gas](/dvm/storage-gas.md)  |
+
+#### Per-transfer fields
+
+Each entry in `transfers` accepts:
 
 | Name   | Type    | Mandatory | Comment       |
 |--------|---------|-----------|---------------|
@@ -14688,6 +15516,9 @@ Creates a transaction and returns its hash.
 | amount | uint64  | false     | Amount of token to send  |
 | burn | uint64  | false     | Amount of token to burn  |
 | payload_rpc | Arguments  | false     | Payload Arguments  |
+
+> [!WARNING]
+> When you pass `scid`, the wallet appends the `SC_ACTION` and `SC_ID` arguments to `sc_rpc` itself — do not also send them, or you pay for them twice.
 
 #### Body
 
@@ -14818,6 +15649,9 @@ curl -X POST \
 ## Smart Contract Invoke
 
 Creates a transaction to call a Smart Contract function and returns its hash.
+
+> [!WARNING]
+> **`scinvoke` has no fee parameter, so it cannot fund a large contract write.** The transaction fee *is* the storage budget for a DVM call, and `scinvoke` always leaves it at the wallet default — which under-funds any write past a few hundred bytes. The transaction mines, the fee is charged, and nothing is stored. For writes of any size, use [Transfer](#transfer) with an explicit `fees`. See [Storage Gas](/dvm/storage-gas.md).
 
 #### Available parameters
 
