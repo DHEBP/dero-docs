@@ -1,0 +1,294 @@
+---
+title: "Storage Gas: Why Large Contract Writes Silently Vanish | DERO Blockchain"
+description: "The fee attached to a DERO contract call is its storage budget. Writes past a few hundred bytes mine, charge, and store nothing unless the fee is set explicitly. How to measure the cost and how to pay it."
+keywords: ["DERO storage gas", "gasstorage", "smart contract write", "scinvoke", "DVM gas", "MAX_STORAGE_GAS_ATOMIC_UNITS", "DERO fees", "Insufficient Storage Gas", "GetGasEstimate", "DVM STORE"]
+date: "2026-08-08"
+lastUpdated: "2026-08-08"
+authors: ["DHEBP"]
+slug: "storage-gas"
+canonicalUrl: "https://derod.org/dvm/storage-gas"
+tags: ["dvm", "smart-contracts", "gas", "fees", "development"]
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# Storage Gas
+
+A DERO contract call is metered on how much it stores, and **the fee attached to the transaction is that budget**. Nothing else funds it. If the fee is too small, the write is dropped — but the transaction still mines and you still pay.
+
+<Callout type="warning">
+**`scinvoke` cannot fund storage gas.** Use `transfer` with an explicit `fees` for any contract write past a few hundred bytes. With the wallet's default fee, a `STORE` of roughly 250 bytes or more is discarded while every RPC response reports success.
+</Callout>
+
+---
+
+## The failure you will actually hit
+
+There are two ways a write fails, and only one of them is about the documented 20,000 ceiling.
+
+| | Over the ceiling | **Under-funded** |
+|---|---|---|
+| Cause | Write costs more than 20,000 gas | Fee is smaller than the write costs |
+| Frequency | Rare | **The common case** |
+| Fix | Store less | Attach a bigger fee |
+
+Both end the same way. `ConsumeStorageGas` panics with `Insufficient Storage Gas`, the panic is recovered into an error, and the block connector returns **before** committing anything:
+
+```go
+// blockchain/transaction_execute.go
+if err != nil { // error occured, give everything to SC, since we may not have
+                // information to send them back
+    ...
+    return
+}
+dvm.ProcessExternal(ss, cache, balance_tree, signer, scid, w_sc_data_tree, w_sc_tree)
+```
+
+The transaction is in the block. The fee is spent. Any DERO you sent along is returned. **The write did not happen**, and no RPC response distinguishes that from success.
+
+---
+
+## What a write costs
+
+Storage gas is consumed over **two separate spans**, so a byte you pass in *and* store is charged twice.
+
+| Span | What is charged | Source |
+|---|---|---|
+| Call arguments | The whole marshalled `sc_rpc` blob, once | `dvm/sc.go:260` |
+| Stored value | The marshalled value, once per `STORE` | `dvm/dvm_store.go:133` |
+| **The key** | **Nothing** — marshalled but never charged | `dvm/dvm_store.go:131` |
+
+Reads are cheap by comparison: `LOAD` and `EXISTS` both go through the same accessor and charge `value.Length() / 10` (`dvm/dvm_store.go:88-127`).
+
+Writing that as a formula, with **S** = byte length of the marshalled arguments and **V** = byte length of the values the contract stores:
+
+```
+gas needed  ≈  S + V
+```
+
+The key is free to store but **not** free to send — it rides inside `S`. A longer key therefore leaves *less* room, not more.
+
+---
+
+## Why the default fee is never enough
+
+When you pass no fee, the wallet computes one itself — and only then:
+
+```go
+// walletapi/transaction_build.go:192
+if fees == 0 && asset.SCID.IsZero() && !fees_done {
+    fees = fees + uint64(len(transfers)+2)*uint64(...FEE_PER_KB...)
+    ...
+    fees = fees + (uint64(len(data))*15)/10   // 1.5 per SCDATA byte
+}
+```
+
+So the wallet supplies **1.5 per argument byte** against a chain cost of **1 per argument byte plus 1 per stored byte**. Setting the two against each other:
+
+```
+default fee ≥ cost   ⟺   base + 1.5·S  ≥  S + V   ⟺   V ≤ base + 0.5·S
+```
+
+**The default fee covers you only while the value you store is no larger than half your argument blob.** A setter that stores its argument verbatim can never satisfy that past a couple of hundred bytes, because `V` and `S` grow together.
+
+<Callout type="info">
+**This is not a rounding error — it is the shape of the formula.** The shortfall is 0.5 per byte and grows linearly, so the bigger the write, the further under water it is.
+</Callout>
+
+### The three regimes, and the mainnet numbers they predict
+
+Substituting the relationship between `S` and `V` for three common shapes reproduces the figures independently measured on mainnet in [deroproject/derohe#141](https://github.com/deroproject/derohe/issues/141):
+
+| Shape | Default-fee limit | Measured on mainnet |
+|---|---|---|
+| Store the argument verbatim | `V ≤ 2·base + overhead` — a couple hundred bytes | *"a limit of"* `<400 bytes` |
+| Long key, short value | `V ≤ 2·base + overhead + keylength` | *"approx. keylength+325 bytes"* |
+| Hex-decode before storing | Self-funding — bound only by the ceiling, `V ≤ ~6,600` | *"about 6600 bytes"* |
+
+The third row is the reason the hex trick works, and it is worth understanding rather than cargo-culting: sending a payload as hex doubles `S` while `V` stays the same, so the wallet's 1.5×`S` grows faster than the chain's `S + V`. It buys funding, not capacity — you are paying full price for twice the arguments.
+
+---
+
+## The ceiling is a wall, not a price
+
+Above 20,000 atomic units, paying more buys nothing. The budget is **clamped**, not priced:
+
+```go
+// dvm/sc.go:244
+if gasstorage_incoming > 0 {
+    if gasstorage_incoming > config.MAX_STORAGE_GAS_ATOMIC_UNITS {
+        gasstorage_incoming = config.MAX_STORAGE_GAS_ATOMIC_UNITS
+    }
+    state.GasStoreLimit = int64(gasstorage_incoming)
+    state.GasStoreCheck = true
+}
+```
+
+For a contract storing its argument verbatim, `S + V ≤ 20,000` puts the hard edge just under **10,000 bytes** — measured at **9,949 bytes** with a five-character key (9,949 needs 19,999 gas; 9,950 needs 20,001). A longer key lowers that.
+
+<Callout type="warning">
+**Refuse an oversized write before you build the transaction.** Once broadcast it will mine and charge the fee regardless. Raising the fee past 20,000 does not rescue it.
+</Callout>
+
+---
+
+## How to measure
+
+Ask the daemon. `DERO.GetGasEstimate` executes the call against current chain state and returns the exact gas it consumed.
+
+```bash
+curl -s -X POST http://127.0.0.1:10102/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "DERO.GetGasEstimate",
+    "params": {
+      "sc_rpc": [
+        {"name": "SC_ACTION", "datatype": "U", "value": 0},
+        {"name": "SC_ID", "datatype": "H", "value": "<scid>"},
+        {"name": "entrypoint", "datatype": "S", "value": "SetVar"},
+        {"name": "k", "datatype": "S", "value": "mykey"},
+        {"name": "v", "datatype": "S", "value": "<the exact payload you will send>"}
+      ],
+      "ringsize": 2,
+      "signer": "dero1..."
+    }
+  }'
+```
+
+```json
+{ "result": { "gascompute": 208200, "gasstorage": 10091, "status": "OK" } }
+```
+
+`gasstorage` is the number to attach as your fee.
+
+<Callout type="warning">
+**Read the number, never the status.** The estimator runs the contract with `gasstorage_incoming = 0`, and the block above only arms the limiter when that value is above zero — so the estimate **never fails for being too large**. It returns `"status": "OK"` on a payload of 250 KB. The count is still correct, because `ConsumeStorageGas` accumulates unconditionally and the flag only decides whether to panic.
+</Callout>
+
+### Three traps in measuring
+
+**1 · Measure the arguments you will actually send.** The key and the entrypoint name are charged inside `S`. Estimating over reconstructed or placeholder arguments under-measures by the drift — one gas per byte of difference. Renaming a key from `big` to `probe5k` moves the cost from 10,087 to 10,091, exactly the four characters added.
+
+**2 · A wrong `signer` produces no measurement at all.** An owner-gated entrypoint returns non-zero for the wrong caller, the daemon reports that as an error, and you get no number back. That is not the same as a cheap write.
+
+**3 · The estimate wants `SC_ACTION` and `SC_ID` inline; `transfer` does not.** `GetGasEstimate` reads both out of `sc_rpc` and errors without them. The wallet's `transfer` takes `scid` as a top-level parameter and **appends** those two arguments itself. Include them in the estimate, omit them from the transfer, and never send both — duplicating them inflates `S` past what you measured.
+
+---
+
+## How to pay
+
+### Why `scinvoke` cannot
+
+`SC_Invoke_Params` has no fee field, and the handler that consumes it never sets one:
+
+```go
+// rpc/wallet_rpc.go:247
+SC_Invoke_Params struct {
+    SC_ID            string    `json:"scid"`
+    SC_RPC           Arguments `json:"sc_rpc"`
+    SC_DERO_Deposit  uint64    `json:"sc_dero_deposit"`
+    SC_TOKEN_Deposit uint64    `json:"sc_token_deposit"`
+    Ringsize         uint64    `json:"ringsize"`
+}
+```
+
+`ScInvoke` translates these into a `Transfer_Params` and forwards it, leaving `Fees` at its zero value — which is precisely the trigger for the wallet's 1.5-per-byte default. There is no parameter you can add to reach it.
+
+### Use `transfer`
+
+`Transfer_Params` carries `Fees`, and passing a `scid` makes it a contract call:
+
+```bash
+curl -s -X POST http://127.0.0.1:10103/json_rpc \
+  -H 'content-type: application/json' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "transfer",
+    "params": {
+      "scid": "<scid>",
+      "sc_rpc": [
+        {"name": "entrypoint", "datatype": "S", "value": "SetVar"},
+        {"name": "k", "datatype": "S", "value": "mykey"},
+        {"name": "v", "datatype": "S", "value": "<the exact payload>"}
+      ],
+      "ringsize": 2,
+      "fees": 10091
+    }
+  }'
+```
+
+<Callout type="warning">
+**A non-zero `fees` replaces the wallet's formula — it does not add to it.** The `if fees == 0` gate means passing a number switches the default off entirely, so a naive value can *under*pay a small call. Always attach `max(measured gasstorage, what the wallet would have charged)`; only ever raise.
+</Callout>
+
+### The whole flow
+
+<Steps>
+
+### Build the exact arguments you intend to send
+
+Final key, final entrypoint, final payload. Nothing reconstructed.
+
+### Measure with `DERO.GetGasEstimate`
+
+Same arguments plus `SC_ACTION` and `SC_ID`, with the real signer address. Read `gasstorage`.
+
+### Refuse if `gasstorage` exceeds 20,000
+
+No fee rescues this. Fail before building the transaction — afterwards it mines and charges regardless.
+
+### Broadcast with `transfer`, `fees` topped up to the measured figure
+
+Never lower than the wallet's own default.
+
+### Verify with `DERO.GetSC`
+
+Read the variable back. A `txid` is not confirmation that anything was stored.
+
+</Steps>
+
+---
+
+## Special cases
+
+**Contract installation is fine.** The contract source is written with a direct `Put` on the tree, outside the DVM store, so it is never metered. The `Initialize` entrypoint is charged once for the marshalled `SC_CODE` argument against 1.5× supplied by the wallet, leaving it over-funded. The residual risk is narrow: an `Initialize` that itself writes far more than the source length.
+
+**`gasstorage = 0` means auto-compute, not "no fee."** Passing zero is what *enables* the wallet's formula, and on the estimator it means "measure without a limit." It never means free.
+
+**Keys are unbounded and uncharged on storage.** [Slixe noted this on #141](https://github.com/deroproject/derohe/issues/141) in 2023 and it is still true. A key costs you only on the argument span.
+
+---
+
+## Source reference
+
+Verified against `derohe` at the current consensus rules.
+
+| Behaviour | Location |
+|---|---|
+| The transaction fee becomes the storage budget | `blockchain/transaction_execute.go:342,378` |
+| Budget clamped to the ceiling, then armed | `dvm/sc.go:244-251` |
+| Arguments charged in full | `dvm/sc.go:260` |
+| Stored value charged in full; key exempt | `dvm/dvm_store.go:131-133` |
+| Panic on overrun | `dvm/dvm.go:449-456` |
+| Changes discarded, fee kept | `blockchain/transaction_execute.go:395-408` |
+| Wallet default: 1.5 per SCDATA byte, only when `fees == 0` | `walletapi/transaction_build.go:192-197` |
+| `MAX_STORAGE_GAS_ATOMIC_UNITS = 20000` | `config/config.go:46` |
+| `FEE_PER_KB = 20` | `config/config.go:49` |
+| `SC_Invoke_Params` has no `Fees`; `Transfer_Params` does | `rpc/wallet_rpc.go:231,247` |
+
+## Prior art
+
+This behaviour has been reported before; this page documents the mechanism rather than claiming the finding.
+
+- [deroproject/derohe#141](https://github.com/deroproject/derohe/issues/141) — Alumn0, 2023. Simulator results plus an 18-test **mainnet** run confirming them. The `<400 bytes`, `keylength+325` and `~6600 bytes` figures above are theirs. Read the comments, not just the issue body.
+- [deroproject/derohe#177](https://github.com/deroproject/derohe/issues/177) — lcances, 2024. States the double charge and proposes separating parameter gas from storage gas.
+- [DEROFDN/derohe#65](https://github.com/DEROFDN/derohe/issues/65) — open request to give `scinvoke` a way to fund storage gas.
+
+## See also
+
+- [DVM Reference — Execution Limits](/dvm/dero-virtual-machine) — the full table of hard limits
+- [Daemon RPC API — Get Gas Estimate](/rpc-api/daemon-rpc-api) — parameter reference
+- [Wallet RPC API — transfer](/rpc-api/wallet-rpc-api) — parameter reference

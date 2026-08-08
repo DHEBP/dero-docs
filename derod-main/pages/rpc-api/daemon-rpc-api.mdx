@@ -1085,6 +1085,10 @@ curl -X POST \
 
 Returns the total costs (= storage and compute) to be paid for a call on a function of a Smart Contract.
 
+<Callout type="warning">
+**`gasstorage` is not informational — it is the fee you must attach.** The transaction fee *is* the storage budget for a contract call, and the wallet's default fee under-funds any write past a few hundred bytes: the transaction mines, the fee is charged, and nothing is stored. Also note this method **never fails for an oversized payload** — it runs the contract with the limiter disarmed, so it returns `"status": "OK"` at any size. Read the number, not the status. See [Storage Gas](/dvm/storage-gas).
+</Callout>
+
 #### Available parameters
 
 | Name   | Type    | Mandatory | Comment       |

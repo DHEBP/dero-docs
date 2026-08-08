@@ -599,9 +599,23 @@ curl -X POST \
 
 ## Transfer
 
-Creates a transaction and returns its hash.
+Creates a transaction and returns its hash. This is also the only wallet method that can call a smart contract with an explicit fee.
 
 #### Available parameters
+
+| Name   | Type    | Mandatory | Comment       |
+|--------|---------|-----------|---------------|
+| transfers  | []Transfer    | false     | Payments to make — see the table below  |
+| sc | string  | false     | SC code to install (base64 or plain)  |
+| sc_value | uint64  | false     | DERO to send with an install  |
+| scid | string  | false     | SCID to call — sets the call action automatically  |
+| sc_rpc | Arguments  | false     | SC call arguments (entrypoint and parameters)  |
+| ringsize | uint64  | false     | Level of anonymity  |
+| fees | uint64  | false     | Fee in atomic units. **Zero means auto-compute**, which under-funds large contract writes — see [Storage Gas](/dvm/storage-gas)  |
+
+#### Per-transfer fields
+
+Each entry in `transfers` accepts:
 
 | Name   | Type    | Mandatory | Comment       |
 |--------|---------|-----------|---------------|
@@ -610,6 +624,10 @@ Creates a transaction and returns its hash.
 | amount | uint64  | false     | Amount of token to send  |
 | burn | uint64  | false     | Amount of token to burn  |
 | payload_rpc | Arguments  | false     | Payload Arguments  |
+
+<Callout type="warning">
+When you pass `scid`, the wallet appends the `SC_ACTION` and `SC_ID` arguments to `sc_rpc` itself — do not also send them, or you pay for them twice.
+</Callout>
 
 #### Body
 
@@ -740,6 +758,10 @@ curl -X POST \
 ## Smart Contract Invoke
 
 Creates a transaction to call a Smart Contract function and returns its hash.
+
+<Callout type="warning">
+**`scinvoke` has no fee parameter, so it cannot fund a large contract write.** The transaction fee *is* the storage budget for a DVM call, and `scinvoke` always leaves it at the wallet default — which under-funds any write past a few hundred bytes. The transaction mines, the fee is charged, and nothing is stored. For writes of any size, use [Transfer](#transfer) with an explicit `fees`. See [Storage Gas](/dvm/storage-gas).
+</Callout>
 
 #### Available parameters
 

@@ -488,6 +488,10 @@ The DVM enforces hard limits to ensure deterministic execution and prevent abuse
 **The 2,000-line and 11,000-eval limits are per function call, not per contract.** A contract can have many functions, but each individual invocation must complete within these bounds. Design complex logic across multiple calls rather than one monolithic function.
 </Callout>
 
+<Callout type="warning">
+**Storage gas is the limit you will hit first, and it fails silently.** The 20,000 ceiling is rarely the problem — running out of the budget *below* it is. That budget comes from the transaction fee, and the wallet's default fee under-funds any write past a few hundred bytes: the transaction mines, the fee is charged, and nothing is stored. See [Storage Gas](/dvm/storage-gas).
+</Callout>
+
 ---
 
 ## Related Pages
