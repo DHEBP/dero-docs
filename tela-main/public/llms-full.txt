@@ -19434,7 +19434,7 @@ title: "TELA Security Model | Zero-Trust Architecture for Decentralized Applicat
 description: "A concise overview of TELA's security approach, including blockchain immutability, cryptographic verification, and trust mechanisms for decentralized applications on DERO."
 keywords: "TELA security, blockchain security, cryptographic verification, decentralized security, DERO blockchain, security model, immutable contracts, zero-trust"
 date: "2024-08-23"
-lastUpdated: "2025-10-22"
+lastUpdated: "2026-08-11"
 authors: ["DHEBP"]
 image: "/assets/tela-security.png"
 slug: "tela/tela-security-model"
@@ -19587,6 +19587,25 @@ graph TB
 | **Transparency** | All code visible = community audit |
 | **No Gatekeepers** | Anyone can deploy, users decide trust |
 | **Reputation** | Author's history = visible on blockchain |
+
+---
+
+## TELA Host Applications
+
+A **TELA host** is the local application that fetches an INDEX and its DOCs from chain, reassembles them, and serves the result on your own machine. No server sits in the middle, so the host is what actually enforces the layers above — which host you run is part of your security model.
+
+The hosts documented across these sites:
+
+| Host | What it is | Documented at |
+|------|-----------|---------------|
+| **Engram** | DERO desktop wallet with a built-in TELA browser | [TELA Overview](/tela/overview.md) |
+| **TELA-CLI** | Command-line host and deployment tool, built on the reference `civilware/tela` package | [Installation](/tela-cli/installation.md) |
+| **Hologram** | DERO decentralized web browser | [hologram.derod.org](https://hologram.derod.org) |
+
+> [!NOTE]
+> **This table is scope, not certification.** TELA is permissionless: anyone can write a host, and community hosts exist that are not documented here. There is no TELA compliance program and no authority that blesses a host — so a host being absent from this table says nothing about its legitimacy, and being listed is not an audit.
+
+Each host decides for itself whether it verifies DOC signatures, how it sandboxes executed code, and what it exposes to app JavaScript. Those choices are not enforced by the chain. Judge any host you run from its source, the same way Layer 2 asks you to judge an app from its author.
 
 ---
 
