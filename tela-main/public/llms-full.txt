@@ -24035,10 +24035,12 @@ async function displayVersion() {
             code: false
         }]);
         
-        // TELA-INDEX stores commit count in "commit" variable
-        // Commit TXIDs are stored as numeric keys: 0, 1, 2, 3...
-        const commitCount = scInfo.valuesstring?.commit || 
-                           scInfo.variablestringkeys?.commit || 0;
+        // TELA-INDEX stores commit count in the "commit" variable.
+        // With `variables: true` the daemon returns every SC variable in
+        // `stringkeys` (string-named keys) and `uint64keys` (numeric keys).
+        // Note: `valuesstring` is NOT this — it is a positional array that only
+        // comes back when you ask for specific keys via `keysstring`.
+        const commitCount = scInfo.stringkeys?.commit || 0;
         
         document.getElementById('version').textContent = 
             `v${APP_VERSION} (${commitCount} updates)`;
