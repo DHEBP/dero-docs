@@ -1575,6 +1575,155 @@ If a customer sends less DERO than the invoice amount:
 
 ---
 
+<!-- source: https://deropay.derod.org/dero-pay/prepaid.md -->
+
+---
+title: "Prepaid Balances — dero-pay/prepaid"
+description: "Wallet-funded, prepaid DERO billing for agent-facing APIs. An agent tops up a wallet-scoped balance once, then spends it down per call — no API key to leak, no per-call payment round trip."
+---
+
+# Prepaid Balances
+
+`dero-pay/prepaid` bills a wallet-scoped balance instead of a per-call payment. A wallet owner signs in with [DeroAuth](https://github.com/DHEBP/DeroAuth), funds the balance through a verified DeroPay invoice, and an agent spends it down automatically as it makes calls — the upstream provider credential never leaves your server.
+
+> [!NOTE]
+> This is the pattern sometimes called a **wallet-budget agent**: the agent authenticates with its own wallet instead of an API key, and its spending is bounded by whatever balance you funded — not by a revocable secret an agent could otherwise leak or overspend against.
+
+```
+agent                     your server (dero-pay/prepaid)          DERO chain
+  │  sign in (DeroAuth)      │                                       │
+  ├──────────────────────────▶ session token                        │
+  │  POST /top-up            │                                       │
+  ├──────────────────────────▶ createPrepaidHandlers                │
+  │  { invoice }              │   └─ x402 invoice, bound to wallet   │
+  ◀──────────────────────────┤                                       │
+  │  pay invoice ─────────────┼──────────────────────────────────────▶
+  │                           │◀── confirmed, verified receipt ──────┤
+  │                           │   └─ PrepaidLedger.credit() (once)   │
+  │  POST /v1/chat/...        │                                       │
+  ├──────────────────────────▶ createMeteredProxy                    │
+  │                           │   ├─ reserve() before upstream call  │
+  │                           │   ├─ forward to upstream (no creds)  │
+  │                           │   └─ capture() actual usage on 200,  │
+  │  { output }               │      release() on failure            │
+  ◀──────────────────────────┤                                       │
+```
+
+## Installable Exports
+
+`dero-pay/prepaid` ships four pieces that compose independently:
+
+- **`PrepaidLedger`** — durable atomic-DERO balances on top of the memory or SQLite store: credit, reserve, capture, release, refund, and stale-hold inspection.
+- **`createPrepaidHandlers`** — top-up, balance, and transaction-history route handlers for a Next.js (or any fetch-Request-based) backend.
+- **`createPrepaidClient`** — the agent-side client: sign in, top up, check balance, list transactions.
+- **`createMeteredProxy`** — an allowlisted upstream proxy that reserves funds before forwarding a request and never forwards the wallet's own auth headers, cookies, or DeroPay payment headers to the upstream.
+
+## Quick Setup
+
+### Wire up the ledger and handlers
+
+```ts
+// lib/prepaid.ts
+
+const store = new SqliteInvoiceStore({ path: "deropay.sqlite" });
+export const ledger = new PrepaidLedger({ store });
+
+export const prepaidHandlers = createPrepaidHandlers({
+  ledger,
+  authenticate: verifyDeroAuthBearer, // your DeroAuth session verifier
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+});
+```
+
+### Expose the top-up, balance, and transaction routes
+
+```ts
+// app/api/v1/x402/top-up/route.ts
+export const POST = prepaidHandlers.topUpHandler;
+```
+
+```ts
+// app/api/v1/x402/balance/[walletAddress]/route.ts
+export const GET = prepaidHandlers.balanceHandler;
+```
+
+```ts
+// app/api/v1/x402/transactions/[walletAddress]/route.ts
+export const GET = prepaidHandlers.transactionsHandler;
+```
+
+### Meter an upstream route
+
+```ts
+
+export const meteredGateway = createMeteredProxy({
+  ledger,
+  authenticate: verifyDeroAuthBearer,
+  allowedUpstreamOrigins: ["https://api.your-inference-provider.com"],
+  adapters: [chatAdapter], // computes the atomic charge for a given call
+});
+```
+
+## Topping Up (Agent Side)
+
+```ts
+
+const client = createPrepaidClient({
+  baseUrl: "https://your-gateway.example.com",
+  walletAddress: "deroi...",
+  getAuthToken: () => session.token,
+});
+
+// Generate the key ONCE per logical top-up attempt.
+const idempotencyKey = createTopUpIdempotencyKey();
+await client.topUp(deroToAtomic("5.0"), idempotencyKey);
+```
+
+> [!WARNING]
+> **`idempotencyKey` is required, and it must be generated once per logical attempt — never once per HTTP call.** If a `topUp()` call times out after the payment actually landed server-side, retry it with the **same** `idempotencyKey`, not a fresh one. Reusing the key is what makes the retry safe; generating a new key on every call (including retries) defeats idempotency and can double-credit the wallet.
+
+## Checking Balance and History
+
+```ts
+const balance = await client.getBalance();
+// => { balanceAtomic: "450000000000", reservedAtomic: "0" }
+
+const { transactions } = await client.getTransactions({ limit: 20 });
+```
+
+## How a Metered Call Is Charged
+
+`createMeteredProxy` never trusts the upstream response for cost before the fact:
+
+1. **Reserve** — before contacting the upstream, the proxy places a hold for the route adapter's estimated maximum charge. If the balance can't cover it, the call is rejected before any upstream request is made.
+2. **Forward** — the request goes to the allowlisted upstream origin only. The wallet's session token, cookies, and any `X-DeroPay-*` headers are stripped, not forwarded.
+3. **Settle** — on a successful response, the adapter computes the actual usage-based charge and the proxy **captures** up to (never more than) the reserved amount. On a connection failure or non-2xx response, the hold is **released** in full.
+
+This reserve-then-capture order means a wallet is never charged for a call that failed, and never charged more than what was reserved up front.
+
+## Security Notes
+
+- **Top-up credit is bound to a verified on-chain payment**, not merely to an idempotency key — the handler checks the paid invoice's resource/amount against what's being redeemed before crediting, so replaying an idempotency key without a matching new payment does not mint additional balance.
+- **`createMeteredProxy` strips credentials before forwarding.** The upstream never sees the wallet's DeroAuth session, cookies, or DeroPay-internal headers.
+- **Test your own receipt verification against a forged or under-confirmed receipt**, not just the happy path — a self-signed test receipt (signed with the same secret the handler verifies against) cannot catch a broken signature check.
+
+## Example App
+
+A complete DeroAuth + prepaid + metered-inference gateway (chat, embeddings, image, audio, video adapters, plus a configurable rate card) is available in the monorepo:
+
+```
+apps/x402-example/
+```
+
+Run it from the monorepo root:
+
+```bash
+bun run dev:x402-example
+```
+
+---
+
 <!-- source: https://deropay.derod.org/dero-pay/quick-start.md -->
 
 ---
@@ -2459,6 +2608,39 @@ The `reason` field on `receipt_rejected` events:
 | `replay_store_not_configured` | Single-use mode enabled but store lacks `markReceiptJtiUsed` |
 | `quota_store_not_configured` | Quota policy set but store lacks `reserveX402Usage` |
 
+## Dynamic Order IDs (Replay Protection for Custom Facilitators)
+
+> [!WARNING]
+> If you build a **custom facilitator or non-Next integration** on top of `dero-pay/x402`'s primitives directly (rather than `createX402RouteGuard`), read this section — it closes a real replay path.
+
+Every x402 payment is looked up on-chain by an `orderId`. If your integration hard-codes a single static `orderId` for a route — the obvious way to wire this up — every request to that route shares the same on-chain payment slot. The slot pays exactly once; every subsequent presentation of that same, now-public, payment tuple is a valid-looking free replay for anyone within the receipt's TTL.
+
+Pass an `orderIdMinter` to mint a fresh, server-issued order id per request instead:
+
+```ts
+
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  orderIdMinter: createOrderIdMinter(process.env.DEROPAY_ORDER_ID_SECRET!),
+  policy: {
+    name: "Premium API Access",
+    amountAtomic: deroToAtomic("0.10"),
+    requiredConfirmations: 3,
+    resource: "/api/protected/report",
+  },
+});
+```
+
+The minted id is `<nonce>.<HMAC(secret, context|nonce)>` — stateless, so it validates across multiple server instances with no shared cache, and a caller cannot forge a server-issued id without the secret.
+
+**Leaving `orderIdMinter` unset is safe only if your own server already issues a distinct `orderId` out-of-band for every unit of work.** `createX402RouteGuard`'s default policy does this correctly; only worry about this if you're calling the lower-level `dero-pay/x402` primitives yourself.
+
+## Payer Privacy
+
+> [!WARNING]
+> x402 payments settle at **ring size 2** and write the payer's plaintext DERO address into public contract state. **This is not sender-anonymous.** Do not describe x402 payments as private or anonymous to end users — only the amount and resource are hidden from casual observers, not the payer's identity.
+
 ## Security Summary
 
 | Layer | Mechanism |
@@ -3222,7 +3404,10 @@ Webhook URL: https://your-medusa-store.com/hooks/payment/deropay_deropay
 |--------|----------|-------------|
 | `gatewayUrl` | Yes | Base URL of your DeroPay gateway server |
 | `apiKey` | Yes | API key for the gateway |
-| `webhookSecret` | No | HMAC-SHA256 secret for webhook verification |
+| `webhookSecret` | Yes | HMAC-SHA256 secret for webhook verification |
+
+> [!WARNING]
+> As of `medusa-payment-deropay@0.3.0`, `webhookSecret` is **required** — the plugin refuses to start without it. In earlier versions it was optional, and leaving it unset silently disabled webhook signature verification entirely: anyone who knew a pending invoice's id could POST a forged webhook and have the order marked paid with no real payment. Upgrade and set `webhookSecret` before deploying.
 
 ## How It Works
 
