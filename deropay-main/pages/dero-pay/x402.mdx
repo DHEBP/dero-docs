@@ -346,6 +346,42 @@ The `reason` field on `receipt_rejected` events:
 | `replay_store_not_configured` | Single-use mode enabled but store lacks `markReceiptJtiUsed` |
 | `quota_store_not_configured` | Quota policy set but store lacks `reserveX402Usage` |
 
+## Dynamic Order IDs (Replay Protection for Custom Facilitators)
+
+<Callout type="warning">
+  If you build a **custom facilitator or non-Next integration** on top of `dero-pay/x402`'s primitives directly (rather than `createX402RouteGuard`), read this section — it closes a real replay path.
+</Callout>
+
+Every x402 payment is looked up on-chain by an `orderId`. If your integration hard-codes a single static `orderId` for a route — the obvious way to wire this up — every request to that route shares the same on-chain payment slot. The slot pays exactly once; every subsequent presentation of that same, now-public, payment tuple is a valid-looking free replay for anyone within the receipt's TTL.
+
+Pass an `orderIdMinter` to mint a fresh, server-issued order id per request instead:
+
+```ts
+import { createOrderIdMinter } from "dero-pay/x402";
+
+export const x402Guard = createX402RouteGuard({
+  getEngine: paymentHandlers.getEngine,
+  receiptSecret: process.env.DEROPAY_RECEIPT_SECRET!,
+  orderIdMinter: createOrderIdMinter(process.env.DEROPAY_ORDER_ID_SECRET!),
+  policy: {
+    name: "Premium API Access",
+    amountAtomic: deroToAtomic("0.10"),
+    requiredConfirmations: 3,
+    resource: "/api/protected/report",
+  },
+});
+```
+
+The minted id is `<nonce>.<HMAC(secret, context|nonce)>` — stateless, so it validates across multiple server instances with no shared cache, and a caller cannot forge a server-issued id without the secret.
+
+**Leaving `orderIdMinter` unset is safe only if your own server already issues a distinct `orderId` out-of-band for every unit of work.** `createX402RouteGuard`'s default policy does this correctly; only worry about this if you're calling the lower-level `dero-pay/x402` primitives yourself.
+
+## Payer Privacy
+
+<Callout type="warning">
+  x402 payments settle at **ring size 2** and write the payer's plaintext DERO address into public contract state. **This is not sender-anonymous.** Do not describe x402 payments as private or anonymous to end users — only the amount and resource are hidden from casual observers, not the payer's identity.
+</Callout>
+
 ## Security Summary
 
 | Layer | Mechanism |

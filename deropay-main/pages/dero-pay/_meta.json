@@ -10,5 +10,6 @@
   "nextjs": "Next.js Integration",
   "x402": "x402 Payment Guard",
   "agent": "Autonomous Agent Payer",
+  "prepaid": "Prepaid Balances",
   "api-reference": "API Reference"
 }

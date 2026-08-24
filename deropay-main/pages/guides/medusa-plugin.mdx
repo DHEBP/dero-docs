@@ -68,7 +68,11 @@ Webhook URL: https://your-medusa-store.com/hooks/payment/deropay_deropay
 |--------|----------|-------------|
 | `gatewayUrl` | Yes | Base URL of your DeroPay gateway server |
 | `apiKey` | Yes | API key for the gateway |
-| `webhookSecret` | No | HMAC-SHA256 secret for webhook verification |
+| `webhookSecret` | Yes | HMAC-SHA256 secret for webhook verification |
+
+<Callout type="warning">
+  As of `medusa-payment-deropay@0.3.0`, `webhookSecret` is **required** — the plugin refuses to start without it. In earlier versions it was optional, and leaving it unset silently disabled webhook signature verification entirely: anyone who knew a pending invoice's id could POST a forged webhook and have the order marked paid with no real payment. Upgrade and set `webhookSecret` before deploying.
+</Callout>
 
 ## How It Works
 

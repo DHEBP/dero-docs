@@ -1,0 +1,157 @@
+---
+title: "Prepaid Balances — dero-pay/prepaid"
+description: "Wallet-funded, prepaid DERO billing for agent-facing APIs. An agent tops up a wallet-scoped balance once, then spends it down per call — no API key to leak, no per-call payment round trip."
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Prepaid Balances
+
+`dero-pay/prepaid` bills a wallet-scoped balance instead of a per-call payment. A wallet owner signs in with [DeroAuth](https://github.com/DHEBP/DeroAuth), funds the balance through a verified DeroPay invoice, and an agent spends it down automatically as it makes calls — the upstream provider credential never leaves your server.
+
+<Callout type="info">
+  This is the pattern sometimes called a **wallet-budget agent**: the agent authenticates with its own wallet instead of an API key, and its spending is bounded by whatever balance you funded — not by a revocable secret an agent could otherwise leak or overspend against.
+</Callout>
+
+```
+agent                     your server (dero-pay/prepaid)          DERO chain
+  │  sign in (DeroAuth)      │                                       │
+  ├──────────────────────────▶ session token                        │
+  │  POST /top-up            │                                       │
+  ├──────────────────────────▶ createPrepaidHandlers                │
+  │  { invoice }              │   └─ x402 invoice, bound to wallet   │
+  ◀──────────────────────────┤                                       │
+  │  pay invoice ─────────────┼──────────────────────────────────────▶
+  │                           │◀── confirmed, verified receipt ──────┤
+  │                           │   └─ PrepaidLedger.credit() (once)   │
+  │  POST /v1/chat/...        │                                       │
+  ├──────────────────────────▶ createMeteredProxy                    │
+  │                           │   ├─ reserve() before upstream call  │
+  │                           │   ├─ forward to upstream (no creds)  │
+  │                           │   └─ capture() actual usage on 200,  │
+  │  { output }               │      release() on failure            │
+  ◀──────────────────────────┤                                       │
+```
+
+## Installable Exports
+
+`dero-pay/prepaid` ships four pieces that compose independently:
+
+- **`PrepaidLedger`** — durable atomic-DERO balances on top of the memory or SQLite store: credit, reserve, capture, release, refund, and stale-hold inspection.
+- **`createPrepaidHandlers`** — top-up, balance, and transaction-history route handlers for a Next.js (or any fetch-Request-based) backend.
+- **`createPrepaidClient`** — the agent-side client: sign in, top up, check balance, list transactions.
+- **`createMeteredProxy`** — an allowlisted upstream proxy that reserves funds before forwarding a request and never forwards the wallet's own auth headers, cookies, or DeroPay payment headers to the upstream.
+
+## Quick Setup
+
+<Steps>
+
+### Wire up the ledger and handlers
+
+```ts
+// lib/prepaid.ts
+import { PrepaidLedger, createPrepaidHandlers } from "dero-pay/prepaid";
+import { SqliteInvoiceStore } from "dero-pay/server";
+
+const store = new SqliteInvoiceStore({ path: "deropay.sqlite" });
+export const ledger = new PrepaidLedger({ store });
+
+export const prepaidHandlers = createPrepaidHandlers({
+  ledger,
+  authenticate: verifyDeroAuthBearer, // your DeroAuth session verifier
+  walletRpcUrl: process.env.DERO_WALLET_RPC!,
+  daemonRpcUrl: process.env.DERO_DAEMON_RPC!,
+});
+```
+
+### Expose the top-up, balance, and transaction routes
+
+```ts
+// app/api/v1/x402/top-up/route.ts
+export const POST = prepaidHandlers.topUpHandler;
+```
+
+```ts
+// app/api/v1/x402/balance/[walletAddress]/route.ts
+export const GET = prepaidHandlers.balanceHandler;
+```
+
+```ts
+// app/api/v1/x402/transactions/[walletAddress]/route.ts
+export const GET = prepaidHandlers.transactionsHandler;
+```
+
+### Meter an upstream route
+
+```ts
+import { createMeteredProxy } from "dero-pay/prepaid";
+import { ledger } from "@/lib/prepaid";
+
+export const meteredGateway = createMeteredProxy({
+  ledger,
+  authenticate: verifyDeroAuthBearer,
+  allowedUpstreamOrigins: ["https://api.your-inference-provider.com"],
+  adapters: [chatAdapter], // computes the atomic charge for a given call
+});
+```
+
+</Steps>
+
+## Topping Up (Agent Side)
+
+```ts
+import { createPrepaidClient, createTopUpIdempotencyKey } from "dero-pay/prepaid";
+
+const client = createPrepaidClient({
+  baseUrl: "https://your-gateway.example.com",
+  walletAddress: "deroi...",
+  getAuthToken: () => session.token,
+});
+
+// Generate the key ONCE per logical top-up attempt.
+const idempotencyKey = createTopUpIdempotencyKey();
+await client.topUp(deroToAtomic("5.0"), idempotencyKey);
+```
+
+<Callout type="warning">
+  **`idempotencyKey` is required, and it must be generated once per logical attempt — never once per HTTP call.** If a `topUp()` call times out after the payment actually landed server-side, retry it with the **same** `idempotencyKey`, not a fresh one. Reusing the key is what makes the retry safe; generating a new key on every call (including retries) defeats idempotency and can double-credit the wallet.
+</Callout>
+
+## Checking Balance and History
+
+```ts
+const balance = await client.getBalance();
+// => { balanceAtomic: "450000000000", reservedAtomic: "0" }
+
+const { transactions } = await client.getTransactions({ limit: 20 });
+```
+
+## How a Metered Call Is Charged
+
+`createMeteredProxy` never trusts the upstream response for cost before the fact:
+
+1. **Reserve** — before contacting the upstream, the proxy places a hold for the route adapter's estimated maximum charge. If the balance can't cover it, the call is rejected before any upstream request is made.
+2. **Forward** — the request goes to the allowlisted upstream origin only. The wallet's session token, cookies, and any `X-DeroPay-*` headers are stripped, not forwarded.
+3. **Settle** — on a successful response, the adapter computes the actual usage-based charge and the proxy **captures** up to (never more than) the reserved amount. On a connection failure or non-2xx response, the hold is **released** in full.
+
+This reserve-then-capture order means a wallet is never charged for a call that failed, and never charged more than what was reserved up front.
+
+## Security Notes
+
+- **Top-up credit is bound to a verified on-chain payment**, not merely to an idempotency key — the handler checks the paid invoice's resource/amount against what's being redeemed before crediting, so replaying an idempotency key without a matching new payment does not mint additional balance.
+- **`createMeteredProxy` strips credentials before forwarding.** The upstream never sees the wallet's DeroAuth session, cookies, or DeroPay-internal headers.
+- **Test your own receipt verification against a forged or under-confirmed receipt**, not just the happy path — a self-signed test receipt (signed with the same secret the handler verifies against) cannot catch a broken signature check.
+
+## Example App
+
+A complete DeroAuth + prepaid + metered-inference gateway (chat, embeddings, image, audio, video adapters, plus a configurable rate card) is available in the monorepo:
+
+```
+apps/x402-example/
+```
+
+Run it from the monorepo root:
+
+```bash
+bun run dev:x402-example
+```
