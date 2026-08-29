@@ -21,6 +21,10 @@
     "display": "hidden",
     "theme": { "breadcrumb": false, "toc": true }
   },
+  "timeline": {
+    "title": "Timeline",
+    "theme": { "breadcrumb": false, "toc": true }
+  },
   "tools": "Tools",
   "engram": "Engram",
   "-- Developers": {
