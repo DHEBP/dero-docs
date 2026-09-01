@@ -94,6 +94,21 @@ const logo = (
 const config: DocsThemeConfig = {
   primaryHue: { dark: 193, light: 193 }, // Teal/cyan hue for DERO branding
   primarySaturation: { dark: 63, light: 63 }, // Adjust the saturation value for the desired intensity
+  // Bumping `key` re-shows the banner to everyone who dismissed the previous one.
+  banner: {
+    key: 'foundation-statement-2026-09',
+    dismissible: true,
+    text: (
+      <a
+        href="https://derofoundation.co/#/press"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        DERO Foundation announcement on the recent security issue.{' '}
+        <span className="nx-underline">Read it →</span>
+      </a>
+    )
+  },
   project: {
     link: 'https://github.com/deroproject/derohe'
   },

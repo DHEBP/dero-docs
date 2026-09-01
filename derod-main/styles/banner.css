@@ -1,0 +1,41 @@
+/* Announcement banner.
+ *
+ * nextra-theme-docs ships a neutral grey strip that reads as chrome and
+ * disappears into the navbar below it. This keeps the strip dark so it does
+ * not compete with the hero, and separates it from the navbar with a cyan
+ * keyline instead — the accent already locked as the site's primary.
+ *
+ * Amber is deliberately not used: it is reserved for the halving countdown.
+ *
+ * The theme sets background and text colour through Tailwind utilities with
+ * `dark:` variants, so these need !important to land in both themes.
+ */
+
+.nextra-banner-container {
+  background: #12161c !important;
+  color: #c8d2dc !important;
+  border-bottom: 1px solid #52c8db;
+}
+
+.nextra-banner-container a {
+  color: #c8d2dc;
+}
+
+.nextra-banner-container a .nx-underline,
+.nextra-banner-container a u {
+  color: #52c8db;
+  text-decoration-color: #52c8db;
+}
+
+.nextra-banner-container a:hover .nx-underline {
+  color: #7ad9e9;
+}
+
+/* The dismiss button inherits a light colour from the theme's dark variant. */
+.nextra-banner-container button {
+  color: #8593a1;
+}
+
+.nextra-banner-container button:hover {
+  color: #c8d2dc;
+}
