@@ -214,10 +214,7 @@ deroproof1qyvvfxzyfqtjm0lgyf5jncleh6cxmmfahgmekxpyrzhhsz832dv8qq9zvfyyskpqqqqqqq
 
 ### Tier 1 — Ask your agent to forge one (no setup)
 
-No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Two ways in:
-
-- **Nothing to install** — point an HTTP MCP client (ChatGPT custom connectors, Cursor hosted mode) at `https://mcp.derod.org/mcp`.
-- **Run it yourself** — `npx dero-mcp-server` and add it to Claude or Cursor, or to a privacy-first client like [OpenCode](https://opencode.ai) or [Goose](https://block.github.io/goose) running on a local model via [Ollama](https://ollama.com). Either way it finds a node automatically: your own if you're running one, a public node otherwise.
+No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Run it yourself: `npx dero-mcp-server` and add it to Claude or Cursor, or to a privacy-first client like [OpenCode](https://opencode.ai) or [Goose](https://block.github.io/goose) running on a local model via [Ollama](https://ollama.com). Either way it finds a node automatically: your own if you're running one, a public node otherwise.
 
 Then ask:
 
@@ -226,7 +223,7 @@ Then ask:
 Back comes a `deroproof…` string. Paste it into an unpatched explorer — it lights up **Verified ✓**, rendering your −5M as a ~184-trillion-DERO "mint." The chain never moved a coin. Change the slot, change the amount, go bigger; the "evidence" doesn't care what number you pick — *that's the whole point.*
 
 <Callout type="info" emoji="🤖">
-Live now — `npx dero-mcp-server` (v0.4.0+) or the hosted endpoint at `mcp.derod.org/mcp`, both shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
+Live now — `npx dero-mcp-server` (v0.4.0+) shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
 </Callout>
 
 ### Tier 2 — Build one from scratch (no DERO tooling)

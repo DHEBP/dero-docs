@@ -26,14 +26,13 @@ Same surfaces on every domain. Point any LLM, MCP client, or A2A runtime at them
 | `/SKILL.md` | Skill descriptor for skill-aware agents |
 | `/agents.md` | Discovery doc for AI-first crawlers |
 | `/.well-known/agent-card.json` | A2A agent card |
-| `/.well-known/mcp-server-card.json` | MCP descriptor — points at the hosted server |
+| `/.well-known/mcp-server-card.json` | MCP descriptor |
 | `/robots.txt` | AI-crawler-aware (GPTBot, ClaudeBot, PerplexityBot, …) |
 
-The hosted MCP server lives at **[mcp.derod.org/mcp](https://mcp.derod.org/mcp)** — Streamable HTTP transport over DERO daemon RPC and the bundled docs index. Wire it into Claude Desktop, Cursor, or any MCP client and query the docs and chain directly.
+The MCP server runs locally (stdio) via npm. The hosted `mcp.derod.org` instance was retired on 2026-10-10. Wire it into Claude Desktop, Cursor, or any MCP client and query the docs and chain directly.
 
 ```bash
-curl https://mcp.derod.org/health       # liveness check
-npx dero-mcp-server                     # run it yourself
+npx dero-mcp-server
 ```
 
 Source: [`dero-mcp-server`](https://github.com/DHEBP/dero-mcp-server) · [npm](https://www.npmjs.com/package/dero-mcp-server)

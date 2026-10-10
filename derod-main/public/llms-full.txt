@@ -7345,10 +7345,7 @@ deroproof1qyvvfxzyfqtjm0lgyf5jncleh6cxmmfahgmekxpyrzhhsz832dv8qq9zvfyyskpqqqqqqq
 
 ### Tier 1 — Ask your agent to forge one (no setup)
 
-No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server.md) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Two ways in:
-
-- **Nothing to install** — point an HTTP MCP client (ChatGPT custom connectors, Cursor hosted mode) at `https://mcp.derod.org/mcp`.
-- **Run it yourself** — `npx dero-mcp-server` and add it to Claude or Cursor, or to a privacy-first client like [OpenCode](https://opencode.ai) or [Goose](https://block.github.io/goose) running on a local model via [Ollama](https://ollama.com). Either way it finds a node automatically: your own if you're running one, a public node otherwise.
+No Go, no keys, no math. The [DERO MCP server](/tools/mcp-server.md) ships a `dero_forge_demo_proof` tool — connect once, then ask in plain language. Run it yourself: `npx dero-mcp-server` and add it to Claude or Cursor, or to a privacy-first client like [OpenCode](https://opencode.ai) or [Goose](https://block.github.io/goose) running on a local model via [Ollama](https://ollama.com). Either way it finds a node automatically: your own if you're running one, a public node otherwise.
 
 Then ask:
 
@@ -7356,7 +7353,7 @@ Then ask:
 
 Back comes a `deroproof…` string. Paste it into an unpatched explorer — it lights up **Verified ✓**, rendering your −5M as a ~184-trillion-DERO "mint." The chain never moved a coin. Change the slot, change the amount, go bigger; the "evidence" doesn't care what number you pick — *that's the whole point.*
 
-Live now — `npx dero-mcp-server` (v0.4.0+) or the hosted endpoint at `mcp.derod.org/mcp`, both shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
+Live now — `npx dero-mcp-server` (v0.4.0+) shipping the forge tool and local-first node resolution ([source](https://github.com/DHEBP/dero-mcp-server)).
 
 ### Tier 2 — Build one from scratch (no DERO tooling)
 
@@ -17126,7 +17123,7 @@ tags: ["tools", "mcp", "ai", "agents", "stdio", "read-only"]
 
 Query the DERO blockchain — and the canonical DERO documentation — from AI assistants. No middlemen, no API keys, no surveillance.
 
-The DERO MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io), the open standard for connecting AI models to external tools. Run it as a local **stdio** process for Claude Desktop / Cursor / OpenCode, or as a **streamable-HTTP** server behind your own domain (e.g. `mcp.derod.org`) for ChatGPT Custom Connectors, Cursor hosted mode, and any agent that needs a remote URL instead of a subprocess.
+The DERO MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io), the open standard for connecting AI models to external tools. Run it as a local **stdio** process for Claude Desktop / Cursor / OpenCode, or as a **streamable-HTTP** server behind your own domain for ChatGPT Custom Connectors, Cursor hosted mode, and any agent that needs a remote URL instead of a subprocess.
 
 > [!NOTE]
 > **AI discovery files:** [llms.txt](https://derod.org/llms.txt) and [/api/openapi.json](https://derod.org/api/openapi.json) are curated subsets for agents — not a full RPC catalog. Use the [Daemon RPC API](/rpc-api/daemon-rpc-api.md) and [Wallet RPC API](/rpc-api/wallet-rpc-api.md) for complete method reference. Examples assume a **local daemon** at `http://127.0.0.1:10102`.
@@ -17255,7 +17252,7 @@ DERO_MCP_AUTH_TOKEN=$(openssl rand -base64 48) \
 | `DERO_MCP_HTTP_HOST` | `127.0.0.1` | Bind address. Use `0.0.0.0` to bind publicly (do not without auth + TLS upstream) |
 | `DERO_MCP_AUTH_TOKEN` | unset | If set, every `/mcp` request must carry `Authorization: Bearer <token>`. Constant-time compared. |
 
-For a turnkey deploy with Caddy + auto-TLS + Docker Compose, see the [`deploy/`](https://github.com/DHEBP/dero-mcp-server/tree/main/deploy) reference in the repo. Anyone can fork and run their own `mcp.derod.org`-style instance.
+For a turnkey deploy with Caddy + auto-TLS + Docker Compose, see the [`deploy/`](https://github.com/DHEBP/dero-mcp-server/tree/main/deploy) reference in the repo. Anyone can fork and run their own instance. The public `mcp.derod.org` instance was retired on 2026-10-10.
 
 The stdio transport and the HTTP transport share the same `buildServer()` factory, so the tool surface, response shapes, and error codes are identical across both.
 

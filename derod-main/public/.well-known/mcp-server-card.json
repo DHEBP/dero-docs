@@ -20,12 +20,6 @@
       }
     }
   ],
-  "remotes": [
-    {
-      "transport": { "type": "streamable-http" },
-      "url": "https://mcp.derod.org/mcp"
-    }
-  ],
   "capabilities": {
     "tools": true,
     "resources": true,

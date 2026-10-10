@@ -16,7 +16,7 @@ import { Callout } from 'nextra/components';
 
 Query the DERO blockchain — and the canonical DERO documentation — from AI assistants. No middlemen, no API keys, no surveillance.
 
-The DERO MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io), the open standard for connecting AI models to external tools. Run it as a local **stdio** process for Claude Desktop / Cursor / OpenCode, or as a **streamable-HTTP** server behind your own domain (e.g. `mcp.derod.org`) for ChatGPT Custom Connectors, Cursor hosted mode, and any agent that needs a remote URL instead of a subprocess.
+The DERO MCP server implements the [Model Context Protocol](https://modelcontextprotocol.io), the open standard for connecting AI models to external tools. Run it as a local **stdio** process for Claude Desktop / Cursor / OpenCode, or as a **streamable-HTTP** server behind your own domain for ChatGPT Custom Connectors, Cursor hosted mode, and any agent that needs a remote URL instead of a subprocess.
 
 <Callout type="info">
 **AI discovery files:** [llms.txt](https://derod.org/llms.txt) and [/api/openapi.json](https://derod.org/api/openapi.json) are curated subsets for agents — not a full RPC catalog. Use the [Daemon RPC API](/rpc-api/daemon-rpc-api) and [Wallet RPC API](/rpc-api/wallet-rpc-api) for complete method reference. Examples assume a **local daemon** at `http://127.0.0.1:10102`.
@@ -146,7 +146,7 @@ DERO_MCP_AUTH_TOKEN=$(openssl rand -base64 48) \
 | `DERO_MCP_HTTP_HOST` | `127.0.0.1` | Bind address. Use `0.0.0.0` to bind publicly (do not without auth + TLS upstream) |
 | `DERO_MCP_AUTH_TOKEN` | unset | If set, every `/mcp` request must carry `Authorization: Bearer <token>`. Constant-time compared. |
 
-For a turnkey deploy with Caddy + auto-TLS + Docker Compose, see the [`deploy/`](https://github.com/DHEBP/dero-mcp-server/tree/main/deploy) reference in the repo. Anyone can fork and run their own `mcp.derod.org`-style instance.
+For a turnkey deploy with Caddy + auto-TLS + Docker Compose, see the [`deploy/`](https://github.com/DHEBP/dero-mcp-server/tree/main/deploy) reference in the repo. Anyone can fork and run their own instance. The public `mcp.derod.org` instance was retired on 2026-10-10.
 
 The stdio transport and the HTTP transport share the same `buildServer()` factory, so the tool surface, response shapes, and error codes are identical across both.
 

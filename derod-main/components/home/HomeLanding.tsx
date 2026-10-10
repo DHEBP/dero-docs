@@ -174,12 +174,10 @@ export default function HomeLanding() {
         <h2 className={styles.secTitle}>Built for AI agents</h2>
         <div className={styles.grid2}>
           <div className={styles.term}>
-            <div className={styles.termH}>Hosted MCP server</div>
-            <code className={styles.termCode}>mcp.derod.org/mcp</code>
+            <div className={styles.termH}>MCP server</div>
             <code className={styles.termCode}>npx dero-mcp-server</code>
             <div className={styles.termGo}>
-              Query chain state and docs from any MCP client, hosted or run
-              locally.
+              Query chain state and docs from any MCP client, run locally.
             </div>
           </div>
           <div className={styles.term}>
