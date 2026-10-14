@@ -1,0 +1,224 @@
+---
+title: "DERO Timeline: Verified Events 2017–2026 | DERO Blockchain"
+description: "A verified, warts-and-all chronology of the DERO project from its December 2017 launch through the 2022 Stargate migration, the community takeover, and the 2026 ecosystem surge — including the incidents most timelines leave out."
+keywords: ["DERO timeline", "DERO history", "DERO Stargate", "DERO Atlantis", "DHEBP", "chain split", "TradeOgre seizure", "kayabaNerve", "deanonymization", "Captain DERO", "DEROFDN", "Hard Fork 3", "Nonsensus", "TELA", "HOLOGRAM", "Xelis"]
+date: "2026-08-21"
+lastUpdated: "2026-08-21"
+authors: ["DHEBP"]
+slug: "timeline"
+canonicalUrl: "https://derod.org/timeline"
+tags: ["timeline", "history", "releases", "incidents", "community", "ecosystem"]
+ogTitle: "DERO Timeline: Verified Events 2017–2026"
+ogDescription: "Every shipped release, every hard fork, and every incident — the DERO story from launch to the community era, with sources."
+ogType: "article"
+twitterCard: "summary_large_image"
+twitterTitle: "DERO Timeline: Verified Events 2017–2026"
+twitterDescription: "The DERO story from scratch — launches, forks, splits, seizures, and the builders who stayed."
+robots: "index, follow"
+priority: 0.8
+changefreq: "weekly"
+schemaType: "Article"
+---
+
+# DERO Timeline — Verified Events (2017–2026)
+
+*Dates sourced from the GitHub API (release tags and repository creation), GitLab, Bitcointalk announcements, law-enforcement statements, security-firm publications, and on-chain records. Incidents are included, not hidden — they are part of the record.*
+
+The pattern worth seeing before the details: the technology shipped through five consecutive down years. The price did not care. The community kept building anyway.
+
+---
+
+## 2017 — Launch
+
+- **Dec 5–6** — DERO announced on Bitcointalk by CaptDero and launched from the Monero codebase by a team of three full-time developers, each with over a decade of cryptography experience. No ICO, no VC funding — a 2M DERO premine (~10% of supply) funds development, with the community share held intact and publicly viewable. ([ANN thread](https://bitcointalk.org/index.php?topic=2525508), [deronews](https://github.com/deroproject/deronews))
+- **Dec 25** — Captain's first public Christmas message on Bitcointalk opens with *"Tomorrow never comes"* — the phrase that bookends his seven-year arc. ([Captain Archive](/captain))
+
+## 2018 — Atlantis
+
+- **Jan 18** — From-scratch Go rewrite status update: wire protocol, consensus, Cryptonight hash, Pedersen commitments interoperable with the C daemon. ([Captain Archive](/captain))
+- **Mar** — CryptoNote protocol reimplementation in Golang completed.
+- **Apr** — Mainnet migrates to the Golang implementation.
+- **Apr 22** — ASIC invasion on Cryptonight. Captain refuses an emergency PoW fork, treats it as a load test, and pivots to Atlantis. ([Captain Archive](/captain))
+- **Jun** — Atlantis testnet: DAG + RocketBulletproofs, block times measured in seconds.
+- **Jul 4** — Mainnet migrates to the Atlantis codebase: 12-second blocks, full SSL/TLS across the P2P network, Bulletproofs.
+- **Incident — Jul 5** — Community managers Serena and Mojo publicly split from the project: the premine was still unlocked eight months in, a John McAfee marketing arrangement was planned over their objection, and a block-time bug had produced ~3.07-minute blocks for the first 204 days — roughly a 35% reduction in miner rewards versus the stated schedule. ([Bitcointalk statement](https://bitcointalk.org/index.php?topic=4670213.msg44927287))
+- **Oct** — Fully in-browser web wallet with client-side key storage.
+
+## 2019 — Stargate Begins
+
+- **Jan** — Stargate RC1 testnet released: fully functional smart contracts on CryptoNote.
+
+## 2020 — Foundations
+
+- **Feb** — DERO Foundation announced to drive adoption and governance.
+- **Dec 19** — `deroproject/derohe` repository created — development of the homomorphic-encryption codebase begins. First `DeroHE` release the same day. ([repo](https://github.com/deroproject/derohe))
+
+## 2021 — The Peak
+
+- **Feb–Dec** — Rapid testnet iteration: 28 releases of the DERO-HE codebase, including the first DVM-BASIC smart-contract tooling.
+- **Jun 11** — civilware/dM: DERO Message, encrypted on-chain chat. ([dM](https://github.com/civilware/dM))
+- **Jun 24** — Slixe first-commits `xelis-blockchain` — a Rust HE BlockDAG — while still in the DERO community. ([repo](https://github.com/xelis-project/xelis-blockchain))
+- **Oct 9** — All-time high: **$27.29**, in the final months of the CryptoNote era.
+- **Oct 20** — `xelis-project` GitHub org created.
+- **Dec 24** — civilware creates Gnomon (decentralized search engine) and EPOCH. ([Gnomon](https://github.com/civilware/Gnomon))
+
+## 2022 — Stargate
+
+- **Jan 2** — Release37: DERO-HE Stargate public testnet begins.
+- **Feb 26** — **Stargate mainnet launch.** DERO migrates from CryptoNote (Atlantis) to DHEBP homomorphic encryption — balances and transfers live as ElGamal ciphertexts, with private smart contracts on encrypted L1. 18-second blocks replace ring signatures entirely.
+- **Mar 3–4** — HardFork-1 (Release47) and HardFork-2 (Release48).
+- **Mar 18** — Stargate mainnet stable (Release50).
+- **Mar 27** — g45t345rt ships dero-rpc-bridge (browser ↔ local wallet). ([repo](https://github.com/g45t345rt/dero-rpc-bridge))
+- **Apr 26 / May 15** — SixofClubsss: Dero-Baccarat, then Dero-Poker-Table. ([Baccarat](https://github.com/SixofClubsss/Dero-Baccarat))
+- **Apr 30–May 20** — apollo5ever: OptimalAutonomousOrganization / DERO_OAO, then dero-name-registration UI. ([DERO_OAO](https://github.com/apollo5ever/DERO_OAO))
+- **May 16** — Hansen333 forks derohe into `derohe-Hansen33-mod` — the modified node that DERO miners still run today ("hansen33-mod"). ([repo](https://github.com/Hansen333/derohe-Hansen33-mod))
+- **Jun 10** — AstroBWT v3 PoW hard fork at block 481600 (Release95/96): CPU-only at first while third-party miners caught up. ([Captain Archive](/captain))
+- **Jun 14–Jul 12** — g45t345rt: derosphere CLI, DERO-SC-Standards, dero-dapps-list.
+- **Jul 3 / Aug 9** — DEROFDN/Engram created (DankFC); first alpha 0.1.2. ([Engram](https://github.com/DEROFDN/Engram))
+- **Jul 10** — Jeff Berwick discusses DERO alongside Pirate Chain and Monero. ([clip](https://www.youtube.com/watch?v=G3XbhH0vsRw))
+- **Jul 20** — civilware publishes the Artificer NFA standard. ([spec](https://github.com/civilware/artificer-nfa-standard))
+- **Jul 23** — SixofClubsss/dSlate: blank-slate DERO dApp kit.
+- **Oct 2 / Nov 23** — apollo5ever: Dero-Forms, then DerBNB (on-chain rentals).
+- **Oct 27** — Release114: reproducible builds, pruning, fastsync.
+- **Nov 19** — dReam-dApps/dReams. ([dReams](https://github.com/dReam-dApps/dReams))
+- **Year close: $3.91 (−67%)**
+
+## 2023 — Chain Split and Stabilization
+
+- **Jan 31** — g45t345rt/DERO-BTC: trustless DERO↔BTC atomic-swap POC. ([repo](https://github.com/g45t345rt/DERO-BTC))
+- **Feb 19** — Release116: miniblock spam fix and wallet crash fix, from bug reports by community dev Slixe.
+- **Incident — Feb** — CrowdStrike reports the first DERO cryptojacking campaign: botnets hijack misconfigured Kubernetes clusters and mine DERO through anonymous pools. DERO's privacy makes it attractive to malware operators — a reputation problem the project did not create and cannot patch. ([CrowdStrike](https://www.crowdstrike.com/en-us/blog/crowdstrike-discovers-first-ever-dero-cryptojacking-campaign-targeting-kubernetes/))
+- **Mar 11–19** — **Chain split crisis.** A seed node failure splits the network. Dank publishes a recovery plan on Mar 16; Release117 (Mar 19) fixes the OOM bug and removes the network's reliance on seed nodes.
+- **May 20** — Captain announces the two-branch model for community contributions (`community-mainnet` / `community-testnet`). It never produces a visible merge pipeline. ([Captain Archive](/captain))
+- **Jun 17** — Release140: first community-contributed release (merges from @Slixe, @8lecramm, @omahs). It is also the last upstream release for two years.
+- **Jun 22–24** — SixofClubsss: on-chain Baccarat, Holdero (Texas Hold'em), Iluma tarot; derbnbDesktop. ([Holdero](https://github.com/SixofClubsss/Holdero))
+- **Jun 29** — g45t345rt/g45w: DERO universal wallet (later archived). ([g45w](https://github.com/g45t345rt/g45w))
+- **~Apr** — Hansen33's DERO Miner with HiveOS flight sheets (repo since deleted; survives in the [Wayback Machine](https://web.archive.org/web/20230410070346/https://github.com/Hansen333/Hansen33-s-DERO-Miner/blob/main/HiveOS.md)).
+- **Incident — Aug 1** — HectoFR/DeroSwap: on-chain DEX (Vue). Archived after three weeks of commits. Other swap attempts follow (8lecramm, TELATOMIC); Pieswap/DeroDEX never published a public GitHub. ([DeroSwap](https://github.com/HectoFR/DeroSwap))
+- **Incident — Aug 2** — KuCoin delists DERO, removing a major liquidity venue. (~400K DERO left on the exchange become unclaimable at the Feb 28, 2024 withdrawal deadline.)
+- **Aug 6** — SixofClubsss/Duels: on-chain asset duels.
+- **Oct 31** — Alumn0/derons. Nonsensus 2023 conference, Phoenix AZ (Oct 31–Nov 2). DERO headline sponsor. ([derons](https://github.com/Alumn0/derons))
+- **Nov 9** — SixofClubsss/Grokked.
+- **Dec 17** — apollo5ever/Dero-Governance-Standards.
+- **Dec 24** — Engram Beta 0.5.0 (DankFC). ([release](https://github.com/DEROFDN/Engram/releases/tag/0.5.0-Beta))
+- **Year close: $2.77 (−30%)**
+
+## 2024 — Silence
+
+- **Incident — Jan 1** — Captain's last message: *"Bless you all."* He then goes MIA and never returns. Seven years of leadership end with a broadcast greeting. ([Captain Archive](/captain))
+- **Jan 16** — Alumn0/dVote: on-chain voting in DVM-BASIC. ([dVote](https://github.com/Alumn0/dVote))
+- **Jan 24–Apr 20** — siteraiser Pong stack: php-pong server, pong-plus, Pong-Hub (multi-seller store), Dero-Tools, Go-Dero-Pong-Node. ([Pong-Hub](https://github.com/siteraiser/Pong-Hub))
+- **Feb 28** — KuCoin withdrawal deadline passes; forfeited DERO change hands in bulk days later.
+- **Apr 11** — 8lecramm/dero-swap-service: BTC/LTC/XMR/ARRR ↔ DERO. ([repo](https://github.com/8lecramm/dero-swap-service))
+- **Incident — Apr 20** — **Xelis mainnet.** Slixe (lead) and g45t345rt (listed fullstack on Xelis docs) ship an ElGamal-HE BlockDAG in Rust — account model, topoheight, side blocks, XSWD, encrypted P2P. Xelis FAQ: *not a fork, written from scratch.* DERO Research License forbids commercial use and covers “new source implementing any portion of the Technology”; Xelis is BSD-3-Clause. Feature overlap and people overlap are public. A license breach is **alleged, not adjudicated**. ([xelis-blockchain](https://github.com/xelis-project/xelis-blockchain), [FAQ](https://docs.xelis.io))
+- **Apr 26** — g45w archived, six days after Xelis mainnet.
+- **May** — Notoriousjoshyb begins the CypherVikings NFA collection. ([example](https://github.com/Notoriousjoshyb/CypherVikings-Odin))
+- **Incident — May 14–18** — Luke Parker (kayabaNerve) finds a passive deanonymization attack against DERO's ring-signature privacy and builds a working proof of concept the same day. After failing to reach anyone who would engage — Captain is gone, the $50K bug bounty has no disclosure process, an admin tells him *"then just disclose it"* — he publishes ["Deanonymization of the Dero Network"](https://gist.github.com/kayabaNerve/b754e9ed9fa4cc2c607f38a83aa3df2a). Privacy expectations for historical transactions are permanently broken. ([Fallout on the Zcash forum](https://forum.zcashcommunity.com/t/questions-to-ecc-zf-re-luke-parkers-firo-xmr-irresponsible-disclosure-of-dero-vulnerabilities/47707))
+- **Incident — Jun** — Wiz reports the Kubernetes cryptojacking campaign evolving: UPX-packed miners disguised as `pause` containers, hardcoded wallets, domain fronting. ([Wiz](https://www.wiz.io/blog/dero-cryptojacking-campaign-adapts-to-evade-detection))
+- **Aug** — @Derolytics joins X. They later say they spent the next year deanonymizing historical DERO transactions. The derolytics.com explorer is first captured by the Wayback Machine on Aug 25, 2024. ([@Derolytics](https://x.com/Derolytics))
+- **Aug 9 / Aug 22** — ArcaneSphere creates dero.world; civilware creates the TELA protocol repository. ([tela](https://github.com/civilware/tela))
+- **Incident — Dec 17** — @Derolytics' first public claim: a single entity sold 1.67M DERO (they say ~11% of circulating supply) between October 2022 and July 2024. ([post](https://x.com/Derolytics/status/1869037735052505251))
+- **No upstream releases.** The main repo is effectively frozen. DEROFDN/Engram continues; Nonsensus 2024 runs at smaller scale.
+- **Year close: $0.7167 (−74%)**
+
+## 2025 — The Handover
+
+- **Jan 12** — 8lecramm ships dShout: encrypted on-chain messaging. ([dShout](https://github.com/8lecramm/dShout))
+- **Feb 26** — DHEBP GitHub account/org activity begins (`dhebp` repo).
+- **Jun 13** — DeroDevTalk Matrix dev channel created — the coordination point where the community takeover gets organized.
+- **Jul 16** — DeroLuna/dero-miner on GitLab. ([gitlab](https://gitlab.com/DeroLuna/dero-miner))
+- **Aug 10** — secretnamebasis/simple-wallet (Fyne GUI), first of a "simple" toolchain: appData-maker, tela-viewer, simple-gnomon indexer, simple-search through December. ([simple-wallet](https://github.com/secretnamebasis/simple-wallet))
+- **Aug 13** — Release142: payload encryption hardening and websockets. The final release ever published from `deroproject/derohe`.
+- **Aug 20 / Sep 26** — siteraiser TELATOMIC-Swaps, then downloadable Exe (DERO ↔ PulseChain). ([TELATOMIC](https://github.com/siteraiser/TELATOMIC-Swaps))
+- **Incident — Aug 20–21** — SafeTrade DERO deposits break after a wallet update that is incompatible with the exchange; users lose deposits. @Derolytics attributes it to no remaining core maintainer to coordinate listings. ([thread](https://x.com/Derolytics/status/1958234597789237637))
+- **Incident — Aug 21** — @Derolytics claims one miner controls ~68% of integrator blocks (miniblocks don't vote), i.e. a practical 51% on consensus. Unverified independently. ([post](https://x.com/Derolytics/status/1958647484466479585))
+- **Incident — Aug 23** — @Derolytics publishes the pinned “$8.3M heist” thread: they allege Captain minted 2.2M DERO from nothing in October 2022 and sold it through July 2024, ship Derolytics Explorer, then announce they are done. The circulated proof string is a display-layer object anyone can forge; consensus still rejects negative amounts. ([thread](https://x.com/Derolytics/status/1959312322368827600), [rebuttal](/integrity/inflation-claim))
+- **Sep 18** — **Incident — RCMP seizes TradeOgre.** Canada's largest-ever cryptocurrency seizure (C$56M / ~$41M) and the first time Canadian law enforcement dismantles an exchange. TradeOgre was DERO's primary remaining liquidity venue. ([RCMP statement](https://rcmp.ca/en/news/2025/09/rcmp-executes-record-seizure-more-56-million-dollars-cryptocurrency), [CoinDesk](https://www.coindesk.com/policy/2025/09/18/rcmp-seizes-usd56m-cad-in-crypto-shuts-down-tradeogre-in-canadas-largest-digital-asset-bust))
+- **Oct 23** — DHEBP/dero-docs: this documentation site.
+- **Oct 25** — DHEBP/DERO-Explorer-TELA: a real-time explorer built on TELA, local-first and censorship-resistant. ([repo](https://github.com/DHEBP/DERO-Explorer-TELA))
+- **Dec 22 / Dec 27** — ArcaneSphere ships SovereignSearch (local TELA site discovery); DHEBP creates the HOLOGRAM repository.
+- **Year close: $0.2692 (−65%)**
+
+## 2026 — The Ecosystem Explodes
+
+- **Jan 12** — First recorded DeroDevTalk meeting; notes live in the open. ([dero-devtalk](https://github.com/moralpriest/dero-devtalk))
+- **Jan 27** — Dirtybird99 releases the first of six no-dev-fee AstroBWT v3 miners (C++, then Zig, Rust, CUDA, Go, pure-Go GPU through July). ([Dirtybird99](https://github.com/Dirtybird99))
+- **Feb 5** — PureWolf browser extension: TELA sites via native messaging. ([ArcaneSphere](https://github.com/ArcaneSphere/PureWolf-Browser-Extension))
+- **Feb 11** — Commando-1000 CLI wallet. ([siteraiser](https://github.com/siteraiser/Commando-1000))
+- **Feb 15** — DHEBP/DeroPay and DHEBP/DeroAuth (login to websites with a DERO wallet). ([DeroAuth](https://github.com/DHEBP/DeroAuth), [DeroPay](https://github.com/DHEBP/DeroPay))
+- **Feb 21 → May 27** — Engram rapid cycle v0.6.3 → v0.6.9: CI/CD hardening, wallet recovery refactor, TELA integration, 10+ language i18n, stealth mode, Android QR scanner, Villager avatars. ([releases](https://github.com/moralpriest/Engram/releases))
+- **Mar 2–3** — derotui v0.1.0/v0.1.1: Bubble Tea terminal wallet. ([derotui](https://github.com/moralpriest/derotui))
+- **Mar 26** — 8lecramm's C miner for DERO. ([dero-c-miner](https://github.com/8lecramm/dero-c-miner))
+- **Apr 2** — Dirtybird99 ships HyperGnomon: Arena-accelerated DERO indexer that finds every TELA app in under 5 seconds. ([HyperGnomon](https://github.com/Dirtybird99/HyperGnomon))
+- **Apr 15** — siteraiser/Tela-DApp-App: TELA dweb loader for Commando-1000. ([repo](https://github.com/siteraiser/Tela-DApp-App))
+- **Apr 18** — **HOLOGRAM v1.0.0**: desktop browser for the DERO decentralized web + TELA dev studio (Go/Wails/Svelte). Seven more releases follow by Jun 17: DocShards, avatars, Privacy Mode, Signal Dark, Gnomon token discovery. ([releases](https://github.com/DHEBP/HOLOGRAM/releases))
+- **May 18** — DERO MCP server created — the DERO ↔ AI agents bridge.
+- **Incident — Jun** — A new DERO mining worm spreads through exposed Docker APIs ('nginx' propagator + 'cloud' miner built on DeroHE CLI). The cryptojacking era continues. ([SecuriTricks](https://securitricks.com/attackreports/dero-miner-zombies-biting-through-docker-apis-to-build-a-cryptojacking-horde))
+- **Jul** — tela-gateway, HyperWolf (TELA dApp launcher), and the Go/GPU miner wave land within weeks.
+- **Jul 9** — Notoriousjoshyb/DERO-Hive. ([repo](https://github.com/Notoriousjoshyb/DERO-Hive))
+- **Aug 1–20** — palperro3942/dero-astrox-miner: from-scratch AstroBWT/v3 miner, v1.0.0 through v1.3.3. ([repo](https://github.com/palperro3942/dero-astrox-miner))
+- **Aug 2** — deromine: all-in-one DERO miner scripts. ([deromine](https://github.com/moralpriest/deromine))
+- **Aug 14–15** — **Release152: Hard-Fork 3** at block **7,504,640** — first release published from DEROFDN/derohe (8lecramm). Extra validation and TX-cache changes. Development has officially moved from deroproject to the community org. ([release](https://github.com/DEROFDN/derohe/releases/tag/Release152))
+- **Aug 15–18** — deronode: all-in-one node installer/manager (install, update, snapshot/restore) — v1.2.0 through v1.4.2 in four days. ([deronode](https://github.com/moralpriest/deronode))
+- **Aug 16** — All-time low: **$0.007579** — the day after Hard Fork 3.
+- **Current** — ~$0.019, market cap ~$240K, YTD −80%.
+
+---
+
+## Price Reality
+
+| Metric | Value |
+| --- | --- |
+| All-time high | $27.29 (Oct 9, 2021 — pre-Stargate, CryptoNote era) |
+| All-time low | $0.007579 (Aug 16, 2026) |
+| Drawdown from ATH | −99.97% |
+
+| Year | Close | Return |
+| --- | --- | --- |
+| 2022 | $3.91 | −67% |
+| 2023 | $2.77 | −30% |
+| 2024 | $0.7167 | −74% |
+| 2025 | $0.2692 | −65% |
+| 2026 YTD | ~$0.019 | −80% |
+
+Five straight years of losses. Every year red. The tech shipped throughout.
+
+## Who Built What
+
+The 2026 surge was not one team — it is a loose network of independent developers, most of whom never held a treasury:
+
+| Builder | Notable work | Active since |
+| --- | --- | --- |
+| civilware | dM, Gnomon, EPOCH, Artificer NFA standard, TELA spec | Jun 2021 |
+| Slixe | Rust AstroBWT, bug reports behind R116, R140 contributor; later Xelis lead | Feb 2021 |
+| SixofClubsss | Casino dApps (Baccarat, Poker, Holdero), dSlate, NFA cards, Grokked, Duels, Iluma | Apr 2022 |
+| g45t345rt | RPC bridge, derosphere, SC standards, g45w wallet, DERO-BTC swap; later Xelis fullstack | Mar 2022 |
+| apollo5ever | DERO_OAO, name registration, Dero-Forms, DerBNB, Private Islands, governance standards | Apr 2022 |
+| dReam-dApps | dReams wallet/framework, templates, examples | Nov 2022 |
+| 8lecramm | derohe-proxy, swap service, dShout, C miner, R140 + Release152 | May 2022 |
+| HectoFR | DeroSwap DEX (archived) | Aug 2023 |
+| Alumn0 | derons, dVote, CSP, intinity | Oct 2023 |
+| Tritonn204 | tnn-miner | Jul 2023 |
+| siteraiser | Pong-Hub, TELATOMIC-Swaps, Commando-1000, Tela-DApp-App | Jan 2024 |
+| ArcaneSphere | dero.world, SovereignSearch, PureWolf, HyperWolf, HyperGnomon (fork) | Aug 2024 |
+| Notoriousjoshyb | CypherVikings NFA, DERO-Hive | May 2024 |
+| moralpriest | docker-dero, Engram fork, derotui, deromine, deronode, tela-gateway | Mar 2024 |
+| memetactician (Capitao117, DDerona) | Engram contributor — accounts banned repeatedly; see notes | Mar 2026 |
+| Hansen333 | hansen33-mod node fork, DERO Miner (deleted, Wayback-only), WooCommerce gateway | May 2022 |
+| secretnamebasis | simple-wallet, simple-gnomon, simple-tela-viewer, simple-search | Aug 2025 |
+| DHEBP | DERO-Explorer-TELA, HOLOGRAM, DeroPay, DeroAuth, this documentation | Oct 2025 |
+| Dirtybird99 | Six-language no-dev-fee miner suite, HyperGnomon indexer | Jan 2026 |
+| palperro3942 | dero-astrox-miner | Aug 2026 |
+| DeroLuna | dero-miner (GitLab) | Jul 2025 |
+| DankFC | original Engram (DEROFDN) | Jul 2022 |
+
+## Notes on Sources and Disputed Claims
+
+- Release dates come from the GitHub API (`published_at`) for [deroproject/derohe](https://github.com/deroproject/derohe/releases) and [DEROFDN/derohe](https://github.com/DEROFDN/derohe/releases); repository dates from repo creation timestamps.
+- Derolytics (@Derolytics) joined X in August 2024. Their first public sell-flow post is December 17, 2024; the full “heist” report is August 23, 2025. October 2022 is the date *they allege* for an on-chain mint — not when they appeared. Technical rebuttal: [The 2022 Inflation Claim](/integrity/inflation-claim). The circulated proof string is a display-layer artifact, not evidence of minted coins.
+- A December 2024 post alleging the deanonymization disclosure was timed to a whale's exit is [circulated](https://techleaks24.substack.com/p/the-lurker-parker-dero-bug-market) but unproven; it is mentioned here only as context, not endorsed.
+- Xelis: first commit 2021-06-24 by Slixe; mainnet 2024-04-20. Public team overlap with DERO community developers (Slixe, g45t345rt). Xelis denies being a DERO fork. DERO Research License 1.1.2 is restrictive; whether a Rust reimplementation “implements any portion of the Technology” is **unverified as a legal finding**.
+- Swap/DEX attempts with public code: HectoFR/DeroSwap (2023, archived), 8lecramm/dero-swap-service (2024), siteraiser TELATOMIC (2025). Pieswap/DeroDEX and any mmarcel swap have **no public GitHub found** — GitHub, GitLab, and Wayback Machine CDX all come up empty; `derodex.com` is an unrelated parked domain.
+- Deleted repositories are dated via Wayback Machine captures where noted (e.g., Hansen33's DERO Miner, last seen April 2023).
+- Some contributors appear under multiple handles because their accounts were banned. memetactician (Engram contributor, active since March 2026) is the same person as Capitao117 and DDerona; `memetactician` and `Capitao117` return 404 from the GitHub API (banned), while `DDerona` was registered August 5, 2026. Attribution follows commit records and community knowledge rather than any single surviving profile.
+- The DeroDevTalk Matrix room's exact creation date (Jun 13, 2025) predates its first archived meeting notes (Jan 12, 2026); both are shown where relevant.
